@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import User from '../models/userModels.js';
 import { AccountStatus } from '../enums/userEnums.js';
 
 export const getAllUsers = async (req, res) => {
