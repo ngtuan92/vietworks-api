@@ -1,0 +1,585 @@
+import User from '../models/userModels.js';
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+import { generateAccessToken, generateRefreshToken, sendTokenResponse, hashPassword, comparePassword } from '../utils/authUtils.js';
+import { UserRole, AccountStatus, AuthProvider } from '../enums/userEnums.js';
+import { Gender } from '../enums/masterDataEnums.js';
+import Wallet from '../models/walletModels.js';
+import JobseekerProfile from '../models/jobseekerProfileModels.js';
+import Company from '../models/companyModels.js';
+import EmployerProfile from '../models/employerProfileModels.js';
+import { verifyGoogleToken } from '../services/googleAuthService.js';
+import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
+import { sendOtpEmail } from '../services/emailService.js';
+
+const normalizeEmail = (email) => {
+  if (typeof email !== 'string') return null;
+  const normalized = email.trim().toLowerCase();
+  return normalized.length ? normalized : null;
+};
+
+const normalizeString = (value) => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length ? normalized : null;
+};
+
+const isValidEmail = (email) => {
+  if (!email) return false;
+  return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/.test(email);
+};
+
+const isValidPassword = (password) => {
+  if (typeof password !== 'string') return false;
+  const normalized = password.trim();
+  if (normalized.length < 8) return false;
+  if (!/[A-Za-z]/.test(normalized)) return false;
+  if (!/\d/.test(normalized)) return false;
+  return true;
+};
+
+const isValidPhone = (phone) => {
+  if (phone == null) return true;
+  if (typeof phone !== 'string') return false;
+  const normalized = phone.trim();
+  if (!normalized.length) return false;
+  const digits = normalized.replace(/[^\d]/g, '');
+  return digits.length >= 8 && digits.length <= 15 && /^[+\d][\d\s-]+$/.test(normalized);
+};
+
+const isValidObjectId = (id) => mongoose.isValidObjectId(id);
+
+const badRequest = (res, message) => res.status(400).json({ success: false, message });
+
+const handleMongoWriteError = (res, error) => {
+  if (error?.code === 11000) {
+    const key = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'field';
+    return badRequest(res, `Duplicate value for ${key}`);
+  }
+  if (error?.name === 'ValidationError') {
+    const firstKey = Object.keys(error.errors || {})[0];
+    const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Validation error';
+    return badRequest(res, firstMsg || 'Validation error');
+  }
+  return null;
+};
+
+const generateOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
+
+
+export const registerJobseeker = async (req, res) => {
+  let createdUserId = null;
+  let createdWalletId = null;
+  let createdJobseekerProfileId = null;
+
+  try {
+    const fullName = normalizeString(req.body?.fullName);
+    const email = normalizeEmail(req.body?.email);
+    const password = req.body?.password;
+    const phone = req.body?.phone;
+
+    if (!fullName || !email || !password) {
+      return badRequest(res, 'Missing required fields: fullName, email, password');
+    }
+
+    if (!isValidEmail(email)) {
+      return badRequest(res, 'Invalid email format');
+    }
+
+    if (!isValidPassword(password)) {
+      return badRequest(res, 'Password is too weak. Use at least 8 characters including letters and numbers');
+    }
+
+    if (!isValidPhone(phone)) {
+      return badRequest(res, 'Invalid phone number');
+    }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return badRequest(res, 'User already exists');
+    }
+
+    const user = await User.create({
+      fullName,
+      email,
+      passwordHash: password,
+      role: UserRole.JOBSEEKER,
+      phone: phone ? phone.trim() : undefined,
+      accountStatus: AccountStatus.ACTIVE,
+      authProvider: AuthProvider.LOCAL
+    });
+    createdUserId = user._id;
+
+    const wallet = await Wallet.create({ userId: user._id });
+    createdWalletId = wallet._id;
+
+    const jobseekerProfile = await JobseekerProfile.create({ userId: user._id });
+    createdJobseekerProfileId = jobseekerProfile._id;
+
+    return sendTokenResponse(user, 201, res);
+  } catch (error) {
+    const handled = handleMongoWriteError(res, error);
+    if (handled) {
+      return handled;
+    }
+
+    if (createdJobseekerProfileId) {
+      await JobseekerProfile.findByIdAndDelete(createdJobseekerProfileId);
+    }
+    if (createdWalletId) {
+      await Wallet.findByIdAndDelete(createdWalletId);
+    }
+    if (createdUserId) {
+      await User.findByIdAndDelete(createdUserId);
+    }
+
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const registerEmployer = async (req, res) => {
+  let createdUserId = null;
+  let createdCompanyId = null;
+  let createdWalletId = null;
+  let createdEmployerProfileId = null;
+
+  try {
+    const fullName = normalizeString(req.body?.fullName);
+    const email = normalizeEmail(req.body?.email);
+    const password = req.body?.password;
+    const phone = normalizeString(req.body?.phone);
+    const representativeName = normalizeString(req.body?.representativeName);
+    const gender = req.body?.gender;
+    const company = req.body?.company;
+
+    if (!fullName || !email || !password || !phone || !representativeName || !gender || !company) {
+      return badRequest(res, 'Missing required employer registration fields');
+    }
+
+    if (!isValidEmail(email)) {
+      return badRequest(res, 'Invalid email format');
+    }
+
+    if (!isValidPassword(password)) {
+      return badRequest(res, 'Password is too weak. Use at least 8 characters including letters and numbers');
+    }
+
+    if (!isValidPhone(phone)) {
+      return badRequest(res, 'Invalid phone number');
+    }
+
+    if (!Object.values(Gender).includes(gender)) {
+      return badRequest(res, 'Invalid gender');
+    }
+
+    const requiredCompanyFields = ['name', 'taxCode', 'industryId', 'sizeId', 'email', 'phone', 'description'];
+    const missingCompanyField = requiredCompanyFields.find((field) => !company[field]);
+    if (missingCompanyField) {
+      return badRequest(res, `Missing company field: ${missingCompanyField}`);
+    }
+
+    const companyName = normalizeString(company.name);
+    const companyTaxCode = normalizeString(company.taxCode);
+    const companyEmail = normalizeEmail(company.email);
+    const companyPhone = normalizeString(company.phone);
+    const companyDescription = normalizeString(company.description);
+    const companyIndustryId = company.industryId;
+    const companySizeId = company.sizeId;
+    const companyWebsite = company.website ? String(company.website).trim() : null;
+
+    if (!companyName) {
+      return badRequest(res, 'Company name is required');
+    }
+
+    if (!companyTaxCode) {
+      return badRequest(res, 'Company taxCode is required');
+    }
+
+    if (!companyEmail || !isValidEmail(companyEmail)) {
+      return badRequest(res, 'Invalid company email');
+    }
+
+    if (!companyPhone || !isValidPhone(companyPhone)) {
+      return badRequest(res, 'Invalid company phone');
+    }
+
+    if (!companyDescription) {
+      return badRequest(res, 'Company description is required');
+    }
+
+    if (!isValidObjectId(companyIndustryId)) {
+      return badRequest(res, 'Invalid company industryId');
+    }
+
+    if (!isValidObjectId(companySizeId)) {
+      return badRequest(res, 'Invalid company sizeId');
+    }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return badRequest(res, 'User already exists');
+    }
+
+    const taxCodeExists = await Company.findOne({ taxCode: companyTaxCode });
+    if (taxCodeExists) {
+      return badRequest(res, 'Company tax code already exists');
+    }
+
+    const user = await User.create({
+      fullName,
+      email,
+      passwordHash: password,
+      role: UserRole.EMPLOYER,
+      phone,
+      accountStatus: AccountStatus.UNVERIFIED,
+      authProvider: AuthProvider.LOCAL
+    });
+    createdUserId = user._id;
+
+    const wallet = await Wallet.create({
+      userId: user._id
+    });
+    createdWalletId = wallet._id;
+
+    const newCompany = await Company.create({
+      ownerUserId: user._id,
+      name: companyName,
+      taxCode: companyTaxCode,
+      website: companyWebsite || null,
+      industryId: companyIndustryId,
+      sizeId: companySizeId,
+      email: companyEmail,
+      phone: companyPhone,
+      avatarUrl: company.avatarUrl || null,
+      coverUrl: company.coverUrl || null,
+      description: companyDescription,
+      locations: Array.isArray(company.locations) ? company.locations : [],
+      businessLicenseFile: company.businessLicenseFile || null
+    });
+    createdCompanyId = newCompany._id;
+
+    const employerProfile = await EmployerProfile.create({
+      userId: user._id,
+      companyId: newCompany._id,
+      representativeName,
+      gender,
+      phone
+    });
+    createdEmployerProfileId = employerProfile._id;
+
+    const otpCode = generateOtpCode();
+    const otpCodeHash = await hashPassword(otpCode);
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await User.findByIdAndUpdate(user._id, {
+      $set: {
+        'emailVerification.otpCodeHash': otpCodeHash,
+        'emailVerification.otpExpiresAt': otpExpiresAt,
+        'emailVerification.otpLastSentAt': new Date()
+      }
+    });
+
+    await sendOtpEmail({ toEmail: user.email, fullName: user.fullName, otpCode });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Employer registered. OTP sent to email for verification.',
+      data: { email: user.email }
+    });
+  } catch (error) {
+    const handled = handleMongoWriteError(res, error);
+    if (handled) {
+      return handled;
+    }
+
+    if (createdEmployerProfileId) {
+      await EmployerProfile.findByIdAndDelete(createdEmployerProfileId);
+    }
+    if (createdCompanyId) {
+      await Company.findByIdAndDelete(createdCompanyId);
+    }
+    if (createdWalletId) {
+      await Wallet.findByIdAndDelete(createdWalletId);
+    }
+    if (createdUserId) {
+      await User.findByIdAndDelete(createdUserId);
+    }
+
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const verifyEmployerOtp = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const otp = normalizeString(req.body?.otp);
+
+    if (!email || !otp) {
+      return badRequest(res, 'Missing required fields: email, otp');
+    }
+
+    const user = await User.findOne({ email, role: UserRole.EMPLOYER }).select('+emailVerification.otpCodeHash');
+    if (!user) {
+      return badRequest(res, 'Employer account not found');
+    }
+
+    if (user.accountStatus !== AccountStatus.UNVERIFIED) {
+      return badRequest(res, 'Account is already verified or invalid status');
+    }
+
+    const otpCodeHash = user.emailVerification?.otpCodeHash;
+    const otpExpiresAt = user.emailVerification?.otpExpiresAt;
+
+    if (!otpCodeHash || !otpExpiresAt) {
+      return badRequest(res, 'OTP has not been requested');
+    }
+
+    if (new Date(otpExpiresAt).getTime() < Date.now()) {
+      return badRequest(res, 'OTP has expired');
+    }
+
+    const isOtpValid = await comparePassword(otp, otpCodeHash);
+    if (!isOtpValid) {
+      return badRequest(res, 'Invalid OTP');
+    }
+
+    user.accountStatus = AccountStatus.ACTIVE;
+    user.emailVerification = {
+      otpCodeHash: null,
+      otpExpiresAt: null,
+      otpLastSentAt: user.emailVerification?.otpLastSentAt || null,
+      verifiedAt: new Date()
+    };
+    await user.save();
+
+    return sendTokenResponse(user, 200, res);
+  } catch (error) {
+    const handled = handleMongoWriteError(res, error);
+    if (handled) {
+      return handled;
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const resendEmployerOtp = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    if (!email) {
+      return badRequest(res, 'Missing required field: email');
+    }
+
+    const user = await User.findOne({ email, role: UserRole.EMPLOYER });
+    if (!user) {
+      return badRequest(res, 'Employer account not found');
+    }
+
+    if (user.accountStatus !== AccountStatus.UNVERIFIED) {
+      return badRequest(res, 'Account is already verified or invalid status');
+    }
+
+    const lastSentAt = user.emailVerification?.otpLastSentAt;
+    if (lastSentAt) {
+      const elapsedSeconds = Math.floor((Date.now() - new Date(lastSentAt).getTime()) / 1000);
+      if (elapsedSeconds < 60) {
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${60 - elapsedSeconds}s before requesting a new OTP`
+        });
+      }
+    }
+
+    const otpCode = generateOtpCode();
+    const otpCodeHash = await hashPassword(otpCode);
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.emailVerification = {
+      otpCodeHash,
+      otpExpiresAt,
+      otpLastSentAt: new Date(),
+      verifiedAt: null
+    };
+    await user.save();
+
+    await sendOtpEmail({ toEmail: user.email, fullName: user.fullName, otpCode });
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP resent successfully'
+    });
+  } catch (error) {
+    const handled = handleMongoWriteError(res, error);
+    if (handled) {
+      return handled;
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const loginByRole = async (req, res, expectedRole = null) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const { password } = req.body;
+
+    if (!email || !password) {
+      return badRequest(res, 'Missing required fields: email, password');
+    }
+
+    const user = await User.findOne({ email }).select('+passwordHash');
+
+    if (user && expectedRole && user.role !== expectedRole) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account role is not allowed for this login endpoint'
+      });
+    }
+
+    if (user && user.role === UserRole.EMPLOYER && user.accountStatus === AccountStatus.UNVERIFIED) {
+      return res.status(403).json({
+        success: false,
+        message: 'Employer email is not verified. Please verify OTP first.'
+      });
+    }
+
+    if (user && (await user.matchPassword(password))) {
+      user.lastLoginAt = Date.now();
+      await user.save();
+
+      sendTokenResponse(user, 200, res);
+    } else {
+      res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const login = async (req, res) => loginByRole(req, res, null);
+export const loginJobseeker = async (req, res) => loginByRole(req, res, UserRole.JOBSEEKER);
+export const loginEmployer = async (req, res) => loginByRole(req, res, UserRole.EMPLOYER);
+
+export const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: 'Refresh token not found' });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    const newAccessToken = generateAccessToken(user._id);
+    res.status(200).json({
+      success: true,
+      accessToken: newAccessToken
+    });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid refresh token' });
+  }
+};
+
+export const logout = (req, res) => {
+  res.cookie('refreshToken', 'none', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+};
+
+const googleLoginByRole = async (req, res, expectedRole = null) => {
+  try {
+    const { tokenId, role } = req.body;
+    const targetRole = expectedRole || role || UserRole.JOBSEEKER;
+
+    const googleUser = await verifyGoogleToken(tokenId);
+    const { email, name } = googleUser;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      if (targetRole === UserRole.EMPLOYER) {
+        return badRequest(res, 'Employer social login is only available for existing employer accounts');
+      }
+
+      user = await User.create({
+        fullName: name,
+        email,
+        role: targetRole,
+        accountStatus: AccountStatus.ACTIVE,
+        authProvider: AuthProvider.GOOGLE
+      });
+    } else {
+      if (targetRole && user.role !== targetRole) {
+        return res.status(403).json({
+          success: false,
+          message: 'Account role is not allowed for this Google login endpoint'
+        });
+      }
+
+      user.lastLoginAt = Date.now();
+      await user.save();
+    }
+
+    return sendTokenResponse(user, 200, res);
+  } catch (error) {
+    console.error('Google Login Error:', error.message);
+    return res.status(500).json({ success: false, message: error.message || 'Google authentication failed' });
+  }
+};
+
+const linkedinLoginByRole = async (req, res, expectedRole = null) => {
+  try {
+    const { code, role } = req.body;
+    const targetRole = expectedRole || role || UserRole.JOBSEEKER;
+
+    const linkedinUser = await verifyLinkedinCode(code);
+    const { email, name } = linkedinUser;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      if (targetRole === UserRole.EMPLOYER) {
+        return badRequest(res, 'Employer social login is only available for existing employer accounts');
+      }
+
+      user = await User.create({
+        fullName: name,
+        email,
+        role: targetRole,
+        accountStatus: AccountStatus.ACTIVE,
+        authProvider: AuthProvider.LINKEDIN
+      });
+    } else {
+      if (targetRole && user.role !== targetRole) {
+        return res.status(403).json({
+          success: false,
+          message: 'Account role is not allowed for this LinkedIn login endpoint'
+        });
+      }
+
+      user.lastLoginAt = Date.now();
+      await user.save();
+    }
+
+    return sendTokenResponse(user, 200, res);
+  } catch (error) {
+    console.error('LinkedIn Login Error:', error.message);
+    return res.status(500).json({ success: false, message: error.message || 'LinkedIn authentication failed' });
+  }
+};
+
+export const googleLogin = async (req, res) => googleLoginByRole(req, res, null);
+export const googleLoginJobseeker = async (req, res) => googleLoginByRole(req, res, UserRole.JOBSEEKER);
+export const googleLoginEmployer = async (req, res) => googleLoginByRole(req, res, UserRole.EMPLOYER);
+export const linkedinLogin = async (req, res) => linkedinLoginByRole(req, res, null);
+export const linkedinLoginJobseeker = async (req, res) => linkedinLoginByRole(req, res, UserRole.JOBSEEKER);
+export const linkedinLoginEmployer = async (req, res) => linkedinLoginByRole(req, res, UserRole.EMPLOYER);

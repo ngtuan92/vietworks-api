@@ -1,0 +1,36 @@
+export const SalaryType = {
+  RANGE: 'RANGE',
+  NEGOTIABLE: 'NEGOTIABLE'
+};
+
+export const SaturdayPolicy = {
+  NOT_SPECIFIED: 'NOT_SPECIFIED',
+  WORKING_SATURDAY: 'WORKING_SATURDAY',
+  OFF_SATURDAY: 'OFF_SATURDAY'
+};
+
+export const JobStatus = {
+  DRAFT: 'DRAFT',
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  PUBLISHED: 'PUBLISHED',
+  EXPIRED: 'EXPIRED',
+  CLOSED: 'CLOSED',
+  REJECTED: 'REJECTED',
+  BANNED: 'BANNED'
+};
+
+export const PremiumDeactivatedReason = {
+  EXPIRED: 'EXPIRED',
+  JOB_CLOSED: 'JOB_CLOSED',
+  JOB_REJECTED: 'JOB_REJECTED',
+  JOB_BANNED: 'JOB_BANNED',
+  ADMIN_ACTION: 'ADMIN_ACTION'
+};
+
+export const ApplicationStatus = {
+  APPLIED: 'APPLIED',
+  VIEWED: 'VIEWED',
+  APPROVED: 'APPROVED',
+  HIRED: 'HIRED',
+  REJECTED: 'REJECTED'
+};

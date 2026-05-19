@@ -1,0 +1,38 @@
+export const CvSectionCode = {
+  PROFILE: 'PROFILE',
+  CONTACT: 'CONTACT',
+  OBJECTIVE: 'OBJECTIVE',
+  EXPERIENCE: 'EXPERIENCE',
+  EDUCATION: 'EDUCATION',
+  SKILLS: 'SKILLS',
+  CERTIFICATES: 'CERTIFICATES',
+  AWARDS: 'AWARDS',
+  ACTIVITIES: 'ACTIVITIES',
+  INTERESTS: 'INTERESTS',
+  ADDITIONAL_INFO: 'ADDITIONAL_INFO'
+};
+
+export const CvBackgroundCategory = {
+  DEFAULT: 'DEFAULT',
+  MINIMAL: 'MINIMAL',
+  CREATIVE: 'CREATIVE',
+  FORMAL: 'FORMAL'
+};
+
+export const CvBackgroundType = {
+  NONE: 'NONE',
+  SYSTEM: 'SYSTEM',
+  CUSTOM: 'CUSTOM'
+};
+
+export const CvStatus = {
+  ACTIVE: 'ACTIVE',
+  DELETED: 'DELETED'
+};
+
+export const TextExtractStatus = {
+  NOT_EXTRACTED: 'NOT_EXTRACTED',
+  EXTRACTED: 'EXTRACTED',
+  FAILED: 'FAILED',
+  UNSUPPORTED: 'UNSUPPORTED'
+};

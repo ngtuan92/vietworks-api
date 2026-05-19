@@ -1,0 +1,72 @@
+export const CommonStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE'
+};
+
+export const Gender = {
+  MALE: 'MALE',
+  FEMALE: 'FEMALE',
+  OTHER: 'OTHER'
+};
+
+export const ProfileVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE'
+};
+
+export const CompanyVerificationStatus = {
+  UNVERIFIED: 'UNVERIFIED',
+  PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED'
+};
+
+export const JobLevelCode = {
+  INTERN: 'INTERN',
+  FRESHER: 'FRESHER',
+  JUNIOR: 'JUNIOR',
+  STAFF: 'STAFF',
+  SENIOR: 'SENIOR',
+  LEADER: 'LEADER',
+  MANAGER: 'MANAGER',
+  HEAD: 'HEAD',
+  BRANCH_MANAGER: 'BRANCH_MANAGER',
+  DEPUTY_DIRECTOR: 'DEPUTY_DIRECTOR',
+  DIRECTOR: 'DIRECTOR'
+};
+
+export const ExperienceLevelCode = {
+  NO_REQUIREMENT: 'NO_REQUIREMENT',
+  UNDER_1_YEAR: 'UNDER_1_YEAR',
+  ONE_YEAR: 'ONE_YEAR',
+  TWO_YEARS: 'TWO_YEARS',
+  THREE_YEARS: 'THREE_YEARS',
+  FOUR_YEARS: 'FOUR_YEARS',
+  FIVE_YEARS: 'FIVE_YEARS',
+  OVER_5_YEARS: 'OVER_5_YEARS'
+};
+
+export const SalaryRangeCode = {
+  UNDER_10: 'UNDER_10',
+  FROM_10_TO_15: 'FROM_10_TO_15',
+  FROM_15_TO_20: 'FROM_15_TO_20',
+  FROM_20_TO_25: 'FROM_20_TO_25',
+  FROM_25_TO_30: 'FROM_25_TO_30',
+  FROM_30_TO_50: 'FROM_30_TO_50',
+  OVER_50: 'OVER_50',
+  NEGOTIABLE: 'NEGOTIABLE'
+};
+
+export const Currency = {
+  VND: 'VND'
+};
+
+export const CompanySizeCode = {
+  SIZE_1_10: 'SIZE_1_10',
+  SIZE_11_50: 'SIZE_11_50',
+  SIZE_51_100: 'SIZE_51_100',
+  SIZE_101_300: 'SIZE_101_300',
+  SIZE_301_500: 'SIZE_301_500',
+  SIZE_501_1000: 'SIZE_501_1000',
+  SIZE_OVER_1000: 'SIZE_OVER_1000'
+};
