@@ -3,31 +3,31 @@ import { CommonStatus } from '../enums/masterDataEnums.js';
 import { slugify } from '../utils/slugify.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinary.js';
 
-// @desc    Tạo mẫu CV mới
-// @route   POST /api/admin/cv-templates
-// @access  Private/Admin
 export const createCvTemplate = async (req, res) => {
   try {
     const { name, code, careerGroupId, description, templateCode, layoutConfig, isPremium } = req.body;
 
     const slug = slugify(name);
+    const codeValue = code || slug;
     
-    const existingTemplate = await CvTemplate.findOne({ $or: [{ code }, { slug }] });
+    const existingTemplate = await CvTemplate.findOne({ $or: [{ code: codeValue }, { slug }] });
     if (existingTemplate) {
       return res.status(400).json({ success: false, message: 'Template code hoặc tên đã tồn tại (slug bị trùng)' });
     }
 
     const newTemplate = await CvTemplate.create({
       name,
-      code,
+      code: codeValue,
       slug,
       careerGroupId,
       description,
       templateCode,
       layoutConfig,
       isPremium: isPremium || false,
+      thumbnailUrl: req.body.thumbnailUrl || 'placeholder',
+      previewImageUrl: req.body.previewImageUrl || 'placeholder',
       status: CommonStatus.ACTIVE,
-      createdBy: req.user._id
+      createdBy: req.user?._id || '000000000000000000000001'
     });
 
     res.status(201).json({ success: true, data: newTemplate });
@@ -36,9 +36,6 @@ export const createCvTemplate = async (req, res) => {
   }
 };
 
-// @desc    Cập nhật mẫu CV
-// @route   PUT /api/admin/cv-templates/:id
-// @access  Private/Admin
 export const updateCvTemplate = async (req, res) => {
   try {
     const { name, description, isPremium, status, layoutConfig, templateCode, careerGroupId } = req.body;
@@ -48,7 +45,6 @@ export const updateCvTemplate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
     }
 
-    // Kiểm tra xem template đã có CV nào sử dụng chưa
     const cvCount = await Cv.countDocuments({ templateId: template._id });
     
     // Nếu có người dùng rồi, KHÔNG cho sửa layoutConfig, templateCode
@@ -65,7 +61,6 @@ export const updateCvTemplate = async (req, res) => {
     }
 
     if (cvCount === 0) {
-      // Chưa ai dùng, cho phép sửa cấu trúc
       if (layoutConfig) updateData.layoutConfig = layoutConfig;
       if (templateCode) updateData.templateCode = templateCode;
     }
@@ -82,9 +77,6 @@ export const updateCvTemplate = async (req, res) => {
   }
 };
 
-// @desc    Bật/tắt trạng thái mẫu CV
-// @route   PATCH /api/admin/cv-templates/:id/status
-// @access  Private/Admin
 export const toggleCvTemplateStatus = async (req, res) => {
   try {
     const template = await CvTemplate.findById(req.params.id);
@@ -101,9 +93,6 @@ export const toggleCvTemplateStatus = async (req, res) => {
   }
 };
 
-// @desc    Tải ảnh preview cho mẫu CV
-// @route   POST /api/admin/cv-templates/:id/preview-image
-// @access  Private/Admin
 export const uploadPreviewImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -115,12 +104,10 @@ export const uploadPreviewImage = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
     }
 
-    // Upload to Cloudinary
     const result = await uploadBufferToCloudinary(req.file.buffer, 'vietworks/cv-templates');
     
-    // Cloudinary returns both secure_url
     template.previewImageUrl = result.secure_url;
-    template.thumbnailUrl = result.secure_url; // You could potentially apply a transformation here if you wanted a smaller thumbnail URL from cloudinary
+    template.thumbnailUrl = result.secure_url;
     
     await template.save();
 
@@ -130,9 +117,6 @@ export const uploadPreviewImage = async (req, res) => {
   }
 };
 
-// @desc    Lấy danh sách mẫu CV (dành cho Admin)
-// @route   GET /api/admin/cv-templates
-// @access  Private/Admin
 export const getAdminCvTemplates = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, status, careerGroupId, sort = '-createdAt' } = req.query;
@@ -157,7 +141,6 @@ export const getAdminCvTemplates = async (req, res) => {
 
     const total = await CvTemplate.countDocuments(query);
 
-    // Tính toán số CV sử dụng cho mỗi template
     const templatesWithStats = await Promise.all(templates.map(async (tpl) => {
       const usersCount = await Cv.countDocuments({ templateId: tpl._id });
       return { ...tpl.toObject(), usersCount };
@@ -178,9 +161,6 @@ export const getAdminCvTemplates = async (req, res) => {
   }
 };
 
-// @desc    Lấy danh sách mẫu CV hoạt động (dành cho Jobseeker)
-// @route   GET /api/cv-templates
-// @access  Public or Private/Jobseeker
 export const getActiveCvTemplates = async (req, res) => {
   try {
     const { careerGroupId } = req.query;
@@ -200,9 +180,6 @@ export const getActiveCvTemplates = async (req, res) => {
   }
 };
 
-// @desc    Lấy chi tiết và xem trước mẫu CV
-// @route   GET /api/cv-templates/:id/preview
-// @access  Public or Private/Jobseeker
 export const getCvTemplatePreview = async (req, res) => {
   try {
     const template = await CvTemplate.findById(req.params.id)
@@ -220,9 +197,6 @@ export const getCvTemplatePreview = async (req, res) => {
   }
 };
 
-// @desc    Lấy danh sách nhóm ngành nghề
-// @route   GET /api/career-groups
-// @access  Public or Private
 export const getCareerGroups = async (req, res) => {
   try {
     const groups = await CareerGroup.find({ status: CommonStatus.ACTIVE }).sort('order name');

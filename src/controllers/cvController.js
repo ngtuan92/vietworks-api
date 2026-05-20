@@ -10,28 +10,38 @@ export const createCv = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Template không tồn tại' });
     }
 
-    const defaultCodes = template.layoutConfig?.defaultSectionCodes || [];
-    
-    const sectionsData = await CvSection.find({ code: { $in: defaultCodes }, status: 'ACTIVE' });
-    
-    const sectionsState = sectionsData.map((sec, index) => {
-      let column = 'right';
-      if (['PROFILE', 'CONTACT', 'SKILLS'].includes(sec.code)) {
-        column = 'left';
-      }
-      if (template.layoutConfig?.columns === 1) {
-        column = 'full';
-      }
+    let sectionsState = [];
+    if (template.layoutConfig?.sections && template.layoutConfig.sections.length > 0) {
+      sectionsState = template.layoutConfig.sections.map((sec) => ({
+        sectionCode: sec.sectionCode,
+        order: sec.order,
+        column: sec.column,
+        position: sec.position || { x: 0, y: 0 },
+        isVisible: sec.isVisible !== undefined ? sec.isVisible : true,
+        items: sec.items || []
+      }));
+    } else {
+      const defaultCodes = template.layoutConfig?.defaultSectionCodes || [];
+      const sectionsData = await CvSection.find({ code: { $in: defaultCodes }, status: 'ACTIVE' });
+      sectionsState = sectionsData.map((sec, index) => {
+        let column = 'right';
+        if (['PROFILE', 'CONTACT', 'SKILLS'].includes(sec.code)) {
+          column = 'left';
+        }
+        if (template.layoutConfig?.columns === 1) {
+          column = 'full';
+        }
 
-      return {
-        sectionCode: sec.code,
-        order: sec.defaultOrder || index + 1,
-        column: column,
-        position: { x: 0, y: 0 },
-        isVisible: true,
-        items: [] 
-      };
-    });
+        return {
+          sectionCode: sec.code,
+          order: sec.defaultOrder || index + 1,
+          column: column,
+          position: { x: 0, y: 0 },
+          isVisible: true,
+          items: [] 
+        };
+      });
+    }
 
     const newCv = await Cv.create({
       userId: req.user._id,
@@ -40,7 +50,11 @@ export const createCv = async (req, res) => {
       style: {
         fontId: template.layoutConfig?.defaultFontId || null,
         themeColorId: template.layoutConfig?.defaultColorId || null,
-        backgroundType: 'NONE'
+        backgroundType: 'NONE',
+        fontSize: template.layoutConfig?.fontSize || 'medium',
+        density: template.layoutConfig?.density || 'normal',
+        titleStyle: template.layoutConfig?.titleStyle || 'underline',
+        avatarShape: template.layoutConfig?.avatarShape || 'circle'
       },
       sections: sectionsState,
       status: CvStatus.ACTIVE

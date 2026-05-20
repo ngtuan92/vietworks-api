@@ -7,11 +7,15 @@ const cvSchema = new mongoose.Schema({
   title: { type: String, required: true },
   templateId: { type: objectId, ref: 'CvTemplate', required: true },
   style: {
-    fontId: { type: objectId, ref: 'CvFont', default: null },
-    themeColorId: { type: objectId, ref: 'CvThemeColor', default: null },
+    fontId: { type: mongoose.Schema.Types.Mixed, default: null }, // Support either direct ID string or object
+    themeColorId: { type: String, default: null }, // Support hex color strings or object ID
     backgroundType: { type: String, enum: Object.values(CvBackgroundType), default: CvBackgroundType.NONE },
     backgroundId: { type: objectId, ref: 'CvBackground', default: null },
-    customBackgroundUrl: { type: String, default: null }
+    customBackgroundUrl: { type: String, default: null },
+    fontSize: { type: String, default: 'medium' },
+    density: { type: String, default: 'normal' },
+    titleStyle: { type: String, default: 'underline' },
+    avatarShape: { type: String, default: 'circle' }
   },
   boost: { type: boostSchema, default: () => ({}) },
   aiReviewSummary: {

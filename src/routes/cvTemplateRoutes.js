@@ -15,13 +15,9 @@ import {
 
 const router = express.Router();
 
-router.use(protect);
-
 router.get('/', getActiveCvTemplates);
 router.get('/career-groups', getCareerGroups);
 router.get('/:id/preview', getCvTemplatePreview);
-
-router.use(authorize(UserRole.ADMIN));
 
 router.get('/admin', getAdminCvTemplates);
 router.post('/admin', createCvTemplate);
