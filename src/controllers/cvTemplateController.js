@@ -113,6 +113,7 @@ export const uploadPreviewImage = async (req, res) => {
 
     res.status(200).json({ success: true, data: template });
   } catch (error) {
+    console.error("Upload error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
