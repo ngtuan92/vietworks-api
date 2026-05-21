@@ -1,0 +1,358 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000003a99"
+    },
+    "code": "EMPLOYER_VIEWED_CV",
+    "name": "Nhà tuyển dụng đã xem CV",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003a9a"
+    },
+    "code": "NEW_CV_TEMPLATE",
+    "name": "Mẫu CV mới",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003a9b"
+    },
+    "code": "MATCHING_JOB",
+    "name": "Việc làm phù hợp",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003a9c"
+    },
+    "code": "INTERVIEW_INVITATION",
+    "name": "Lời mời phỏng vấn",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003a9d"
+    },
+    "code": "APPLICATION_RESULT",
+    "name": "Kết quả ứng tuyển",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003a9e"
+    },
+    "code": "COMPANY_VERIFIED",
+    "name": "Công ty đã được duyệt",
+    "targetRole": "EMPLOYER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003a9f"
+    },
+    "code": "COMPANY_REJECTED",
+    "name": "Công ty bị từ chối",
+    "targetRole": "EMPLOYER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa0"
+    },
+    "code": "JOB_APPROVED",
+    "name": "Tin tuyển dụng đã được duyệt",
+    "targetRole": "EMPLOYER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa1"
+    },
+    "code": "JOB_REJECTED",
+    "name": "Tin tuyển dụng bị từ chối",
+    "targetRole": "EMPLOYER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa2"
+    },
+    "code": "JOB_BANNED",
+    "name": "Tin tuyển dụng bị khóa",
+    "targetRole": "EMPLOYER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa3"
+    },
+    "code": "WALLET_DEPOSIT_SUCCESS",
+    "name": "Nạp tiền vào ví thành công",
+    "targetRole": "ALL",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa4"
+    },
+    "code": "PACKAGE_PURCHASE_SUCCESS",
+    "name": "Mua gói dịch vụ thành công",
+    "targetRole": "ALL",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa5"
+    },
+    "code": "PAYMENT_SUCCESS",
+    "name": "Thanh toán thành công",
+    "targetRole": "ALL",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa6"
+    },
+    "code": "PAYMENT_FAILED",
+    "name": "Thanh toán thất bại",
+    "targetRole": "ALL",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa7"
+    },
+    "code": "PAYMENT_CANCELLED",
+    "name": "Thanh toán đã hủy",
+    "targetRole": "ALL",
+    "defaultChannels": [
+      "IN_APP"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa8"
+    },
+    "code": "AI_CV_REVIEW_COMPLETED",
+    "name": "AI Review CV đã hoàn tất",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP",
+      "EMAIL"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aa9"
+    },
+    "code": "AI_CV_REVIEW_FAILED",
+    "name": "AI Review CV thất bại",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aaa"
+    },
+    "code": "AI_CV_REVIEW_QUOTA_EXCEEDED",
+    "name": "Bạn đã hết lượt AI Review CV hôm nay",
+    "targetRole": "JOBSEEKER",
+    "defaultChannels": [
+      "IN_APP"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000003aab"
+    },
+    "code": "SYSTEM_UPDATE",
+    "name": "Cập nhật hệ thống",
+    "targetRole": "ALL",
+    "defaultChannels": [
+      "IN_APP"
+    ],
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-17T00:00:00.000Z"
+    }
+  }
+]

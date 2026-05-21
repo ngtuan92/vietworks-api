@@ -1,0 +1,1218 @@
+[
+  {
+    "_id": {
+      "$oid": "0000000000000000000003e9"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales / Tư vấn bán hàng",
+    "slug": "sales-tu-van-ban-hang",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003ea"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Account / Quản lý khách hàng",
+    "slug": "account-quan-ly-khach-hang",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003eb"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales Bất động sản",
+    "slug": "sales-bat-dong-san",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003ec"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales Giáo dục",
+    "slug": "sales-giao-duc",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003ed"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales Tài chính / Ngân hàng / Bảo hiểm",
+    "slug": "sales-tai-chinh-ngan-hang-bao-hiem",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003ee"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales Logistics / Xuất nhập khẩu",
+    "slug": "sales-logistics-xuat-nhap-khau",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003ef"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales IT / Phần mềm",
+    "slug": "sales-it-phan-mem",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 7,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f0"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales Kỹ thuật / Sản xuất",
+    "slug": "sales-ky-thuat-san-xuat",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 8,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f1"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Sales Bán lẻ / Dịch vụ tiêu dùng",
+    "slug": "sales-ban-le-dich-vu-tieu-dung",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 9,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f2"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Quản lý kinh doanh",
+    "slug": "quan-ly-kinh-doanh",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 10,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f3"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Digital Marketing",
+    "slug": "digital-marketing",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f4"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Content Marketing",
+    "slug": "content-marketing",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f5"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Social Media / Branding",
+    "slug": "social-media-branding",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f6"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Event / Campaign",
+    "slug": "event-campaign",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f7"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "PR / Truyền thông",
+    "slug": "pr-truyen-thong",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f8"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Market Research / Phân tích",
+    "slug": "market-research-phan-tich",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003f9"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Quản lý Marketing",
+    "slug": "quan-ly-marketing",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 7,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003fa"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Lập trình phần mềm",
+    "slug": "lap-trinh-phan-mem",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003fb"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Kiểm thử phần mềm",
+    "slug": "kiem-thu-phan-mem",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003fc"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "AI / Data",
+    "slug": "ai-data",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003fd"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Hạ tầng / Vận hành IT",
+    "slug": "ha-tang-van-hanh-it",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003fe"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "An toàn thông tin",
+    "slug": "an-toan-thong-tin",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000003ff"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "IoT / Embedded",
+    "slug": "iot-embedded",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000400"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Quản lý dự án IT",
+    "slug": "quan-ly-du-an-it",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 7,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000401"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Kiến trúc / Quản lý kỹ thuật",
+    "slug": "kien-truc-quan-ly-ky-thuat",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 8,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000402"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Product / BA",
+    "slug": "product-ba",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 9,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000403"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Game Development",
+    "slug": "game-development",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 10,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000404"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000068"
+    },
+    "name": "Nhân sự",
+    "slug": "nhan-su",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000405"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000068"
+    },
+    "name": "Hành chính",
+    "slug": "hanh-chinh",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000406"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000068"
+    },
+    "name": "Trợ lý / Thư ký",
+    "slug": "tro-ly-thu-ky",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000407"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000068"
+    },
+    "name": "Pháp lý / Pháp chế",
+    "slug": "phap-ly-phap-che",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000408"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Kế toán",
+    "slug": "ke-toan",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000409"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Kiểm toán / Thuế",
+    "slug": "kiem-toan-thue",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000040a"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Tài chính doanh nghiệp",
+    "slug": "tai-chinh-doanh-nghiep",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000040b"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Ngân hàng",
+    "slug": "ngan-hang",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000040c"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Chứng khoán / Đầu tư",
+    "slug": "chung-khoan-dau-tu",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000040d"
+    },
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Bảo hiểm / Rủi ro",
+    "slug": "bao-hiem-rui-ro",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000040e"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006a"
+    },
+    "name": "Giáo viên / Giảng viên / Gia sư",
+    "slug": "giao-vien-giang-vien-gia-su",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000040f"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006a"
+    },
+    "name": "Trợ giảng",
+    "slug": "tro-giang",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000410"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006a"
+    },
+    "name": "Quản lý giáo dục",
+    "slug": "quan-ly-giao-duc",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000411"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006a"
+    },
+    "name": "Hỗ trợ học viên / Lớp học",
+    "slug": "ho-tro-hoc-vien-lop-hoc",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000412"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006a"
+    },
+    "name": "Phát triển đào tạo",
+    "slug": "phat-trien-dao-tao",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000413"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006b"
+    },
+    "name": "Y tá / Điều dưỡng",
+    "slug": "y-ta-dieu-duong",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000414"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006b"
+    },
+    "name": "Bác sĩ / Kỹ thuật viên y tế",
+    "slug": "bac-si-ky-thuat-vien-y-te",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000415"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006b"
+    },
+    "name": "Dược phẩm / Công nghệ sinh học",
+    "slug": "duoc-pham-cong-nghe-sinh-hoc",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000416"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006b"
+    },
+    "name": "Thiết bị y tế / Phòng lab",
+    "slug": "thiet-bi-y-te-phong-lab",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000417"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006b"
+    },
+    "name": "Chăm sóc sức khỏe",
+    "slug": "cham-soc-suc-khoe",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000418"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Xây dựng / Thi công",
+    "slug": "xay-dung-thi-cong",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000419"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Quản lý dự án xây dựng",
+    "slug": "quan-ly-du-an-xay-dung",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000041a"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Thiết kế / Kiến trúc / Nội thất",
+    "slug": "thiet-ke-kien-truc-noi-that",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000041b"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Công nhân xây dựng / Kỹ thuật",
+    "slug": "cong-nhan-xay-dung-ky-thuat",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000041c"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Bất động sản",
+    "slug": "bat-dong-san",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000041d"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Quản lý vận hành bất động sản",
+    "slug": "quan-ly-van-hanh-bat-dong-san",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000041e"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006d"
+    },
+    "name": "Chăm sóc khách hàng",
+    "slug": "cham-soc-khach-hang",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000041f"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006d"
+    },
+    "name": "Vận hành",
+    "slug": "van-hanh",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000420"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006d"
+    },
+    "name": "Nhà hàng / Dịch vụ ăn uống",
+    "slug": "nha-hang-dich-vu-an-uong",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000421"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006d"
+    },
+    "name": "Khách sạn / Dịch vụ cư trú",
+    "slug": "khach-san-dich-vu-cu-tru",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000422"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006d"
+    },
+    "name": "Du lịch",
+    "slug": "du-lich",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000423"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Thiết kế đồ họa / UI UX",
+    "slug": "thiet-ke-do-hoa-ui-ux",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000424"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Thiết kế nội thất / Môi trường",
+    "slug": "thiet-ke-noi-that-moi-truong",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000425"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Nghệ thuật / Hoạt hình / Game Art",
+    "slug": "nghe-thuat-hoat-hinh-game-art",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000426"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Biên tập / Viết / Xuất bản",
+    "slug": "bien-tap-viet-xuat-ban",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000427"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Phim / Truyền hình",
+    "slug": "phim-truyen-hinh",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000428"
+    },
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Quản lý thiết kế / Sáng tạo",
+    "slug": "quan-ly-thiet-ke-sang-tao",
+    "description": "",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

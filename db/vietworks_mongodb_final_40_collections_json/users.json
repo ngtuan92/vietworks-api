@@ -1,0 +1,24 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000000001"
+    },
+    "role": "ADMIN",
+    "fullName": "Admin VietWorks",
+    "email": "admin@vietworks.vn",
+    "passwordHash": "$2b$10$nR1UxU3NJ6LMDh0CxkJO3.fxKUKRlLc4Zx.5I1A38TjRHn3hUCU4q",
+    "phone": "0900000000",
+    "accountStatus": "ACTIVE",
+    "authProvider": "LOCAL",
+    "banReason": null,
+    "bannedAt": null,
+    "bannedBy": null,
+    "lastLoginAt": null,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

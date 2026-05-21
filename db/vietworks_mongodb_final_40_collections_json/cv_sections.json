@@ -1,0 +1,233 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000002711"
+    },
+    "code": "PROFILE",
+    "name": "Thông tin cá nhân",
+    "description": "Họ tên, vị trí mong muốn, ảnh đại diện",
+    "icon": "user",
+    "allowMultiple": false,
+    "allowMultipleItems": false,
+    "isRequired": true,
+    "defaultOrder": 1,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002712"
+    },
+    "code": "CONTACT",
+    "name": "Liên hệ",
+    "description": "Email, số điện thoại, địa chỉ, mạng xã hội",
+    "icon": "phone",
+    "allowMultiple": false,
+    "allowMultipleItems": false,
+    "isRequired": true,
+    "defaultOrder": 2,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002713"
+    },
+    "code": "OBJECTIVE",
+    "name": "Mục tiêu nghề nghiệp",
+    "description": "Mục tiêu ngắn hạn và dài hạn của ứng viên",
+    "icon": "target",
+    "allowMultiple": false,
+    "allowMultipleItems": false,
+    "isRequired": false,
+    "defaultOrder": 3,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002714"
+    },
+    "code": "EXPERIENCE",
+    "name": "Kinh nghiệm làm việc",
+    "description": "Danh sách công ty, vị trí và mô tả công việc",
+    "icon": "briefcase",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 4,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002715"
+    },
+    "code": "EDUCATION",
+    "name": "Học vấn",
+    "description": "Trường học, chuyên ngành, thời gian học",
+    "icon": "graduation-cap",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 5,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002716"
+    },
+    "code": "SKILLS",
+    "name": "Kỹ năng",
+    "description": "Các kỹ năng chuyên môn hoặc kỹ năng mềm",
+    "icon": "sparkles",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 6,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002717"
+    },
+    "code": "CERTIFICATES",
+    "name": "Chứng chỉ",
+    "description": "Các chứng chỉ đã đạt được",
+    "icon": "award",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 7,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002718"
+    },
+    "code": "AWARDS",
+    "name": "Giải thưởng",
+    "description": "Các giải thưởng, thành tích nổi bật",
+    "icon": "trophy",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 8,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002719"
+    },
+    "code": "ACTIVITIES",
+    "name": "Hoạt động",
+    "description": "Hoạt động ngoại khóa, tình nguyện, câu lạc bộ",
+    "icon": "users",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 9,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000271a"
+    },
+    "code": "INTERESTS",
+    "name": "Sở thích",
+    "description": "Sở thích cá nhân",
+    "icon": "heart",
+    "allowMultiple": false,
+    "allowMultipleItems": true,
+    "isRequired": false,
+    "defaultOrder": 10,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000271b"
+    },
+    "code": "ADDITIONAL_INFO",
+    "name": "Thông tin thêm",
+    "description": "Các thông tin bổ sung khác",
+    "icon": "info",
+    "allowMultiple": false,
+    "allowMultipleItems": false,
+    "isRequired": false,
+    "defaultOrder": 11,
+    "status": "ACTIVE",
+    "isSystemCodeLocked": true,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

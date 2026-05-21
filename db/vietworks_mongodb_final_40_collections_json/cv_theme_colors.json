@@ -1,0 +1,92 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000002ee1"
+    },
+    "code": "BLUE",
+    "name": "Xanh dương chuyên nghiệp",
+    "primaryColor": "#2563EB",
+    "secondaryColor": "#DBEAFE",
+    "textColor": "#111827",
+    "isDefault": true,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002ee2"
+    },
+    "code": "GREEN",
+    "name": "Xanh lá hiện đại",
+    "primaryColor": "#16A34A",
+    "secondaryColor": "#DCFCE7",
+    "textColor": "#111827",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002ee3"
+    },
+    "code": "BURGUNDY",
+    "name": "Đỏ đô nổi bật",
+    "primaryColor": "#9F1239",
+    "secondaryColor": "#FFE4E6",
+    "textColor": "#111827",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002ee4"
+    },
+    "code": "PURPLE",
+    "name": "Tím sáng tạo",
+    "primaryColor": "#7C3AED",
+    "secondaryColor": "#EDE9FE",
+    "textColor": "#111827",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002ee5"
+    },
+    "code": "BLACK",
+    "name": "Đen tối giản",
+    "primaryColor": "#111827",
+    "secondaryColor": "#F3F4F6",
+    "textColor": "#111827",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]
