@@ -1,0 +1,167 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa1"
+    },
+    "code": "INTERN",
+    "name": "Thực tập sinh",
+    "levelOrder": 1,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa2"
+    },
+    "code": "FRESHER",
+    "name": "Fresher",
+    "levelOrder": 2,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa3"
+    },
+    "code": "JUNIOR",
+    "name": "Junior",
+    "levelOrder": 3,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa4"
+    },
+    "code": "STAFF",
+    "name": "Nhân viên",
+    "levelOrder": 4,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa5"
+    },
+    "code": "SENIOR",
+    "name": "Senior",
+    "levelOrder": 5,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa6"
+    },
+    "code": "LEADER",
+    "name": "Trưởng nhóm",
+    "levelOrder": 6,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa7"
+    },
+    "code": "MANAGER",
+    "name": "Quản lý / Giám sát",
+    "levelOrder": 7,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa8"
+    },
+    "code": "HEAD",
+    "name": "Trưởng / Phó phòng",
+    "levelOrder": 8,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fa9"
+    },
+    "code": "BRANCH_MANAGER",
+    "name": "Trưởng chi nhánh",
+    "levelOrder": 9,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000faa"
+    },
+    "code": "DEPUTY_DIRECTOR",
+    "name": "Phó giám đốc",
+    "levelOrder": 10,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000fab"
+    },
+    "code": "DIRECTOR",
+    "name": "Giám đốc",
+    "levelOrder": 11,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]
