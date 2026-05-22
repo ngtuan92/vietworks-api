@@ -33,6 +33,9 @@ export const sendOtpEmail = async ({ toEmail, fullName, otpCode }) => {
     auth: {
       user: process.env.MAIL_USERNAME,
       pass: process.env.MAIL_PASSWORD
+    },
+    tls: {
+      rejectUnauthorized: false
     }
   });
 
