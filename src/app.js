@@ -25,18 +25,30 @@ app.get('/health', (req, res) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 import authRoutes from './routes/authRoutes.js';
+import masterDataRoutes from './routes/masterDataRoutes.js';
+
 import packageRoutes from './routes/packageRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import jobRoutes from './routes/jobRoutes.js';
+import jobAdminRoutes from './routes/jobAdminRoutes.js';
 
 app.use('/api/auth', authRoutes);
+
 app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', invoiceRoutes);
 app.use('/api', analyticsRoutes);
+app.use('/api', jobRoutes);
+app.use('/api', masterDataRoutes);
+app.use('/api', jobAdminRoutes);
+
+
+
+
 
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;

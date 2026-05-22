@@ -1,12 +1,21 @@
 import mongoose from 'mongoose';
-import { CommonStatus } from '../enums/masterDataEnums.js';
 
 const skillSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  slug: { type: String, required: true, unique: true },
-  aliases: { type: [String], default: [] },
-  status: { type: String, enum: Object.values(CommonStatus), default: CommonStatus.ACTIVE }
-}, { timestamps: true });
+  name: { type: String, required: true },
+  slug: { type: String, required: true },
+  aliases: [{ type: String }],
+  status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
+  // Mảng chứa các Id của nhóm nghề liên quan
+  careerGroupIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CareerGroup'
+  }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
 
-const Skill = mongoose.model('Skill', skillSchema, 'skills');
+// 👉 QUAN TRỌNG: Tạo index cho mảng careerGroupIds để tối ưu tốc độ tìm kiếm (Multikey Index)
+skillSchema.index({ careerGroupIds: 1, status: 1 });
+
+const Skill = mongoose.model('Skill', skillSchema,'skills');
 export default Skill;

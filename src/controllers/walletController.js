@@ -1,5 +1,5 @@
-import Wallet from '../models/Wallet.js';
-import Transaction from '../models/Transaction.js';
+import Wallet from '../models/walletModels.js';
+import Transaction from '../models/transactionModels.js';
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 
 export const createWallet = async (req, res) => {

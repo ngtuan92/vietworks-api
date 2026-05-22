@@ -38,7 +38,24 @@ const jobSchema = new mongoose.Schema({
   publishedAt: { type: Date, default: null },
   closedAt: { type: Date, default: null },
   rejectedReason: { type: String, default: null },
-  bannedReason: { type: String, default: null }
+  bannedReason: { type: String, default: null },
+  submittedAt: {
+  type: Date,
+  default: null
+},
+reviewedAt: {
+  type: Date,
+  default: null
+},
+reviewedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'User',
+  default: null
+},
+reviewNote: {
+  type: String,
+  default: null
+}
 }, { timestamps: true });
 
 const Job = mongoose.model('Job', jobSchema, 'jobs');
