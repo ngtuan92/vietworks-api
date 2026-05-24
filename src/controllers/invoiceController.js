@@ -1,4 +1,4 @@
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transactionModels.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/userModels.js';
 

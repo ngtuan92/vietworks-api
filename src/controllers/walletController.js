@@ -1,5 +1,9 @@
 import Wallet from '../models/walletModels.js';
+<<<<<<< HEAD
 import Transaction from '../models/Transaction.js';
+=======
+import Transaction from '../models/transactionModels.js';
+>>>>>>> thai
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 
 export const createWallet = async (req, res) => {
