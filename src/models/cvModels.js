@@ -25,6 +25,7 @@ const cvSchema = new mongoose.Schema({
     lastReviewedAt: { type: Date, default: null }
   },
   sections: { type: [mongoose.Schema.Types.Mixed], default: [] },
+  isMain: { type: Boolean, default: false },
   status: { type: String, enum: Object.values(CvStatus), default: CvStatus.ACTIVE }
 }, { timestamps: true });
 

@@ -43,6 +43,9 @@ export const createCv = async (req, res) => {
       });
     }
 
+    const activeCvsCount = await Cv.countDocuments({ userId: req.user._id, status: CvStatus.ACTIVE });
+    const isMain = activeCvsCount === 0;
+
     const newCv = await Cv.create({
       userId: req.user._id,
       title: title || `CV - ${template.name}`,
@@ -57,6 +60,7 @@ export const createCv = async (req, res) => {
         avatarShape: template.layoutConfig?.avatarShape || 'circle'
       },
       sections: sectionsState,
+      isMain,
       status: CvStatus.ACTIVE
     });
 
@@ -68,7 +72,7 @@ export const createCv = async (req, res) => {
 
 export const updateCv = async (req, res) => {
   try {
-    const { title, sections, style } = req.body;
+    const { title, sections, style, isMain } = req.body;
 
     const cv = await Cv.findOne({ _id: req.params.id, userId: req.user._id });
     if (!cv) {
@@ -78,6 +82,13 @@ export const updateCv = async (req, res) => {
     if (title) cv.title = title;
     if (sections) cv.sections = sections;
     if (style) cv.style = { ...cv.style, ...style };
+
+    if (isMain === true) {
+      await Cv.updateMany({ userId: req.user._id, _id: { $ne: cv._id } }, { isMain: false });
+      cv.isMain = true;
+    } else if (isMain === false) {
+      cv.isMain = false;
+    }
 
     await cv.save();
 
@@ -127,6 +138,15 @@ export const deleteCv = async (req, res) => {
 
     cv.status = CvStatus.DELETED;
     await cv.save();
+
+    // Nếu CV bị xóa là CV chính, tự động đặt CV hoạt động gần nhất còn lại làm CV chính mới
+    if (cv.isMain) {
+      const anotherCv = await Cv.findOne({ userId: req.user._id, status: CvStatus.ACTIVE }).sort('-updatedAt');
+      if (anotherCv) {
+        anotherCv.isMain = true;
+        await anotherCv.save();
+      }
+    }
 
     res.status(200).json({ success: true, message: 'CV đã được xóa' });
   } catch (error) {
