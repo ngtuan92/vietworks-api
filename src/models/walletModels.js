@@ -10,5 +10,5 @@ const walletSchema = new mongoose.Schema({
   status: { type: String, enum: Object.values(WalletStatus), default: WalletStatus.ACTIVE }
 }, { timestamps: true });
 
-const Wallet = mongoose.model('Wallet', walletSchema, 'wallets');
+const Wallet = mongoose.models.Wallet || mongoose.model('Wallet', walletSchema, 'wallets');
 export default Wallet;

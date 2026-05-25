@@ -1,0 +1,130 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000001389"
+    },
+    "code": "NO_REQUIREMENT",
+    "name": "Không yêu cầu",
+    "minYear": 0,
+    "maxYear": 0,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000138a"
+    },
+    "code": "UNDER_1_YEAR",
+    "name": "Dưới 1 năm",
+    "minYear": 0,
+    "maxYear": 1,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000138b"
+    },
+    "code": "ONE_YEAR",
+    "name": "1 năm",
+    "minYear": 1,
+    "maxYear": 1,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000138c"
+    },
+    "code": "TWO_YEARS",
+    "name": "2 năm",
+    "minYear": 2,
+    "maxYear": 2,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000138d"
+    },
+    "code": "THREE_YEARS",
+    "name": "3 năm",
+    "minYear": 3,
+    "maxYear": 3,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000138e"
+    },
+    "code": "FOUR_YEARS",
+    "name": "4 năm",
+    "minYear": 4,
+    "maxYear": 4,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000138f"
+    },
+    "code": "FIVE_YEARS",
+    "name": "5 năm",
+    "minYear": 5,
+    "maxYear": 5,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001390"
+    },
+    "code": "OVER_5_YEARS",
+    "name": "Trên 5 năm",
+    "minYear": 5,
+    "maxYear": null,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

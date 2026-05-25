@@ -1,0 +1,87 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000002af9"
+    },
+    "name": "Roboto",
+    "cssFontFamily": "'Roboto', sans-serif",
+    "fontUrl": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+    "previewText": "Nguyễn Tiến Dũng",
+    "isDefault": true,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002afa"
+    },
+    "name": "Open Sans",
+    "cssFontFamily": "'Open Sans', sans-serif",
+    "fontUrl": "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap",
+    "previewText": "Nguyễn Tiến Dũng",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002afb"
+    },
+    "name": "Montserrat",
+    "cssFontFamily": "'Montserrat', sans-serif",
+    "fontUrl": "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap",
+    "previewText": "Nguyễn Tiến Dũng",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002afc"
+    },
+    "name": "Inter",
+    "cssFontFamily": "'Inter', sans-serif",
+    "fontUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap",
+    "previewText": "Nguyễn Tiến Dũng",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002afd"
+    },
+    "name": "Lato",
+    "cssFontFamily": "'Lato', sans-serif",
+    "fontUrl": "https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap",
+    "previewText": "Nguyễn Tiến Dũng",
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

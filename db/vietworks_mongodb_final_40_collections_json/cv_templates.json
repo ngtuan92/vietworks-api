@@ -1,0 +1,502 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000002329"
+    },
+    "name": "CV Kinh doanh / Bán hàng",
+    "code": "CV_SALES",
+    "slug": "cv-kinh-doanh-ban-hang",
+    "careerGroupId": {
+      "$oid": "000000000000000000000065"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_sales-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_sales-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Kinh doanh / Bán hàng.",
+    "templateCode": "MODERN_SALES",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000232a"
+    },
+    "name": "CV Marketing / Truyền thông",
+    "code": "CV_MARKETING",
+    "slug": "cv-marketing-truyen-thong",
+    "careerGroupId": {
+      "$oid": "000000000000000000000066"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_marketing-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_marketing-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Marketing / Truyền thông.",
+    "templateCode": "CREATIVE_MARKETING",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000232b"
+    },
+    "name": "CV Công nghệ thông tin",
+    "code": "CV_IT",
+    "slug": "cv-cong-nghe-thong-tin",
+    "careerGroupId": {
+      "$oid": "000000000000000000000067"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_it-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_it-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Công nghệ thông tin.",
+    "templateCode": "MODERN_TECH",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000232c"
+    },
+    "name": "CV Nhân sự / Hành chính / Pháp lý",
+    "code": "CV_HR_ADMIN_LEGAL",
+    "slug": "cv-nhan-su-hanh-chinh-phap-ly",
+    "careerGroupId": {
+      "$oid": "000000000000000000000068"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_hr_admin_legal-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_hr_admin_legal-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Nhân sự / Hành chính / Pháp lý.",
+    "templateCode": "PROFESSIONAL_SIMPLE",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000232d"
+    },
+    "name": "CV Tài chính / Kế toán / Ngân hàng",
+    "code": "CV_FINANCE",
+    "slug": "cv-tai-chinh-ke-toan-ngan-hang",
+    "careerGroupId": {
+      "$oid": "000000000000000000000069"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_finance-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_finance-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Tài chính / Kế toán / Ngân hàng.",
+    "templateCode": "FORMAL_FINANCE",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000232e"
+    },
+    "name": "CV Giáo dục / Đào tạo",
+    "code": "CV_EDUCATION",
+    "slug": "cv-giao-duc-dao-tao",
+    "careerGroupId": {
+      "$oid": "00000000000000000000006a"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_education-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_education-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Giáo dục / Đào tạo.",
+    "templateCode": "CLEAN_EDUCATION",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": true,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000232f"
+    },
+    "name": "CV Y tế / Dược / Chăm sóc sức khỏe",
+    "code": "CV_HEALTHCARE",
+    "slug": "cv-y-te-duoc-cham-soc-suc-khoe",
+    "careerGroupId": {
+      "$oid": "00000000000000000000006b"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_healthcare-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_healthcare-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Y tế / Dược / Chăm sóc sức khỏe.",
+    "templateCode": "PROFESSIONAL_HEALTH",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": true,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002330"
+    },
+    "name": "CV Xây dựng / Bất động sản",
+    "code": "CV_CONSTRUCTION_REAL_ESTATE",
+    "slug": "cv-xay-dung-bat-dong-san",
+    "careerGroupId": {
+      "$oid": "00000000000000000000006c"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_construction_real_estate-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_construction_real_estate-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Xây dựng / Bất động sản.",
+    "templateCode": "STRUCTURED_PROJECT",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": true,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002331"
+    },
+    "name": "CV Dịch vụ / Vận hành / Chăm sóc khách hàng",
+    "code": "CV_SERVICE_OPERATION",
+    "slug": "cv-dich-vu-van-hanh-cham-soc-khach-hang",
+    "careerGroupId": {
+      "$oid": "00000000000000000000006d"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_service_operation-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_service_operation-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Dịch vụ / Vận hành / Chăm sóc khách hàng.",
+    "templateCode": "SERVICE_FRIENDLY",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": true,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000002332"
+    },
+    "name": "CV Thiết kế / Sáng tạo / Nội dung",
+    "code": "CV_CREATIVE_CONTENT",
+    "slug": "cv-thiet-ke-sang-tao-noi-dung",
+    "careerGroupId": {
+      "$oid": "00000000000000000000006e"
+    },
+    "thumbnailUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_creative_content-thumb.png",
+    "previewImageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv_creative_content-preview.png",
+    "description": "Mẫu CV phù hợp cho nhóm nghề Thiết kế / Sáng tạo / Nội dung.",
+    "templateCode": "CREATIVE_PORTFOLIO",
+    "layoutConfig": {
+      "pageSize": "A4",
+      "orientation": "portrait",
+      "columns": 2,
+      "leftColumnWidth": 35,
+      "rightColumnWidth": 65,
+      "defaultFontId": {
+        "$oid": "000000000000000000002af9"
+      },
+      "defaultColorId": {
+        "$oid": "000000000000000000002ee1"
+      },
+      "defaultSectionCodes": [
+        "PROFILE",
+        "CONTACT",
+        "OBJECTIVE",
+        "SKILLS",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATES",
+        "ACTIVITIES",
+        "INTERESTS"
+      ]
+    },
+    "isPremium": true,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]
