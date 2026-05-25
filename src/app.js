@@ -32,27 +32,24 @@ import walletRoutes from './routes/walletRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-<<<<<<< HEAD
+
 import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import cvRoutes from './routes/cvRoutes.js';
+import uploadedCvRoutes from './routes/uploadedCvRoutes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
-=======
+
 import jobRoutes from './routes/jobRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
 
-app.use('/api/auth', authRoutes);
-
->>>>>>> thai
 app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', invoiceRoutes);
-<<<<<<< HEAD
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cvs', cvRoutes);
-=======
+app.use('/api/jobseeker/cvs', uploadedCvRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
@@ -61,7 +58,6 @@ app.use('/api', jobAdminRoutes);
 
 
 
->>>>>>> thai
 
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
