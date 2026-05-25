@@ -36,7 +36,7 @@ import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import cvRoutes from './routes/cvRoutes.js';
 
 app.use('/api/auth', authRoutes);
-app.use('/api/cv-templates', cvTemplateRoutes);
+//app.use('/api/cv-templates', cvTemplateRoutes);
 import jobRoutes from './routes/jobRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
 
