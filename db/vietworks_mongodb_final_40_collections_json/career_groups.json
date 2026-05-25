@@ -1,0 +1,172 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000000065"
+    },
+    "name": "Kinh doanh / Bán hàng",
+    "slug": "kinh-doanh-ban-hang",
+    "code": "KINH_DOANH_BAN_HANG",
+    "description": "Nhóm nghề Kinh doanh / Bán hàng",
+    "status": "ACTIVE",
+    "order": 1,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000066"
+    },
+    "name": "Marketing / Truyền thông",
+    "slug": "marketing-truyen-thong",
+    "code": "MARKETING_TRUYEN_THONG",
+    "description": "Nhóm nghề Marketing / Truyền thông",
+    "status": "ACTIVE",
+    "order": 2,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000067"
+    },
+    "name": "Công nghệ thông tin",
+    "slug": "cong-nghe-thong-tin",
+    "code": "CONG_NGHE_THONG_TIN",
+    "description": "Nhóm nghề Công nghệ thông tin",
+    "status": "ACTIVE",
+    "order": 3,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000068"
+    },
+    "name": "Nhân sự / Hành chính / Pháp lý",
+    "slug": "nhan-su-hanh-chinh-phap-ly",
+    "code": "NHAN_SU_HANH_CHINH_PHAP_LY",
+    "description": "Nhóm nghề Nhân sự / Hành chính / Pháp lý",
+    "status": "ACTIVE",
+    "order": 4,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000000069"
+    },
+    "name": "Tài chính / Kế toán / Ngân hàng",
+    "slug": "tai-chinh-ke-toan-ngan-hang",
+    "code": "TAI_CHINH_KE_TOAN_NGAN_HANG",
+    "description": "Nhóm nghề Tài chính / Kế toán / Ngân hàng",
+    "status": "ACTIVE",
+    "order": 5,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000006a"
+    },
+    "name": "Giáo dục / Đào tạo",
+    "slug": "giao-duc-dao-tao",
+    "code": "GIAO_DUC_DAO_TAO",
+    "description": "Nhóm nghề Giáo dục / Đào tạo",
+    "status": "ACTIVE",
+    "order": 6,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000006b"
+    },
+    "name": "Y tế / Dược / Chăm sóc sức khỏe",
+    "slug": "y-te-duoc-cham-soc-suc-khoe",
+    "code": "Y_TE_DUOC_CHAM_SOC_SUC_KHOE",
+    "description": "Nhóm nghề Y tế / Dược / Chăm sóc sức khỏe",
+    "status": "ACTIVE",
+    "order": 7,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000006c"
+    },
+    "name": "Xây dựng / Bất động sản",
+    "slug": "xay-dung-bat-dong-san",
+    "code": "XAY_DUNG_BAT_DONG_SAN",
+    "description": "Nhóm nghề Xây dựng / Bất động sản",
+    "status": "ACTIVE",
+    "order": 8,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000006d"
+    },
+    "name": "Dịch vụ / Vận hành / Chăm sóc khách hàng",
+    "slug": "dich-vu-van-hanh-cham-soc-khach-hang",
+    "code": "DICH_VU_VAN_HANH_CHAM_SOC_KHACH_HANG",
+    "description": "Nhóm nghề Dịch vụ / Vận hành / Chăm sóc khách hàng",
+    "status": "ACTIVE",
+    "order": 9,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "00000000000000000000006e"
+    },
+    "name": "Thiết kế / Sáng tạo / Nội dung",
+    "slug": "thiet-ke-sang-tao-noi-dung",
+    "code": "THIET_KE_SANG_TAO_NOI_DUNG",
+    "description": "Nhóm nghề Thiết kế / Sáng tạo / Nội dung",
+    "status": "ACTIVE",
+    "order": 10,
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

@@ -1,0 +1,107 @@
+[
+  {
+    "_id": {
+      "$oid": "0000000000000000000032c9"
+    },
+    "code": "NONE",
+    "name": "Không dùng hình nền",
+    "imageUrl": null,
+    "category": "DEFAULT",
+    "isPremium": false,
+    "isDefault": true,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000032ca"
+    },
+    "code": "MINIMAL_BLUE",
+    "name": "Nền xanh tối giản",
+    "imageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv-bg-minimal-blue.png",
+    "category": "MINIMAL",
+    "isPremium": false,
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000032cb"
+    },
+    "code": "SOFT_GRAY",
+    "name": "Nền xám nhẹ",
+    "imageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv-bg-soft-gray.png",
+    "category": "MINIMAL",
+    "isPremium": false,
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000032cc"
+    },
+    "code": "CREATIVE_PATTERN",
+    "name": "Pattern sáng tạo",
+    "imageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv-bg-creative-pattern.png",
+    "category": "CREATIVE",
+    "isPremium": true,
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000032cd"
+    },
+    "code": "FORMAL_LINE",
+    "name": "Nền đường kẻ chuyên nghiệp",
+    "imageUrl": "https://res.cloudinary.com/demo/image/upload/vietworks/cv-bg-formal-line.png",
+    "category": "FORMAL",
+    "isPremium": false,
+    "isDefault": false,
+    "status": "ACTIVE",
+    "createdBy": {
+      "$oid": "000000000000000000000001"
+    },
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

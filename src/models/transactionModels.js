@@ -27,5 +27,5 @@ const transactionSchema = new mongoose.Schema({
   invoiceRequested: { type: Boolean, default: false }
 }, { timestamps: true });
 
-const Transaction = mongoose.model('Transaction', transactionSchema, 'transactions');
+const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema, 'transactions');
 export default Transaction;

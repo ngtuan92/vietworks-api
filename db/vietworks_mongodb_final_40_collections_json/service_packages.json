@@ -1,0 +1,212 @@
+[
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b1"
+    },
+    "code": "BOOST_CV_7_DAYS",
+    "name": "Đẩy Top CV - Gói 7 ngày",
+    "targetRole": "JOBSEEKER",
+    "packageType": "CV_BOOST",
+    "price": 50000,
+    "currency": "VND",
+    "durationDays": 7,
+    "quantity": 1,
+    "unit": "CV",
+    "benefits": {
+      "boostCv": true,
+      "priorityInTalentPool": true,
+      "priorityInApplicationList": true
+    },
+    "description": "Ưu tiên hiển thị CV của ứng viên trong 7 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b2"
+    },
+    "code": "BOOST_CV_30_DAYS",
+    "name": "Đẩy Top CV - Gói 30 ngày",
+    "targetRole": "JOBSEEKER",
+    "packageType": "CV_BOOST",
+    "price": 150000,
+    "currency": "VND",
+    "durationDays": 30,
+    "quantity": 1,
+    "unit": "CV",
+    "benefits": {
+      "boostCv": true,
+      "priorityInTalentPool": true,
+      "priorityInApplicationList": true
+    },
+    "description": "Ưu tiên hiển thị CV của ứng viên trong 30 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b3"
+    },
+    "code": "UNLOCK_CV_SINGLE",
+    "name": "Mở khóa 1 hồ sơ ứng viên",
+    "targetRole": "EMPLOYER",
+    "packageType": "CV_UNLOCK",
+    "price": 20000,
+    "currency": "VND",
+    "durationDays": null,
+    "quantity": 1,
+    "unit": "CV",
+    "benefits": {
+      "unlockCvCount": 1
+    },
+    "description": "Mở khóa thông tin liên hệ của 1 hồ sơ ứng viên.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b4"
+    },
+    "code": "UNLOCK_CV_50_30_DAYS",
+    "name": "Gói mở khóa 50 hồ sơ ứng viên",
+    "targetRole": "EMPLOYER",
+    "packageType": "CV_UNLOCK_BUNDLE",
+    "price": 800000,
+    "currency": "VND",
+    "durationDays": 30,
+    "quantity": 50,
+    "unit": "CV",
+    "benefits": {
+      "unlockCvCount": 50
+    },
+    "description": "Gói mở khóa 50 CV, hạn dùng 30 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b5"
+    },
+    "code": "UNLOCK_CV_100_30_DAYS",
+    "name": "Gói mở khóa 100 hồ sơ ứng viên",
+    "targetRole": "EMPLOYER",
+    "packageType": "CV_UNLOCK_BUNDLE",
+    "price": 1500000,
+    "currency": "VND",
+    "durationDays": 30,
+    "quantity": 100,
+    "unit": "CV",
+    "benefits": {
+      "unlockCvCount": 100
+    },
+    "description": "Gói mở khóa 100 CV, hạn dùng 30 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b6"
+    },
+    "code": "PREMIUM_JOB_7_DAYS",
+    "name": "Tin tuyển dụng nổi bật + Gấp - Gói 7 ngày",
+    "targetRole": "EMPLOYER",
+    "packageType": "PREMIUM_JOB",
+    "price": 150000,
+    "currency": "VND",
+    "durationDays": 7,
+    "quantity": 1,
+    "unit": "JOB",
+    "benefits": {
+      "topHomepage": true,
+      "topSearch": true,
+      "urgentBadge": true
+    },
+    "description": "Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 7 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b7"
+    },
+    "code": "PREMIUM_JOB_14_DAYS",
+    "name": "Tin tuyển dụng nổi bật + Gấp - Gói 14 ngày",
+    "targetRole": "EMPLOYER",
+    "packageType": "PREMIUM_JOB",
+    "price": 250000,
+    "currency": "VND",
+    "durationDays": 14,
+    "quantity": 1,
+    "unit": "JOB",
+    "benefits": {
+      "topHomepage": true,
+      "topSearch": true,
+      "urgentBadge": true
+    },
+    "description": "Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 14 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "0000000000000000000036b8"
+    },
+    "code": "PREMIUM_JOB_30_DAYS",
+    "name": "Tin tuyển dụng nổi bật + Gấp - Gói 30 ngày",
+    "targetRole": "EMPLOYER",
+    "packageType": "PREMIUM_JOB",
+    "price": 400000,
+    "currency": "VND",
+    "durationDays": 30,
+    "quantity": 1,
+    "unit": "JOB",
+    "benefits": {
+      "topHomepage": true,
+      "topSearch": true,
+      "urgentBadge": true
+    },
+    "description": "Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 30 ngày.",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]

@@ -1,0 +1,138 @@
+[
+  {
+    "_id": {
+      "$oid": "000000000000000000001771"
+    },
+    "code": "UNDER_10",
+    "name": "Dưới 10 triệu",
+    "minMillion": 0,
+    "maxMillion": 10,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001772"
+    },
+    "code": "FROM_10_TO_15",
+    "name": "10 - 15 triệu",
+    "minMillion": 10,
+    "maxMillion": 15,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001773"
+    },
+    "code": "FROM_15_TO_20",
+    "name": "15 - 20 triệu",
+    "minMillion": 15,
+    "maxMillion": 20,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001774"
+    },
+    "code": "FROM_20_TO_25",
+    "name": "20 - 25 triệu",
+    "minMillion": 20,
+    "maxMillion": 25,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001775"
+    },
+    "code": "FROM_25_TO_30",
+    "name": "25 - 30 triệu",
+    "minMillion": 25,
+    "maxMillion": 30,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001776"
+    },
+    "code": "FROM_30_TO_50",
+    "name": "30 - 50 triệu",
+    "minMillion": 30,
+    "maxMillion": 50,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001777"
+    },
+    "code": "OVER_50",
+    "name": "Trên 50 triệu",
+    "minMillion": 50,
+    "maxMillion": null,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "000000000000000000001778"
+    },
+    "code": "NEGOTIABLE",
+    "name": "Thỏa thuận",
+    "minMillion": null,
+    "maxMillion": null,
+    "currency": "VND",
+    "status": "ACTIVE",
+    "createdAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-14T00:00:00.000Z"
+    }
+  }
+]
