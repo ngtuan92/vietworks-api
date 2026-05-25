@@ -226,7 +226,7 @@ router.delete('/jobs/:jobId', protect, authorize('EMPLOYER'), deleteJob);
  *       200:
  *         description: Jobs retrieved successfully
  */
-router.get('/employer/jobs', protect, authorize(['EMPLOYER','ADMIN']), getMyJobs);
+router.get('/employer/jobs', protect, authorize('EMPLOYER'), getMyJobs);
 
 /**
  * @swagger
@@ -264,7 +264,7 @@ router.post('/jobs/:jobId/close', protect, authorize(['EMPLOYER','ADMIN']), clos
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId',protect,authorize(['EMPLOYER','ADMIN']), getJobById);
+router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
 
 /**
  * @swagger

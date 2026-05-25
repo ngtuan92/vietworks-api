@@ -32,17 +32,11 @@ import walletRoutes from './routes/walletRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-
 import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import cvRoutes from './routes/cvRoutes.js';
 
 app.use('/api/auth', authRoutes);
-<<<<<<< HEAD
-//app.use('/api/cv-templates', cvTemplateRoutes);
-=======
 app.use('/api/cv-templates', cvTemplateRoutes);
-
->>>>>>> 97358159e0a6e1cac703c88a2ad7a1254a2ed2cd
 import jobRoutes from './routes/jobRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
 
@@ -52,8 +46,6 @@ app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', invoiceRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/cvs', cvRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cvs', cvRoutes);
 app.use('/api', analyticsRoutes);
