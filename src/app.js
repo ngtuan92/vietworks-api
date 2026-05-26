@@ -34,14 +34,14 @@ import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import cvRoutes from './routes/cvRoutes.js';
-
+import employerAccountRoutes from './routes/employerAccountRoutes.js';
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
 import jobRoutes from './routes/jobRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
-
+import companyLocationRoutes from './routes/companyLocationRoutes.js';
 app.use('/api/auth', authRoutes);
-
+app.use('/api', employerAccountRoutes);
 app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', adminRoutes);
@@ -52,6 +52,7 @@ app.use('/api', analyticsRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
 app.use('/api', jobAdminRoutes);
+app.use('/api', companyLocationRoutes);
 
 
 
