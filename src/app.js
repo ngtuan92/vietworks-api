@@ -40,6 +40,9 @@ app.use('/api/cv-templates', cvTemplateRoutes);
 import jobRoutes from './routes/jobRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
 import companyLocationRoutes from './routes/companyLocationRoutes.js';
+import employerCompanyRoutes from './routes/employerCompanyRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import companyMasterData from './routes/companyMasterDataRoutes.js';
 app.use('/api/auth', authRoutes);
 app.use('/api', employerAccountRoutes);
 app.use('/api', packageRoutes);
@@ -53,6 +56,10 @@ app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
 app.use('/api', jobAdminRoutes);
 app.use('/api', companyLocationRoutes);
+app.use('/api', employerCompanyRoutes);
+app.use('/api', uploadRoutes);
+app.use('/api', companyMasterData);
+
 
 
 
