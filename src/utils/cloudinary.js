@@ -30,7 +30,10 @@ export const uploadPdf = multer({
     const allowedTypes = [
       'application/pdf',
       'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-word',  // thêm
+      'application/x-msword',  // thêm  
+      'application/vnd.ms-word.document.12'
     ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
@@ -40,10 +43,10 @@ export const uploadPdf = multer({
   }
 });
 
-export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates') => {
+export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates', resourceType = 'auto') => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder },
+      { folder, resource_type: resourceType },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);

@@ -23,7 +23,7 @@ export const uploadCv = async (req, res) => {
     const userId = req.user._id;
 
     const folder = `vietworks/uploaded-cvs/${userId}`;
-    const result = await uploadBufferToCloudinary(req.file.buffer, folder);
+    const result = await uploadBufferToCloudinary(req.file.buffer, folder, 'raw');
 
     const uploadedCv = await UploadedCv.create({
       userId,
