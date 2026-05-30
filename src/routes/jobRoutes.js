@@ -127,7 +127,7 @@ router.post('/jobs', protect, authorize('EMPLOYER'), createJob);
  *       200:
  *         description: Job updated successfully
  */
-router.patch('/jobs/:jobId', protect, authorize(['EMPLOYER','ADMIN']), updateJob);
+router.patch('/jobs/:jobId', protect, authorize('EMPLOYER'), updateJob);
 
 /**
  * @swagger
@@ -226,7 +226,7 @@ router.delete('/jobs/:jobId', protect, authorize('EMPLOYER'), deleteJob);
  *       200:
  *         description: Jobs retrieved successfully
  */
-router.get('/employer/jobs', protect, authorize(['EMPLOYER','ADMIN']), getMyJobs);
+router.get('/employer/jobs', protect, authorize('EMPLOYER'), getMyJobs);
 
 /**
  * @swagger
@@ -246,7 +246,7 @@ router.get('/employer/jobs', protect, authorize(['EMPLOYER','ADMIN']), getMyJobs
  *       200:
  *         description: Job closed successfully
  */
-router.post('/jobs/:jobId/close', protect, authorize(['EMPLOYER','ADMIN']), closeJob);
+router.post('/jobs/:jobId/close', protect, authorize('EMPLOYER'), closeJob);
 
 /**
  * @swagger
@@ -264,7 +264,7 @@ router.post('/jobs/:jobId/close', protect, authorize(['EMPLOYER','ADMIN']), clos
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId',protect,authorize(['EMPLOYER','ADMIN']), getJobById);
+router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
 
 /**
  * @swagger
