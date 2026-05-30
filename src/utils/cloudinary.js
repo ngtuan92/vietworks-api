@@ -11,7 +11,7 @@ cloudinary.config({
 });
 
 const storage = multer.memoryStorage();
-export const upload = multer({ 
+export const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
@@ -23,10 +23,30 @@ export const upload = multer({
   }
 });
 
-export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates') => {
+export const uploadPdf = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for CV files
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-word',  // thêm
+      'application/x-msword',  // thêm  
+      'application/vnd.ms-word.document.12'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Chỉ cho phép tải lên file PDF, DOC, DOCX!'), false);
+    }
+  }
+});
+
+export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates', resourceType = 'auto') => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder },
+      { folder, resource_type: resourceType },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
@@ -34,4 +54,8 @@ export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-template
     );
     uploadStream.end(buffer);
   });
+};
+
+export const deleteFromCloudinary = (publicId) => {
+  return cloudinary.uploader.destroy(publicId);
 };
