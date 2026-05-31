@@ -217,3 +217,66 @@ export const applyJob = async (req, res) => {
     });
   }
 };
+
+export const checkDuplicateApplication = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const userId = req.user.id;
+
+    const Application = (await import('../models/applicationModels.js')).default;
+
+    const existingApplication = await Application.findOne({
+      jobId: jobId,
+      jobseekerUserId: userId
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        hasApplied: !!existingApplication,
+        applicationId: existingApplication?._id || null,
+        appliedAt: existingApplication?.createdAt || null,
+        status: existingApplication?.status || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const getApplyCvPreview = async (req, res) => {
+  try {
+    const { jobId, cvId } = req.params;
+    const userId = req.user.id;
+
+    const cv = await Cv.findOne({ _id: cvId, userId })
+      .populate('templateId')
+      .populate('style.fontId')
+      .populate('style.themeColorId')
+      .populate('style.backgroundId');
+
+    if (!cv) {
+      return res.status(404).json({
+        success: false,
+        message: 'CV not found or access denied'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        type: 'ONLINE',
+        cvData: cv
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+

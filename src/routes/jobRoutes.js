@@ -13,6 +13,9 @@ import {
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { getApplyOptions } from '../controllers/applyController.js';
 import { applyJob } from '../controllers/applyController.js';
+import { getApplyCvPreview } from '../controllers/applyController.js';
+import { checkDuplicateApplication } from '../controllers/applyController.js';
+
 
 const router = express.Router();
 
@@ -272,6 +275,26 @@ router.get('/jobs/:jobId/apply-options', protect, getApplyOptions);
 
 /**
  * @swagger
+ * /api/jobs/{jobId}/apply/check:
+ *   get:
+ *     summary: Kiểm tra ứng viên đã ứng tuyển job này chưa
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Check result returned successfully
+ */
+router.get('/jobs/:jobId/apply/check', protect, checkDuplicateApplication);
+
+/**
+ * @swagger
  * /api/jobs/{jobId}/apply:
  *   post:
  *     summary: Ứng tuyển vào job
@@ -308,6 +331,33 @@ router.get('/jobs/:jobId/apply-options', protect, getApplyOptions);
  *         description: Ứng tuyển thành công
  */
 router.post('/jobs/:jobId/apply', protect, applyJob);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/apply/cv-preview/{cvId}:
+ *   get:
+ *     summary: Preview CV when applying
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: cvId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: CV preview data retrieved
+ */
+router.get('/jobs/:jobId/apply/cv-preview/:cvId', protect, getApplyCvPreview);
+
+
 
 /**
  * @swagger
