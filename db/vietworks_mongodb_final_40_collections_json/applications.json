@@ -1,1 +1,51 @@
-[]
+[
+    {
+        "_id": {
+            "$oid": "6a1b8ff0fbaacda0460eb9ea"
+        },
+        "jobId": {
+            "$oid": "6a1b87a616d170f779461403"
+        },
+        "companyId": {
+            "$oid": "6a1b06d32cbb9e3255b3e38d"
+        },
+        "jobseekerUserId": {
+            "$oid": "6a1aef54ef7c684fc2cd0e0f"
+        },
+        "cvId": null,
+        "uploadedCvId": {
+            "$oid": "6a1af169836d0b85d22749a7"
+        },
+        "expectedWorkLocation": {
+            "provinceCode": "01",
+            "provinceName": "Hà Nội",
+            "districtCode": "004",
+            "districtName": "Quận Cầu Giấy",
+            "wardCode": "00134",
+            "wardName": "Phường Xuân Phương",
+            "detailAddress": "Tòa nhà OpentIT, Cầu Giấy, Hà Nội"
+        },
+        "status": "APPLIED",
+        "coverLetter": null,
+        "personalDataAgreementAccepted": true,
+        "viewedAt": null,
+        "approvedMessage": null,
+        "rejectionReason": null,
+        "statusHistory": [
+            {
+                "status": "APPLIED",
+                "changedAt": {
+                    "$date": "2026-05-31T01:33:36.563Z"
+                },
+                "note": "Ứng viên nộp hồ sơ"
+            }
+        ],
+        "createdAt": {
+            "$date": "2026-05-31T01:33:36.565Z"
+        },
+        "updatedAt": {
+            "$date": "2026-05-31T01:33:36.565Z"
+        },
+        "__v": 0
+    }
+]

@@ -11,6 +11,8 @@ import {
   closeJob
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { getApplyOptions } from '../controllers/applyController.js';
+import { applyJob } from '../controllers/applyController.js';
 
 const router = express.Router();
 
@@ -247,6 +249,65 @@ router.get('/employer/jobs', protect, authorize('EMPLOYER'), getMyJobs);
  *         description: Job closed successfully
  */
 router.post('/jobs/:jobId/close', protect, authorize('EMPLOYER'), closeJob);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/apply-options:
+ *   get:
+ *     summary: Lấy options để ứng tuyển (danh sách CV, địa điểm, thỏa thuận)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Apply options retrieved successfully
+ */
+router.get('/jobs/:jobId/apply-options', protect, getApplyOptions);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/apply:
+ *   post:
+ *     summary: Ứng tuyển vào job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               cvId:
+ *                 type: string
+ *                 description: ID của CV online
+ *               uploadedCvId:
+ *                 type: string
+ *                 description: ID của CV upload
+ *               expectedWorkLocation:
+ *                 type: object
+ *                 description: Địa điểm mong muốn
+ *               personalDataAgreementAccepted:
+ *                 type: boolean
+ *                 description: Đồng ý thỏa thuận dữ liệu cá nhân
+ *     responses:
+ *       201:
+ *         description: Ứng tuyển thành công
+ */
+router.post('/jobs/:jobId/apply', protect, applyJob);
 
 /**
  * @swagger
