@@ -264,7 +264,7 @@ router.post('/jobs/:jobId/close', protect, authorize('EMPLOYER'), closeJob);
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
+router.get('/jobs/:jobId', getJobById);
 
 /**
  * @swagger

@@ -510,7 +510,7 @@ export const getJobById = async (req, res) => {
       });
     }
 
-    // If job is not published, only creator can view it
+    // Check if job is not public - only creator can view
     if (job.status !== JobStatus.PUBLISHED && (!req.user || job.createdBy._id.toString() !== req.user.id)) {
       return res.status(403).json({
         success: false,
@@ -518,9 +518,32 @@ export const getJobById = async (req, res) => {
       });
     }
 
+    // Check if user can apply
+    let canApply = true;
+    let cannotApplyReason = null;
+
+    if (job.status === JobStatus.EXPIRED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm đã hết hạn';
+    } else if (job.status === JobStatus.CLOSED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm đã đóng';
+    } else if (job.status === JobStatus.REJECTED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm bị từ chối';
+    } else if (job.status === JobStatus.BANNED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm bị khóa';
+    } else if (new Date(job.deadline) < new Date()) {
+      canApply = false;
+      cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
+    }
+
     res.status(200).json({
       success: true,
-      data: job
+      data: job,
+      canApply,
+      cannotApplyReason
     });
   } catch (error) {
     res.status(500).json({
