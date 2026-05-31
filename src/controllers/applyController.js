@@ -365,3 +365,76 @@ export const getMyApplications = async (req, res) => {
   }
 };
 
+export const getApplicationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const Application = (await import('../models/applicationModels.js')).default;
+
+    const application = await Application.findOne({
+      _id: id,
+      jobseekerUserId: userId
+    })
+      .populate('jobId', 'title workLocations salary')
+      .populate('companyId', 'name avatarUrl verificationStatus')
+      .populate('cvId', 'title templateId')
+      .populate('uploadedCvId', 'title fileName fileType');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy hồ sơ ứng tuyển'
+      });
+    }
+
+    const job = application.jobId;
+    const company = application.companyId;
+    const cv = application.cvId;
+    const uploadedCv = application.uploadedCvId;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: application._id,
+        job: {
+          id: job?._id,
+          title: job?.title || 'Việc đã xóa',
+          salary: job?.salary,
+          location: job?.workLocations?.[0] ? {
+            districtName: job.workLocations[0].districtName,
+            provinceName: job.workLocations[0].provinceName
+          } : null
+        },
+        company: {
+          id: company?._id,
+          name: company?.name || 'Công ty đã xóa',
+          avatarUrl: company?.avatarUrl || null,
+          isVerified: company?.verificationStatus === 'VERIFIED'
+        },
+        appliedAt: application.createdAt,
+        status: application.status,
+        viewedAt: application.viewedAt,
+        approvedMessage: application.approvedMessage,
+        rejectionReason: application.rejectionReason,
+        statusHistory: application.statusHistory || [],
+        cv: cv ? {
+          id: cv._id,
+          title: cv.title,
+          type: 'ONLINE'
+        } : uploadedCv ? {
+          id: uploadedCv._id,
+          title: uploadedCv.title,
+          fileName: uploadedCv.fileName,
+          type: 'UPLOADED'
+        } : null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
