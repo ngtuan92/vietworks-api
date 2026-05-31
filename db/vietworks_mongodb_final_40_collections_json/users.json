@@ -20,5 +20,40 @@
     "updatedAt": {
       "$date": "2026-05-14T00:00:00.000Z"
     }
+  },
+  {
+    "_id": {
+      "$oid": "6a1b06d32cbb9e3255b3e38b"
+    },
+    "role": "EMPLOYER",
+    "fullName": "dungcn",
+    "email": "chungocdung3@gmail.com",
+    "passwordHash": "$2b$10$bUProcl68hdhkXGY2BBGtejhl/Z3Uj4.JxavIE91NtUpV/HJ0mCXC",
+    "phone": "0334624364",
+    "accountStatus": "ACTIVE",
+    "authProvider": "LOCAL",
+    "banReason": null,
+    "bannedAt": null,
+    "bannedBy": null,
+    "lastLoginAt": {
+      "$date": "2026-05-30T16:02:34.432Z"
+    },
+    "emailVerification": {
+      "otpCodeHash": null,
+      "otpExpiresAt": null,
+      "otpLastSentAt": {
+        "$date": "2026-05-30T15:48:35.992Z"
+      },
+      "verifiedAt": {
+        "$date": "2026-05-30T15:49:43.087Z"
+      }
+    },
+    "createdAt": {
+      "$date": "2026-05-30T15:48:35.588Z"
+    },
+    "updatedAt": {
+      "$date": "2026-05-30T16:02:34.433Z"
+    },
+    "__v": 0
   }
 ]
