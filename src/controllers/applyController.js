@@ -188,11 +188,11 @@ export const applyJob = async (req, res) => {
       cvId: cvId || null,
       uploadedCvId: uploadedCvId || null,
       expectedWorkLocation: expectedWorkLocation || null,
-      status: ApplicationStatus.APPLIED,
+      status: ApplicationStatus.UNREAD,
       personalDataAgreementAccepted: true,
       statusHistory: [
         {
-          status: ApplicationStatus.APPLIED,
+          status: ApplicationStatus.UNREAD,
           changedAt: new Date(),
           note: 'Ứng viên nộp hồ sơ'
         }
@@ -270,6 +270,91 @@ export const getApplyCvPreview = async (req, res) => {
       data: {
         type: 'ONLINE',
         cvData: cv
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const getMyApplications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10, status } = req.query;
+
+    const Application = (await import('../models/applicationModels.js')).default;
+
+    const query = { jobseekerUserId: userId };
+    if (status) {
+      query.status = status;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [applications, total] = await Promise.all([
+      Application.find(query)
+        .populate('jobId', 'title workLocations salary')
+        .populate('companyId', 'name avatarUrl verificationStatus')
+        .populate('cvId', 'title templateId')
+        .populate('uploadedCvId', 'title fileName fileType')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Application.countDocuments(query)
+    ]);
+
+    const formattedApplications = applications.map(app => {
+      const job = app.jobId;
+      const company = app.companyId;
+      const cv = app.cvId;
+      const uploadedCv = app.uploadedCvId;
+
+      return {
+        id: app._id,
+        job: {
+          id: job?._id,
+          title: job?.title || 'Việc đã xóa',
+          salary: job?.salary,
+          location: job?.workLocations?.[0] ? {
+            districtName: job.workLocations[0].districtName,
+            provinceName: job.workLocations[0].provinceName
+          } : null
+        },
+        company: {
+          id: company?._id,
+          name: company?.name || 'Công ty đã xóa',
+          avatarUrl: company?.avatarUrl || null,
+          isVerified: company?.verificationStatus === 'VERIFIED'
+        },
+        appliedAt: app.createdAt,
+        status: app.status,
+        cv: cv ? {
+          id: cv._id,
+          title: cv.title,
+          type: 'ONLINE'
+        } : uploadedCv ? {
+          id: uploadedCv._id,
+          title: uploadedCv.title,
+          fileName: uploadedCv.fileName,
+          type: 'UPLOADED'
+        } : null,
+        viewedAt: app.viewedAt
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        applications: formattedApplications,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          totalPages: Math.ceil(total / parseInt(limit))
+        }
       }
     });
   } catch (error) {
