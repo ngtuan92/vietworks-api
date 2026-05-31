@@ -16,6 +16,7 @@ import { applyJob } from '../controllers/applyController.js';
 import { getApplyCvPreview } from '../controllers/applyController.js';
 import { checkDuplicateApplication } from '../controllers/applyController.js';
 import { getMyApplications } from '../controllers/applyController.js';
+import { getApplicationStatus } from '../controllers/applyController.js';
 
 
 const router = express.Router();
@@ -387,6 +388,27 @@ router.get('/jobs/:jobId/apply/cv-preview/:cvId', protect, getApplyCvPreview);
  *         description: Danh sách applications của ứng viên
  */
 router.get('/jobseeker/applications', protect, getMyApplications);
+
+/**
+ * @swagger
+ * /api/jobseeker/applications/{id}/status:
+ *   get:
+ *     summary: Lấy trạng thái chi tiết của một hồ sơ đã nộp
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của application
+ *     responses:
+ *       200:
+ *         description: Trạng thái chi tiết của hồ sơ
+ */
+router.get('/jobseeker/applications/:id/status', protect, getApplicationStatus);
 
 
 /**
