@@ -27,18 +27,10 @@ export const uploadPdf = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for CV files
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-word',  // thêm
-      'application/x-msword',  // thêm  
-      'application/vnd.ms-word.document.12'
-    ];
-    if (allowedTypes.includes(file.mimetype)) {
+    if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Chỉ cho phép tải lên file PDF, DOC, DOCX!'), false);
+      cb(new Error('Chỉ cho phép tải lên file PDF!'), false);
     }
   }
 });
@@ -58,4 +50,22 @@ export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-template
 
 export const deleteFromCloudinary = (publicId) => {
   return cloudinary.uploader.destroy(publicId);
+};
+
+export const generateSignedUrl = (fileUrl) => {
+  const resourceTypeMatch = fileUrl.match(/cloudinary\.com\/[^/]+\/([^/]+)\/upload\//);
+  const resourceType = resourceTypeMatch ? resourceTypeMatch[1] : 'image';
+
+  const uploadMatch = fileUrl.match(/\/upload\/(?:v\d+\/)?(.+)$/);
+  if (!uploadMatch) return fileUrl;
+
+  // raw type giữ extension trong publicId, image type bỏ extension
+  const publicId = resourceType === 'raw'
+    ? uploadMatch[1]
+    : uploadMatch[1].replace(/\.[^/.]+$/, '');
+
+  const options = { resource_type: resourceType, type: 'upload', sign_url: true };
+  if (resourceType !== 'raw') options.format = 'pdf';
+
+  return cloudinary.url(publicId, options);
 };
