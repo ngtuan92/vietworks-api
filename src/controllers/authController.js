@@ -1,4 +1,4 @@
-import User from '../models/userModels.js';
+﻿import User from '../models/userModels.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import { generateAccessToken, generateRefreshToken, sendTokenResponse, hashPassword, comparePassword } from '../utils/authUtils.js';
@@ -50,6 +50,19 @@ const isValidPhone = (phone) => {
 const isValidObjectId = (id) => mongoose.isValidObjectId(id);
 
 const badRequest = (res, message) => res.status(400).json({ success: false, message });
+const isBlockedAccount = (user) => (
+  user?.accountStatus === AccountStatus.BANNED || user?.accountStatus === 'LOCKED'
+);
+
+const blockedAccountResponse = (res, user) => res.status(403).json({
+  success: false,
+  code: 'ACCOUNT_BANNED',
+  message: user?.banReason
+    ? `Tài khoản của bạn đã bị khóa: ${user.banReason}`
+    : 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+  banReason: user?.banReason || null,
+  bannedAt: user?.bannedAt || null
+});
 
 const handleMongoWriteError = (res, error) => {
   if (error?.code === 11000) {
@@ -434,6 +447,10 @@ const loginByRole = async (req, res, expectedRole = null) => {
       });
     }
 
+    if (user && isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
     if (user && user.role === UserRole.EMPLOYER && user.accountStatus === AccountStatus.UNVERIFIED) {
       return res.status(403).json({
         success: false,
@@ -471,6 +488,10 @@ export const refreshToken = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
     }
 
     const newAccessToken = generateAccessToken(user._id);
@@ -518,6 +539,10 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
         authProvider: AuthProvider.GOOGLE
       });
     } else {
+      if (isBlockedAccount(user)) {
+        return blockedAccountResponse(res, user);
+      }
+
       if (targetRole && user.role !== targetRole) {
         return res.status(403).json({
           success: false,
@@ -559,6 +584,10 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
         authProvider: AuthProvider.LINKEDIN
       });
     } else {
+      if (isBlockedAccount(user)) {
+        return blockedAccountResponse(res, user);
+      }
+
       if (targetRole && user.role !== targetRole) {
         return res.status(403).json({
           success: false,
@@ -583,3 +612,4 @@ export const googleLoginEmployer = async (req, res) => googleLoginByRole(req, re
 export const linkedinLogin = async (req, res) => linkedinLoginByRole(req, res, null);
 export const linkedinLoginJobseeker = async (req, res) => linkedinLoginByRole(req, res, UserRole.JOBSEEKER);
 export const linkedinLoginEmployer = async (req, res) => linkedinLoginByRole(req, res, UserRole.EMPLOYER);
+
