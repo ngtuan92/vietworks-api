@@ -1,4 +1,4 @@
-import Package from '../models/servicePackageModels.js';
+﻿import Package from '../models/servicePackageModels.js';
 
 export const createPackage = async (req, res) => {
   try {
@@ -20,7 +20,7 @@ export const createPackage = async (req, res) => {
     const pkg = await Package.create(packageData);
     res.status(201).json({ success: true, data: pkg });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -31,7 +31,7 @@ export const updatePackage = async (req, res) => {
 
     const pkg = await Package.findById(id);
     if (!pkg) {
-      return res.status(404).json({ success: false, message: 'Package not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy gói dịch vụ' });
     }
 
     if (name !== undefined) pkg.name = name;
@@ -49,7 +49,7 @@ export const updatePackage = async (req, res) => {
     await pkg.save();
     res.status(200).json({ success: true, data: pkg });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -60,14 +60,14 @@ export const updatePackageStatus = async (req, res) => {
 
     const pkg = await Package.findById(id);
     if (!pkg) {
-      return res.status(404).json({ success: false, message: 'Package not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy gói dịch vụ' });
     }
 
     pkg.isActive = isActive;
     await pkg.save();
     res.status(200).json({ success: true, data: pkg });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -83,6 +83,6 @@ export const getPackages = async (req, res) => {
     const packages = await Package.find(filter).sort({ sortOrder: 1, createdAt: -1 });
     res.status(200).json({ success: true, data: packages });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };

@@ -12,7 +12,7 @@ export const getMyRepresentativeProfile = async (req, res) => {
     if (!employerProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Employer profile not found'
+        message: 'Không tìm thấy hồ sơ nhà tuyển dụng'
       });
     }
 
@@ -28,8 +28,8 @@ export const getMyRepresentativeProfile = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };
@@ -43,7 +43,7 @@ export const getMyEmployerLoginInfo = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Không tìm thấy người dùng'
       });
     }
 
@@ -58,8 +58,8 @@ export const getMyEmployerLoginInfo = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };
@@ -72,14 +72,14 @@ export const updateMyRepresentativeProfile = async (req, res) => {
     if (!representativeName || !gender || !phone) {
       return res.status(400).json({
         success: false,
-        message: 'Representative name, gender and phone are required'
+        message: 'Tên người đại diện, giới tính và số điện thoại là bắt buộc'
       });
     }
 
     if (!Object.values(Gender).includes(gender)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid gender'
+        message: 'Giới tính không hợp lệ'
       });
     }
 
@@ -99,13 +99,13 @@ export const updateMyRepresentativeProfile = async (req, res) => {
     if (!employerProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Employer profile not found'
+        message: 'Không tìm thấy hồ sơ nhà tuyển dụng'
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Representative profile updated successfully',
+      message: 'Cập nhật thông tin người đại diện thành công',
       data: {
         id: employerProfile._id,
         representativeName: employerProfile.representativeName,
@@ -116,8 +116,8 @@ export const updateMyRepresentativeProfile = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };
@@ -129,21 +129,21 @@ export const updateMyEmployerPassword = async (req, res) => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Current password, new password and confirm new password are required'
+        message: 'Mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới là bắt buộc'
       });
     }
 
     if (newPassword !== confirmNewPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Confirm new password does not match'
+        message: 'Xác nhận mật khẩu mới không khớp'
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters'
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
       });
     }
 
@@ -152,7 +152,7 @@ export const updateMyEmployerPassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'Không tìm thấy người dùng'
       });
     }
 
@@ -161,7 +161,7 @@ export const updateMyEmployerPassword = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Current password is incorrect'
+        message: 'Mật khẩu hiện tại không chính xác'
       });
     }
 
@@ -170,13 +170,13 @@ export const updateMyEmployerPassword = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Password updated successfully'
+      message: 'Cập nhật mật khẩu thành công'
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };

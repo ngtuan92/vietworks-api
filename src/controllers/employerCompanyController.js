@@ -1,4 +1,4 @@
-import EmployerProfile from '../models/employerProfileModels.js';
+﻿import EmployerProfile from '../models/employerProfileModels.js';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
@@ -27,7 +27,7 @@ export const getMyCompanyProfile = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Company not found'
+        message: 'Không tìm thấy công ty'
       });
     }
 
@@ -59,7 +59,7 @@ export const getMyCompanyProfile = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }
@@ -88,7 +88,7 @@ export const updateMyCompanyProfile = async (req, res) => {
     if (!name || !taxCode || !industryId || !sizeId || !email || !phone || !description) {
       return res.status(400).json({
         success: false,
-        message: 'Name, tax code, industry, size, email, phone and description are required'
+        message: 'Tên công ty, mã số thuế, ngành nghề, quy mô, email, số điện thoại và mô tả là bắt buộc'
       });
     }
 
@@ -143,13 +143,13 @@ export const updateMyCompanyProfile = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Company not found or not owned by this employer'
+        message: 'Không tìm thấy công ty hoặc công ty không thuộc nhà tuyển dụng này'
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Company profile updated successfully',
+      message: 'Cập nhật hồ sơ công ty thành công',
       data: {
         id: company._id,
         name: company.name,
@@ -171,13 +171,13 @@ export const updateMyCompanyProfile = async (req, res) => {
     if (error.code === 11000 && error.keyPattern?.taxCode) {
       return res.status(400).json({
         success: false,
-        message: 'Company tax code already exists'
+        message: 'Mã số thuế công ty đã tồn tại'
       });
     }
 
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }
