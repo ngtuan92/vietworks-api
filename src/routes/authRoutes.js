@@ -1,9 +1,11 @@
-import express from 'express';
+﻿import express from 'express';
 import {
   registerJobseeker,
   registerEmployer,
   verifyEmployerOtp,
   resendEmployerOtp,
+  forgotPassword,
+  resetPassword,
   login,
   loginEmployer,
   loginJobseeker,
@@ -198,6 +200,10 @@ router.post('/register/employer/resend-otp', resendEmployerOtp);
  *       401:
  *         description: Invalid credentials
  */
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
+router.post('/reset-password', resetPassword);
+
 router.post('/login', login);
 router.post('/login/jobseeker', loginJobseeker);
 router.post('/login/employer', loginEmployer);
@@ -281,3 +287,4 @@ router.post('/linkedin/jobseeker', linkedinLoginJobseeker);
 router.post('/linkedin/employer', linkedinLoginEmployer);
 
 export default router;
+

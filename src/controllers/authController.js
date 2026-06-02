@@ -1,5 +1,6 @@
 ﻿import User from '../models/userModels.js';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { generateAccessToken, generateRefreshToken, sendTokenResponse, hashPassword, comparePassword } from '../utils/authUtils.js';
 import { UserRole, AccountStatus, AuthProvider } from '../enums/userEnums.js';
@@ -10,7 +11,7 @@ import Company from '../models/companyModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import { verifyGoogleToken } from '../services/googleAuthService.js';
 import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
-import { sendOtpEmail } from '../services/emailService.js';
+import { sendOtpEmail, sendPasswordResetEmail } from '../services/emailService.js';
 
 const normalizeEmail = (email) => {
   if (typeof email !== 'string') return null;
@@ -471,6 +472,107 @@ const loginByRole = async (req, res, expectedRole = null) => {
   }
 };
 
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+
+    if (!email) {
+      return badRequest(res, 'Email is required');
+    }
+
+    if (!isValidEmail(email)) {
+      return badRequest(res, 'Invalid email format');
+    }
+
+    const user = await User.findOne({ email });
+    const genericMessage = 'If the email exists in our system, a password reset link has been sent.';
+
+    if (!user) {
+      return res.status(200).json({ success: true, message: genericMessage });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    if (user.authProvider !== AuthProvider.LOCAL) {
+      return res.status(200).json({ success: true, message: genericMessage });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.passwordReset = {
+      tokenHash: resetTokenHash,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+    };
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetPath = user.role === UserRole.EMPLOYER ? '/employer/reset-password' : '/reset-password';
+    const resetUrl = `${frontendUrl}${resetPath}?token=${resetToken}`;
+
+    await sendPasswordResetEmail({
+      toEmail: user.email,
+      fullName: user.fullName,
+      resetUrl
+    });
+
+    return res.status(200).json({ success: true, message: genericMessage });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const token = req.params?.token || req.body?.token;
+    const password = req.body?.password;
+    const confirmPassword = req.body?.confirmPassword;
+
+    if (!token) {
+      return badRequest(res, 'Reset token is required');
+    }
+
+    if (!password || !confirmPassword) {
+      return badRequest(res, 'Missing required fields: password, confirmPassword');
+    }
+
+    if (password !== confirmPassword) {
+      return badRequest(res, 'Password confirmation does not match');
+    }
+
+    if (!isValidPassword(password)) {
+      return badRequest(res, 'Password is too weak. Use at least 8 characters including letters and numbers');
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      'passwordReset.tokenHash': tokenHash,
+      'passwordReset.expiresAt': { $gt: new Date() }
+    }).select('+passwordReset.tokenHash');
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    user.passwordHash = password;
+    user.passwordReset = {
+      tokenHash: null,
+      expiresAt: null
+    };
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password reset successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 export const login = async (req, res) => loginByRole(req, res, null);
 export const loginJobseeker = async (req, res) => loginByRole(req, res, UserRole.JOBSEEKER);
 export const loginEmployer = async (req, res) => loginByRole(req, res, UserRole.EMPLOYER);
@@ -612,4 +714,5 @@ export const googleLoginEmployer = async (req, res) => googleLoginByRole(req, re
 export const linkedinLogin = async (req, res) => linkedinLoginByRole(req, res, null);
 export const linkedinLoginJobseeker = async (req, res) => linkedinLoginByRole(req, res, UserRole.JOBSEEKER);
 export const linkedinLoginEmployer = async (req, res) => linkedinLoginByRole(req, res, UserRole.EMPLOYER);
+
 

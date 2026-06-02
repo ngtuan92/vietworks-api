@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { UserRole, AccountStatus, AuthProvider } from '../enums/userEnums.js';
 import { hashPassword, comparePassword } from '../utils/authUtils.js';
 
@@ -76,6 +76,17 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
+  },
+  passwordReset: {
+    tokenHash: {
+      type: String,
+      default: null,
+      select: false
+    },
+    expiresAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true
@@ -94,3 +105,4 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
 
 const User = mongoose.model('User', userSchema, 'users');
 export default User;
+
