@@ -25,27 +25,34 @@ app.get('/health', (req, res) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 import authRoutes from './routes/authRoutes.js';
+import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
+import jobRoutes from './routes/jobRoutes.js';
 import masterDataRoutes from './routes/masterDataRoutes.js';
-
+import companyLocationRoutes from './routes/companyLocationRoutes.js';
+import companyMasterData from './routes/companyMasterDataRoutes.js';
+import employerCompanyRoutes from './routes/employerCompanyRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import employerAccountRoutes from './routes/employerAccountRoutes.js';
 import packageRoutes from './routes/packageRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import cvRoutes from './routes/cvRoutes.js';
 import uploadedCvRoutes from './routes/uploadedCvRoutes.js';
-import employerAccountRoutes from './routes/employerAccountRoutes.js';
+import jobAdminRoutes from './routes/jobAdminRoutes.js';
+
+// Public & Static Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
-import jobRoutes from './routes/jobRoutes.js';
-import jobAdminRoutes from './routes/jobAdminRoutes.js';
-import companyLocationRoutes from './routes/companyLocationRoutes.js';
-import employerCompanyRoutes from './routes/employerCompanyRoutes.js';
-import uploadRoutes from './routes/uploadRoutes.js';
-import companyMasterData from './routes/companyMasterDataRoutes.js';
-app.use('/api/auth', authRoutes);
+app.use('/api', jobRoutes);
+app.use('/api', masterDataRoutes);
+app.use('/api', companyLocationRoutes);
+app.use('/api', companyMasterData);
+
+// Protected & Specific Routes
 app.use('/api', employerAccountRoutes);
+app.use('/api', employerCompanyRoutes);
 app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', adminRoutes);
@@ -53,14 +60,8 @@ app.use('/api', invoiceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cvs', cvRoutes);
 app.use('/api/jobseeker/cvs', uploadedCvRoutes);
-app.use('/api', analyticsRoutes);
-app.use('/api', jobRoutes);
-app.use('/api', masterDataRoutes);
 app.use('/api', jobAdminRoutes);
-app.use('/api', companyLocationRoutes);
-app.use('/api', employerCompanyRoutes);
 app.use('/api', uploadRoutes);
-app.use('/api', companyMasterData);
 
 
 app.use((err, req, res, next) => {
