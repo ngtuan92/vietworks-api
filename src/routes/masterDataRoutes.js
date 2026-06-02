@@ -31,7 +31,7 @@ const router = express.Router();
  *                   items:
  *                     type: object
  */
-router.get('/master-data/career-groups',protect,authorize('EMPLOYER'), getCareerGroups);
+router.get('/master-data/career-groups', getCareerGroups);
 
 /**
  * @swagger
@@ -70,7 +70,7 @@ router.get('/master-data/career-groups',protect,authorize('EMPLOYER'), getCareer
  *                   items:
  *                     type: object
  */
-router.get('/master-data/careers', protect, authorize('EMPLOYER'), getCareers);
+router.get('/master-data/careers', getCareers);
 
 /**
  * @swagger
@@ -106,7 +106,7 @@ router.get('/master-data/careers', protect, authorize('EMPLOYER'), getCareers);
  *                   items:
  *                     type: object
  */
-router.get('/master-data/career-positions', protect, authorize('EMPLOYER'), getCareerPositions);
+router.get('/master-data/career-positions', getCareerPositions);
 
 /**
  * @swagger
@@ -137,7 +137,7 @@ router.get('/master-data/career-positions', protect, authorize('EMPLOYER'), getC
  *                   items:
  *                     type: object
  */
-router.get('/master-data/job-levels', protect, authorize('EMPLOYER'), getJobLevels);
+router.get('/master-data/job-levels', getJobLevels);
 
 /**
  * @swagger
@@ -162,7 +162,7 @@ router.get('/master-data/job-levels', protect, authorize('EMPLOYER'), getJobLeve
  *                   items:
  *                     type: object
  */
-router.get('/master-data/experience-levels', protect, authorize('EMPLOYER'), getExperienceLevels);
+router.get('/master-data/experience-levels', getExperienceLevels);
 
 
 /**
@@ -213,5 +213,5 @@ router.get('/master-data/experience-levels', protect, authorize('EMPLOYER'), get
  *       500:
  *         description: Lỗi server
  */
-router.get('/master-data/career-groups/:careerGroupId/skills', protect, authorize('EMPLOYER'), getSkillsByCareerGroup);
+router.get('/master-data/career-groups/:careerGroupId/skills', getSkillsByCareerGroup);
 export default router;

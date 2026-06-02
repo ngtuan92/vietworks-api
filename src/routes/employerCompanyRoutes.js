@@ -4,7 +4,8 @@ import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
 import {
   getMyCompanyProfile,
-  updateMyCompanyProfile
+  updateMyCompanyProfile,
+  submitMyCompanyForVerification
 } from '../controllers/employerCompanyController.js';
 
 const router = express.Router();
@@ -123,6 +124,14 @@ router.put(
   protect,
   authorize(UserRole.EMPLOYER),
   updateMyCompanyProfile
+);
+
+
+router.post(
+  '/employer/company/profile/submit-verification',
+  protect,
+  authorize(UserRole.EMPLOYER),
+  submitMyCompanyForVerification
 );
 
 export default router;

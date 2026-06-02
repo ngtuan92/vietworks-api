@@ -8,11 +8,94 @@ import {
   getJobById,
   getJobs,
   submitJobForReview,
-  closeJob
+  closeJob,
+  getPublicJobs,
+  getPublicJobDetail
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
+
+
+/**
+ * @swagger
+ * /api/jobs/public:
+ *   get:
+ *     summary: Guest và Jobseeker xem danh sách job public
+ *     description: Chỉ trả về job PUBLISHED, chưa hết hạn và không bị khóa. Hỗ trợ tìm kiếm, lọc và phân trang bằng query string.
+ *     tags:
+ *       - Public Jobs
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: Tìm theo tiêu đề, mô tả, yêu cầu, quyền lợi
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *         description: Tìm theo tỉnh/thành, quận/huyện, phường/xã hoặc địa chỉ
+ *       - in: query
+ *         name: careerGroupId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: careerId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: experienceLevelId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: jobLevelId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: salaryMin
+ *         schema:
+ *           type: number
+ *         description: Lương tối thiểu, đơn vị triệu VND
+ *       - in: query
+ *         name: salaryMax
+ *         schema:
+ *           type: number
+ *         description: Lương tối đa, đơn vị triệu VND
+ *       - in: query
+ *         name: saturdayPolicy
+ *         schema:
+ *           type: string
+ *           enum: [WORK_SATURDAY, OFF_SATURDAY, NOT_SPECIFIED]
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [publishedAt, createdAt, deadline, salary.minMillion]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *     responses:
+ *       200:
+ *         description: Danh sách job public
+ *       500:
+ *         description: Server error
+ */
+router.get('/jobs/public', getPublicJobs);
+
+router.get('/jobs/public/:jobId', getPublicJobDetail);
 
 /**
  * @swagger
@@ -332,4 +415,7 @@ router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
  */
 router.get('/jobs', getJobs);
 
+
+
 export default router;
+

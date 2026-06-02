@@ -43,6 +43,8 @@ import companyLocationRoutes from './routes/companyLocationRoutes.js';
 import employerCompanyRoutes from './routes/employerCompanyRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import companyMasterData from './routes/companyMasterDataRoutes.js';
+import adminCompanyVerificationRoutes from './routes/adminCompanyVerificationRoutes.js';
+
 app.use('/api/auth', authRoutes);
 app.use('/api', employerAccountRoutes);
 app.use('/api', packageRoutes);
@@ -59,6 +61,8 @@ app.use('/api', companyLocationRoutes);
 app.use('/api', employerCompanyRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api', companyMasterData);
+app.use('/api', adminCompanyVerificationRoutes);
+
 
 
 
