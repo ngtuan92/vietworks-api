@@ -19,8 +19,8 @@ export const getCompanyIndustries = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };
@@ -41,8 +41,8 @@ export const getCompanySizes = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };

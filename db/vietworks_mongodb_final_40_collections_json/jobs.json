@@ -1,1 +1,68 @@
-[]
+[
+    {
+        "_id": {
+            "$oid": "6a1b879816d170f779461402"
+        },
+        "companyId": {
+            "$oid": "6a1b06d32cbb9e3255b3e38d"
+        },
+        "createdBy": {
+            "$oid": "6a1b06d32cbb9e3255b3e38b"
+        },
+        "title": "Backend Developer (Node.js)",
+        "careerGroupId": {
+            "$oid": "000000000000000000000003"
+        },
+        "careerId": {
+            "$oid": "000000000000000000000001"
+        },
+        "careerPositionId": {
+            "$oid": "000000000000000000000001"
+        },
+        "jobLevelId": {
+            "$oid": "000000000000000000000003"
+        },
+        "experienceLevelId": {
+            "$oid": "000000000000000000000002"
+        },
+        "skills": [],
+        "salary": {
+            "type": "RANGE",
+            "minMillion": 15,
+            "maxMillion": 25
+        },
+        "workLocations": [
+            {
+                "provinceCode": "01",
+                "provinceName": "Hà Nội",
+                "districtCode": "004",
+                "districtName": "Quận Cầu Giấy",
+                "wardCode": "00134",
+                "wardName": "Phường Xuân Phương",
+                "detailAddress": "Tòa nhà OpentIT, Cầu Giấy, Hà Nội"
+            }
+        ],
+        "saturdayPolicy": "NOT_SPECIFIED",
+        "description": "Phát triển và bảo trì các API RESTful cho hệ thống tuyển dụng. Làm việc với team product để triển khai tính năng mới.",
+        "requirements": "- 1-2 năm kinh nghiệm với Node.js\n- Thành thạo Express, MongoDB\n- Hiểu biết về RESTful API design\n- Có khả năng làm việc nhóm",
+        "benefits": "- Lương competitive\n- Bảo hiểm xã hội\n- Lịch làm việc linh hoạt\n- Đào tạo nội bộ",
+        "workingTime": "Thứ 2 - Thứ 6 (9:00 - 18:00)",
+        "applyInstruction": "Ứng viên nộp hồ sơ trực tuyến bằng cách bấm Ứng tuyển ngay dưới đây",
+        "deadline": {
+            "$date": "2026-06-15T00:00:00.000Z"
+        },
+        "status": "PUBLISHED",
+        "isUrgent": false,
+        "premium": null,
+        "publishedAt": null,
+        "closedAt": null,
+        "rejectedReason": null,
+        "bannedReason": null,
+        "createdAt": {
+            "$date": "2026-05-31T00:58:00.289Z"
+        },
+        "updatedAt": {
+            "$date": "2026-05-31T00:58:00.289Z"
+        }
+    }
+]

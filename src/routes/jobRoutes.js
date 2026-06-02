@@ -13,6 +13,13 @@ import {
   getPublicJobDetail
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { getApplyOptions } from '../controllers/applyController.js';
+import { applyJob } from '../controllers/applyController.js';
+import { getApplyCvPreview } from '../controllers/applyController.js';
+import { checkDuplicateApplication } from '../controllers/applyController.js';
+import { getMyApplications } from '../controllers/applyController.js';
+import { getApplicationStatus } from '../controllers/applyController.js';
+
 
 const router = express.Router();
 
@@ -333,6 +340,162 @@ router.post('/jobs/:jobId/close', protect, authorize('EMPLOYER'), closeJob);
 
 /**
  * @swagger
+ * /api/jobs/{jobId}/apply-options:
+ *   get:
+ *     summary: Lấy options để ứng tuyển (danh sách CV, địa điểm, thỏa thuận)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Apply options retrieved successfully
+ */
+router.get('/jobs/:jobId/apply-options', protect, getApplyOptions);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/apply/check:
+ *   get:
+ *     summary: Kiểm tra ứng viên đã ứng tuyển job này chưa
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Check result returned successfully
+ */
+router.get('/jobs/:jobId/apply/check', protect, checkDuplicateApplication);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/apply:
+ *   post:
+ *     summary: Ứng tuyển vào job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               cvId:
+ *                 type: string
+ *                 description: ID của CV online
+ *               uploadedCvId:
+ *                 type: string
+ *                 description: ID của CV upload
+ *               expectedWorkLocation:
+ *                 type: object
+ *                 description: Địa điểm mong muốn
+ *               personalDataAgreementAccepted:
+ *                 type: boolean
+ *                 description: Đồng ý thỏa thuận dữ liệu cá nhân
+ *     responses:
+ *       201:
+ *         description: Ứng tuyển thành công
+ */
+router.post('/jobs/:jobId/apply', protect, applyJob);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/apply/cv-preview/{cvId}:
+ *   get:
+ *     summary: Preview CV when applying
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: cvId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: CV preview data retrieved
+ */
+router.get('/jobs/:jobId/apply/cv-preview/:cvId', protect, getApplyCvPreview);
+
+/**
+ * @swagger
+ * /api/jobseeker/applications:
+ *   get:
+ *     summary: Lấy danh sách việc đã ứng tuyển của ứng viên
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [UNREAD, APPLIED, VIEWED, APPROVED, REJECTED, HIRED]
+ *     responses:
+ *       200:
+ *         description: Danh sách applications của ứng viên
+ */
+router.get('/jobseeker/applications', protect, getMyApplications);
+
+/**
+ * @swagger
+ * /api/jobseeker/applications/{id}/status:
+ *   get:
+ *     summary: Lấy trạng thái chi tiết của một hồ sơ đã nộp
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của application
+ *     responses:
+ *       200:
+ *         description: Trạng thái chi tiết của hồ sơ
+ */
+router.get('/jobseeker/applications/:id/status', protect, getApplicationStatus);
+
+
+/**
+ * @swagger
  * /api/jobs/{jobId}:
  *   get:
  *     summary: Get job by ID
@@ -347,7 +510,7 @@ router.post('/jobs/:jobId/close', protect, authorize('EMPLOYER'), closeJob);
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
+router.get('/jobs/:jobId', getJobById);
 
 /**
  * @swagger

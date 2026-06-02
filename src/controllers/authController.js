@@ -1,5 +1,6 @@
-import User from '../models/userModels.js';
+﻿import User from '../models/userModels.js';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { generateAccessToken, generateRefreshToken, sendTokenResponse, hashPassword, comparePassword } from '../utils/authUtils.js';
 import { UserRole, AccountStatus, AuthProvider } from '../enums/userEnums.js';
@@ -10,7 +11,7 @@ import Company from '../models/companyModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import { verifyGoogleToken } from '../services/googleAuthService.js';
 import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
-import { sendOtpEmail } from '../services/emailService.js';
+import { sendOtpEmail, sendPasswordResetEmail } from '../services/emailService.js';
 
 const normalizeEmail = (email) => {
   if (typeof email !== 'string') return null;
@@ -50,16 +51,45 @@ const isValidPhone = (phone) => {
 const isValidObjectId = (id) => mongoose.isValidObjectId(id);
 
 const badRequest = (res, message) => res.status(400).json({ success: false, message });
+const isBlockedAccount = (user) => (
+  user?.accountStatus === AccountStatus.BANNED || user?.accountStatus === 'LOCKED'
+);
+
+const blockedAccountResponse = (res, user) => res.status(403).json({
+  success: false,
+  code: 'ACCOUNT_BANNED',
+  message: user?.banReason
+    ? `Tài khoản của bạn đã bị khóa: ${user.banReason}`
+    : 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+  banReason: user?.banReason || null,
+  bannedAt: user?.bannedAt || null
+});
+
+const formatCurrentUser = (user) => ({
+  _id: user._id,
+  userId: user._id,
+  fullName: user.fullName,
+  displayName: user.fullName,
+  email: user.email,
+  phone: user.phone || null,
+  role: user.role,
+  status: user.accountStatus,
+  accountStatus: user.accountStatus,
+  authProvider: user.authProvider,
+  isEmailVerified: Boolean(user.emailVerification?.verifiedAt) || user.accountStatus === AccountStatus.ACTIVE,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt
+});
 
 const handleMongoWriteError = (res, error) => {
   if (error?.code === 11000) {
     const key = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'field';
-    return badRequest(res, `Duplicate value for ${key}`);
+    return badRequest(res, `Giá trị bị trùng cho ${key}`);
   }
   if (error?.name === 'ValidationError') {
     const firstKey = Object.keys(error.errors || {})[0];
-    const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Validation error';
-    return badRequest(res, firstMsg || 'Validation error');
+    const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Dữ liệu không hợp lệ';
+    return badRequest(res, firstMsg || 'Dữ liệu không hợp lệ');
   }
   return null;
 };
@@ -79,24 +109,24 @@ export const registerJobseeker = async (req, res) => {
     const phone = req.body?.phone;
 
     if (!fullName || !email || !password) {
-      return badRequest(res, 'Missing required fields: fullName, email, password');
+      return badRequest(res, 'Thiếu thông tin bắt buộc: họ tên, email, mật khẩu');
     }
 
     if (!isValidEmail(email)) {
-      return badRequest(res, 'Invalid email format');
+      return badRequest(res, 'Email không đúng định dạng');
     }
 
     if (!isValidPassword(password)) {
-      return badRequest(res, 'Password is too weak. Use at least 8 characters including letters and numbers');
+      return badRequest(res, 'Mật khẩu quá yếu. Vui lòng dùng ít nhất 8 ký tự gồm chữ và số');
     }
 
     if (!isValidPhone(phone)) {
-      return badRequest(res, 'Invalid phone number');
+      return badRequest(res, 'Số điện thoại không hợp lệ');
     }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return badRequest(res, 'User already exists');
+      return badRequest(res, 'Tài khoản đã tồn tại');
     }
 
     const user = await User.create({
@@ -133,7 +163,7 @@ export const registerJobseeker = async (req, res) => {
       await User.findByIdAndDelete(createdUserId);
     }
 
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -153,29 +183,29 @@ export const registerEmployer = async (req, res) => {
     const company = req.body?.company;
 
     if (!fullName || !email || !password || !phone || !representativeName || !gender || !company) {
-      return badRequest(res, 'Missing required employer registration fields');
+      return badRequest(res, 'Thiếu thông tin bắt buộc để đăng ký nhà tuyển dụng');
     }
 
     if (!isValidEmail(email)) {
-      return badRequest(res, 'Invalid email format');
+      return badRequest(res, 'Email không đúng định dạng');
     }
 
     if (!isValidPassword(password)) {
-      return badRequest(res, 'Password is too weak. Use at least 8 characters including letters and numbers');
+      return badRequest(res, 'Mật khẩu quá yếu. Vui lòng dùng ít nhất 8 ký tự gồm chữ và số');
     }
 
     if (!isValidPhone(phone)) {
-      return badRequest(res, 'Invalid phone number');
+      return badRequest(res, 'Số điện thoại không hợp lệ');
     }
 
     if (!Object.values(Gender).includes(gender)) {
-      return badRequest(res, 'Invalid gender');
+      return badRequest(res, 'Giới tính không hợp lệ');
     }
 
     const requiredCompanyFields = ['name', 'taxCode', 'industryId', 'sizeId', 'email', 'phone', 'description'];
     const missingCompanyField = requiredCompanyFields.find((field) => !company[field]);
     if (missingCompanyField) {
-      return badRequest(res, `Missing company field: ${missingCompanyField}`);
+      return badRequest(res, `Thiếu thông tin công ty bắt buộc: ${missingCompanyField}`);
     }
 
     const companyName = normalizeString(company.name);
@@ -188,41 +218,41 @@ export const registerEmployer = async (req, res) => {
     const companyWebsite = company.website ? String(company.website).trim() : null;
 
     if (!companyName) {
-      return badRequest(res, 'Company name is required');
+      return badRequest(res, 'Tên công ty là bắt buộc');
     }
 
     if (!companyTaxCode) {
-      return badRequest(res, 'Company taxCode is required');
+      return badRequest(res, 'Mã số thuế công ty là bắt buộc');
     }
 
     if (!companyEmail || !isValidEmail(companyEmail)) {
-      return badRequest(res, 'Invalid company email');
+      return badRequest(res, 'Email công ty không hợp lệ');
     }
 
     if (!companyPhone || !isValidPhone(companyPhone)) {
-      return badRequest(res, 'Invalid company phone');
+      return badRequest(res, 'Số điện thoại công ty không hợp lệ');
     }
 
     if (!companyDescription) {
-      return badRequest(res, 'Company description is required');
+      return badRequest(res, 'Mô tả công ty là bắt buộc');
     }
 
     if (!isValidObjectId(companyIndustryId)) {
-      return badRequest(res, 'Invalid company industryId');
+      return badRequest(res, 'Ngành nghề công ty không hợp lệ');
     }
 
     if (!isValidObjectId(companySizeId)) {
-      return badRequest(res, 'Invalid company sizeId');
+      return badRequest(res, 'Quy mô công ty không hợp lệ');
     }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return badRequest(res, 'User already exists');
+      return badRequest(res, 'Tài khoản đã tồn tại');
     }
 
     const taxCodeExists = await Company.findOne({ taxCode: companyTaxCode });
     if (taxCodeExists) {
-      return badRequest(res, 'Company tax code already exists');
+      return badRequest(res, 'Mã số thuế công ty đã tồn tại');
     }
 
     const user = await User.create({
@@ -283,7 +313,7 @@ export const registerEmployer = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Employer registered. OTP sent to email for verification.',
+      message: 'Đăng ký nhà tuyển dụng thành công. Mã OTP đã được gửi đến email để xác thực.',
       data: { email: user.email }
     });
   } catch (error) {
@@ -305,7 +335,7 @@ export const registerEmployer = async (req, res) => {
       await User.findByIdAndDelete(createdUserId);
     }
 
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -315,32 +345,32 @@ export const verifyEmployerOtp = async (req, res) => {
     const otp = normalizeString(req.body?.otp);
 
     if (!email || !otp) {
-      return badRequest(res, 'Missing required fields: email, otp');
+      return badRequest(res, 'Thiếu thông tin bắt buộc: email và OTP');
     }
 
     const user = await User.findOne({ email, role: UserRole.EMPLOYER }).select('+emailVerification.otpCodeHash');
     if (!user) {
-      return badRequest(res, 'Employer account not found');
+      return badRequest(res, 'Không tìm thấy tài khoản nhà tuyển dụng');
     }
 
     if (user.accountStatus !== AccountStatus.UNVERIFIED) {
-      return badRequest(res, 'Account is already verified or invalid status');
+      return badRequest(res, 'Tài khoản đã được xác thực hoặc trạng thái không hợp lệ');
     }
 
     const otpCodeHash = user.emailVerification?.otpCodeHash;
     const otpExpiresAt = user.emailVerification?.otpExpiresAt;
 
     if (!otpCodeHash || !otpExpiresAt) {
-      return badRequest(res, 'OTP has not been requested');
+      return badRequest(res, 'Chưa yêu cầu mã OTP');
     }
 
     if (new Date(otpExpiresAt).getTime() < Date.now()) {
-      return badRequest(res, 'OTP has expired');
+      return badRequest(res, 'Mã OTP đã hết hạn');
     }
 
     const isOtpValid = await comparePassword(otp, otpCodeHash);
     if (!isOtpValid) {
-      return badRequest(res, 'Invalid OTP');
+      return badRequest(res, 'Mã OTP không hợp lệ');
     }
 
     user.accountStatus = AccountStatus.ACTIVE;
@@ -358,7 +388,7 @@ export const verifyEmployerOtp = async (req, res) => {
     if (handled) {
       return handled;
     }
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -366,16 +396,16 @@ export const resendEmployerOtp = async (req, res) => {
   try {
     const email = normalizeEmail(req.body?.email);
     if (!email) {
-      return badRequest(res, 'Missing required field: email');
+      return badRequest(res, 'Thiếu thông tin bắt buộc: email');
     }
 
     const user = await User.findOne({ email, role: UserRole.EMPLOYER });
     if (!user) {
-      return badRequest(res, 'Employer account not found');
+      return badRequest(res, 'Không tìm thấy tài khoản nhà tuyển dụng');
     }
 
     if (user.accountStatus !== AccountStatus.UNVERIFIED) {
-      return badRequest(res, 'Account is already verified or invalid status');
+      return badRequest(res, 'Tài khoản đã được xác thực hoặc trạng thái không hợp lệ');
     }
 
     const lastSentAt = user.emailVerification?.otpLastSentAt;
@@ -384,7 +414,7 @@ export const resendEmployerOtp = async (req, res) => {
       if (elapsedSeconds < 60) {
         return res.status(429).json({
           success: false,
-          message: `Please wait ${60 - elapsedSeconds}s before requesting a new OTP`
+          message: `Vui lòng chờ ${60 - elapsedSeconds} giây trước khi yêu cầu OTP mới`
         });
       }
     }
@@ -405,14 +435,14 @@ export const resendEmployerOtp = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'OTP resent successfully'
+      message: 'Gửi lại OTP thành công'
     });
   } catch (error) {
     const handled = handleMongoWriteError(res, error);
     if (handled) {
       return handled;
     }
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -422,7 +452,7 @@ const loginByRole = async (req, res, expectedRole = null) => {
     const { password } = req.body;
 
     if (!email || !password) {
-      return badRequest(res, 'Missing required fields: email, password');
+      return badRequest(res, 'Thiếu thông tin bắt buộc: email, mật khẩu');
     }
 
     const user = await User.findOne({ email }).select('+passwordHash');
@@ -430,14 +460,18 @@ const loginByRole = async (req, res, expectedRole = null) => {
     if (user && expectedRole && user.role !== expectedRole) {
       return res.status(403).json({
         success: false,
-        message: 'Account role is not allowed for this login endpoint'
+        message: 'Vai trò tài khoản không được phép đăng nhập tại endpoint này'
       });
+    }
+
+    if (user && isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
     }
 
     if (user && user.role === UserRole.EMPLOYER && user.accountStatus === AccountStatus.UNVERIFIED) {
       return res.status(403).json({
         success: false,
-        message: 'Employer email is not verified. Please verify OTP first.'
+        message: 'Email nhà tuyển dụng chưa được xác thực. Vui lòng xác thực OTP trước.'
       });
     }
 
@@ -447,13 +481,189 @@ const loginByRole = async (req, res, expectedRole = null) => {
 
       sendTokenResponse(user, 200, res);
     } else {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
+      res.status(401).json({ success: false, message: 'Email hoặc mật khẩu không chính xác' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
+
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword, confirmPassword } = req.body;
+    const passwordConfirmation = confirmNewPassword || confirmPassword;
+
+    if (!currentPassword || !newPassword || !passwordConfirmation) {
+      return badRequest(res, 'Mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu là bắt buộc');
+    }
+
+    if (newPassword !== passwordConfirmation) {
+      return badRequest(res, 'Xác nhận mật khẩu không khớp');
+    }
+
+    if (!isValidPassword(newPassword)) {
+      return badRequest(res, 'Mật khẩu quá yếu. Vui lòng dùng ít nhất 8 ký tự gồm chữ và số');
+    }
+
+    if (currentPassword === newPassword) {
+      return badRequest(res, 'Mật khẩu mới phải khác mật khẩu hiện tại');
+    }
+
+    const user = await User.findById(req.user._id).select('+passwordHash');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    if (user.authProvider !== AuthProvider.LOCAL || !user.passwordHash) {
+      return res.status(400).json({ success: false, message: 'Tài khoản này không sử dụng mật khẩu nội bộ' });
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không chính xác' });
+    }
+
+    user.passwordHash = newPassword;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    const currentUser = formatCurrentUser(user);
+
+    return res.status(200).json({
+      success: true,
+      data: currentUser,
+      user: currentUser
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+
+    if (!email) {
+      return badRequest(res, 'Email là bắt buộc');
+    }
+
+    if (!isValidEmail(email)) {
+      return badRequest(res, 'Email không đúng định dạng');
+    }
+
+    const user = await User.findOne({ email });
+    const genericMessage = 'Nếu email tồn tại trong hệ thống, link đặt lại mật khẩu đã được gửi.';
+
+    if (!user) {
+      return res.status(200).json({ success: true, message: genericMessage });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    if (user.authProvider !== AuthProvider.LOCAL) {
+      return res.status(200).json({ success: true, message: genericMessage });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.passwordReset = {
+      tokenHash: resetTokenHash,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+    };
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetPath = user.role === UserRole.EMPLOYER ? '/employer/reset-password' : '/reset-password';
+    const resetUrl = `${frontendUrl}${resetPath}?token=${resetToken}`;
+
+    await sendPasswordResetEmail({
+      toEmail: user.email,
+      fullName: user.fullName,
+      resetUrl
+    });
+
+    return res.status(200).json({ success: true, message: genericMessage });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const token = req.params?.token || req.body?.token;
+    const password = req.body?.password;
+    const confirmPassword = req.body?.confirmPassword;
+
+    if (!token) {
+      return badRequest(res, 'Token đặt lại mật khẩu là bắt buộc');
+    }
+
+    if (!password || !confirmPassword) {
+      return badRequest(res, 'Thiếu thông tin bắt buộc: mật khẩu và xác nhận mật khẩu');
+    }
+
+    if (password !== confirmPassword) {
+      return badRequest(res, 'Xác nhận mật khẩu không khớp');
+    }
+
+    if (!isValidPassword(password)) {
+      return badRequest(res, 'Mật khẩu quá yếu. Vui lòng dùng ít nhất 8 ký tự gồm chữ và số');
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      'passwordReset.tokenHash': tokenHash,
+      'passwordReset.expiresAt': { $gt: new Date() }
+    }).select('+passwordReset.tokenHash');
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    user.passwordHash = password;
+    user.passwordReset = {
+      tokenHash: null,
+      expiresAt: null
+    };
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Đặt lại mật khẩu thành công' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
 export const login = async (req, res) => loginByRole(req, res, null);
 export const loginJobseeker = async (req, res) => loginByRole(req, res, UserRole.JOBSEEKER);
 export const loginEmployer = async (req, res) => loginByRole(req, res, UserRole.EMPLOYER);
@@ -463,14 +673,18 @@ export const refreshToken = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return res.status(401).json({ success: false, message: 'Refresh token not found' });
+      return res.status(401).json({ success: false, message: 'Không tìm thấy refresh token' });
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.id);
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
+      return res.status(401).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
     }
 
     const newAccessToken = generateAccessToken(user._id);
@@ -479,7 +693,7 @@ export const refreshToken = async (req, res) => {
       accessToken: newAccessToken
     });
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid refresh token' });
+    res.status(401).json({ success: false, message: 'Refresh token không hợp lệ' });
   }
 };
 
@@ -491,7 +705,7 @@ export const logout = (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Logged out successfully'
+    message: 'Đăng xuất thành công'
   });
 };
 
@@ -507,7 +721,7 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
 
     if (!user) {
       if (targetRole === UserRole.EMPLOYER) {
-        return badRequest(res, 'Employer social login is only available for existing employer accounts');
+        return badRequest(res, 'Đăng nhập mạng xã hội cho nhà tuyển dụng chỉ áp dụng với tài khoản đã tồn tại');
       }
 
       user = await User.create({
@@ -518,10 +732,14 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
         authProvider: AuthProvider.GOOGLE
       });
     } else {
+      if (isBlockedAccount(user)) {
+        return blockedAccountResponse(res, user);
+      }
+
       if (targetRole && user.role !== targetRole) {
         return res.status(403).json({
           success: false,
-          message: 'Account role is not allowed for this Google login endpoint'
+          message: 'Vai trò tài khoản không được phép đăng nhập Google tại endpoint này'
         });
       }
 
@@ -532,7 +750,7 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
     return sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error('Google Login Error:', error.message);
-    return res.status(500).json({ success: false, message: error.message || 'Google authentication failed' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' || 'Xác thực Google thất bại' });
   }
 };
 
@@ -548,7 +766,7 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
 
     if (!user) {
       if (targetRole === UserRole.EMPLOYER) {
-        return badRequest(res, 'Employer social login is only available for existing employer accounts');
+        return badRequest(res, 'Đăng nhập mạng xã hội cho nhà tuyển dụng chỉ áp dụng với tài khoản đã tồn tại');
       }
 
       user = await User.create({
@@ -559,10 +777,14 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
         authProvider: AuthProvider.LINKEDIN
       });
     } else {
+      if (isBlockedAccount(user)) {
+        return blockedAccountResponse(res, user);
+      }
+
       if (targetRole && user.role !== targetRole) {
         return res.status(403).json({
           success: false,
-          message: 'Account role is not allowed for this LinkedIn login endpoint'
+          message: 'Vai trò tài khoản không được phép đăng nhập LinkedIn tại endpoint này'
         });
       }
 
@@ -573,7 +795,7 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
     return sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error('LinkedIn Login Error:', error.message);
-    return res.status(500).json({ success: false, message: error.message || 'LinkedIn authentication failed' });
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' || 'Xác thực LinkedIn thất bại' });
   }
 };
 
@@ -583,3 +805,8 @@ export const googleLoginEmployer = async (req, res) => googleLoginByRole(req, re
 export const linkedinLogin = async (req, res) => linkedinLoginByRole(req, res, null);
 export const linkedinLoginJobseeker = async (req, res) => linkedinLoginByRole(req, res, UserRole.JOBSEEKER);
 export const linkedinLoginEmployer = async (req, res) => linkedinLoginByRole(req, res, UserRole.EMPLOYER);
+
+
+
+
+

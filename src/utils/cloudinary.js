@@ -11,7 +11,7 @@ cloudinary.config({
 });
 
 const storage = multer.memoryStorage();
-export const upload = multer({ 
+export const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
@@ -23,10 +23,22 @@ export const upload = multer({
   }
 });
 
-export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates') => {
+export const uploadPdf = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for CV files
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Chỉ cho phép tải lên file PDF!'), false);
+    }
+  }
+});
+
+export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates', resourceType = 'auto') => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder },
+      { folder, resource_type: resourceType },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
@@ -34,4 +46,26 @@ export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-template
     );
     uploadStream.end(buffer);
   });
+};
+
+export const deleteFromCloudinary = (publicId) => {
+  return cloudinary.uploader.destroy(publicId);
+};
+
+export const generateSignedUrl = (fileUrl) => {
+  const resourceTypeMatch = fileUrl.match(/cloudinary\.com\/[^/]+\/([^/]+)\/upload\//);
+  const resourceType = resourceTypeMatch ? resourceTypeMatch[1] : 'image';
+
+  const uploadMatch = fileUrl.match(/\/upload\/(?:v\d+\/)?(.+)$/);
+  if (!uploadMatch) return fileUrl;
+
+  // raw type giữ extension trong publicId, image type bỏ extension
+  const publicId = resourceType === 'raw'
+    ? uploadMatch[1]
+    : uploadMatch[1].replace(/\.[^/.]+$/, '');
+
+  const options = { resource_type: resourceType, type: 'upload', sign_url: true };
+  if (resourceType !== 'raw') options.format = 'pdf';
+
+  return cloudinary.url(publicId, options);
 };

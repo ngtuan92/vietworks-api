@@ -1,4 +1,4 @@
-import Job from '../models/jobModels.js';
+﻿import Job from '../models/jobModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import CareerGroup from '../models/careerGroupModels.js'; 
 import Company from '../models/companyModels.js';
@@ -86,21 +86,21 @@ export const createJob = async (req, res) => {
     if (!title || !careerGroupId || !careerId || !careerPositionId || !jobLevelId || !experienceLevelId) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: title, careerGroupId, careerId, careerPositionId, jobLevelId, experienceLevelId'
+        message: 'Thiếu thông tin bắt buộc: tiêu đề, nhóm nghề, nghề, vị trí chuyên môn, cấp bậc và kinh nghiệm'
       });
     }
 
     if (!description || !requirements || !benefits || !workingTime || !applyInstruction) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: description, requirements, benefits, workingTime, applyInstruction'
+        message: 'Thiếu thông tin bắt buộc: mô tả, yêu cầu, quyền lợi, thời gian làm việc và hướng dẫn ứng tuyển'
       });
     }
 
     if (!deadline) {
       return res.status(400).json({
         success: false,
-        message: 'deadline is required'
+        message: 'Hạn nộp hồ sơ là bắt buộc'
       });
     }
 
@@ -109,7 +109,7 @@ export const createJob = async (req, res) => {
     if (!employerProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Employer profile not found'
+        message: 'Không tìm thấy hồ sơ nhà tuyển dụng'
       });
     }
 
@@ -124,7 +124,7 @@ export const createJob = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Company not found'
+        message: 'Không tìm thấy công ty'
       });
     }
 
@@ -164,13 +164,13 @@ export const createJob = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Job created successfully as draft',
+      message: 'Đã tạo bản nháp việc làm thành công',
       data: newJob
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -196,7 +196,7 @@ export const submitJobForReview = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid job ID'
+        message: 'ID việc làm không hợp lệ'
       });
     }
 
@@ -205,7 +205,7 @@ export const submitJobForReview = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
@@ -242,7 +242,7 @@ export const submitJobForReview = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Job has been submitted for review successfully',
+      message: 'Đã gửi việc làm để duyệt thành công',
       data: {
         jobId: job._id,
         title: job.title,
@@ -253,7 +253,7 @@ export const submitJobForReview = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -274,7 +274,7 @@ export const updateJob = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
@@ -282,7 +282,7 @@ export const updateJob = async (req, res) => {
     if (job.createdBy.toString() !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this job'
+        message: 'Bạn không có quyền cập nhật việc làm này'
       });
     }
 
@@ -389,8 +389,8 @@ export const updateJob = async (req, res) => {
 
     // Phản hồi thông điệp rõ ràng cho client biết tin có bị hạ xuống để chờ duyệt hay không
     const customMessage = (job.status === JobStatus.PENDING_APPROVAL)
-      ? 'Job updated successfully and moved to PENDING APPROVAL due to core info changes.'
-      : 'Job updated successfully.';
+      ? 'Cập nhật việc làm thành công và chuyển sang chờ duyệt do thay đổi thông tin quan trọng.'
+      : 'Cập nhật việc làm thành công.';
 
     res.status(200).json({
       success: true,
@@ -401,7 +401,7 @@ export const updateJob = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -420,7 +420,7 @@ export const publishJob = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
@@ -449,7 +449,7 @@ export const publishJob = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -468,21 +468,21 @@ export const deleteJob = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
     if (job.createdBy.toString() !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to delete this job'
+        message: 'Bạn không có quyền xóa việc làm này'
       });
     }
 
     if (job.status !== JobStatus.DRAFT) {
       return res.status(400).json({
         success: false,
-        message: 'Can only delete jobs in draft status'
+        message: 'Chỉ có thể xóa việc làm ở trạng thái nháp'
       });
     }
 
@@ -490,12 +490,12 @@ export const deleteJob = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Job deleted successfully'
+      message: 'Xóa việc làm thành công'
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -542,7 +542,7 @@ export const getMyJobs = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -569,26 +569,49 @@ export const getJobById = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
-    // If job is not published, only creator can view it
+    // Check if job is not public - only creator can view
     if (job.status !== JobStatus.PUBLISHED && (!req.user || job.createdBy._id.toString() !== req.user.id)) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to view this job'
+        message: 'Bạn không có quyền xem việc làm này'
       });
+    }
+
+    // Check if user can apply
+    let canApply = true;
+    let cannotApplyReason = null;
+
+    if (job.status === JobStatus.EXPIRED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm đã hết hạn';
+    } else if (job.status === JobStatus.CLOSED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm đã đóng';
+    } else if (job.status === JobStatus.REJECTED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm bị từ chối';
+    } else if (job.status === JobStatus.BANNED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm bị khóa';
+    } else if (new Date(job.deadline) < new Date()) {
+      canApply = false;
+      cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
     }
 
     res.status(200).json({
       success: true,
-      data: job
+      data: job,
+      canApply,
+      cannotApplyReason
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -673,7 +696,7 @@ export const getJobs = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -692,21 +715,21 @@ export const closeJob = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
     if (job.createdBy.toString() !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to close this job'
+        message: 'Bạn không có quyền đóng việc làm này'
       });
     }
 
     if (job.status !== JobStatus.PUBLISHED) {
       return res.status(400).json({
         success: false,
-        message: 'Only published jobs can be closed'
+        message: 'Chỉ có thể đóng việc làm đang được hiển thị'
       });
     }
 
@@ -716,13 +739,13 @@ export const closeJob = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Job closed successfully',
+      message: 'Đóng việc làm thành công',
       data: job
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -978,3 +1001,4 @@ export const getPublicJobDetail = async (req, res) => {
     });
   }
 };
+

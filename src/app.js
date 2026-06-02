@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Backend is running' });
+  res.status(200).json({ status: 'OK', message: 'Backend đang hoạt động' });
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -34,6 +34,7 @@ import invoiceRoutes from './routes/invoiceRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import cvRoutes from './routes/cvRoutes.js';
+import uploadedCvRoutes from './routes/uploadedCvRoutes.js';
 import employerAccountRoutes from './routes/employerAccountRoutes.js';
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
@@ -53,6 +54,7 @@ app.use('/api', adminRoutes);
 app.use('/api', invoiceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cvs', cvRoutes);
+app.use('/api/jobseeker/cvs', uploadedCvRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
@@ -65,16 +67,12 @@ app.use('/api', adminCompanyVerificationRoutes);
 
 
 
-
-
-
-
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
-    message: err.message,
+    message: 'Lỗi máy chủ',
     stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
-});
+}); 
 
 export default app;

@@ -28,6 +28,7 @@ export const PremiumDeactivatedReason = {
 };
 
 export const ApplicationStatus = {
+  UNREAD: 'UNREAD',
   APPLIED: 'APPLIED',
   VIEWED: 'VIEWED',
   APPROVED: 'APPROVED',

@@ -1,1 +1,38 @@
-[]
+[
+    {
+        "_id": {
+            "$oid": "6a1b06d32cbb9e3255b3e38d"
+        },
+        "ownerUserId": {
+            "$oid": "6a1b06d32cbb9e3255b3e38b"
+        },
+        "name": "OpentIT",
+        "taxCode": "TEMP1780156115538",
+        "website": null,
+        "industryId": {
+            "$oid": "000000000000000000000001"
+        },
+        "sizeId": {
+            "$oid": "000000000000000000000001"
+        },
+        "email": "chungocdung3@gmail.com",
+        "phone": "0334624364",
+        "avatarUrl": null,
+        "coverUrl": null,
+        "description": "OpentIT - Ha Noi TayTuu Ha Noi",
+        "locations": [],
+        "businessLicenseFile": null,
+        "verificationStatus": "VERIFIED",
+        "verifiedBy": null,
+        "verifiedAt": null,
+        "rejectionReason": null,
+        "followersCount": 0,
+        "createdAt": {
+            "$date": "2026-05-30T15:48:35.803Z"
+        },
+        "updatedAt": {
+            "$date": "2026-05-30T15:48:35.803Z"
+        },
+        "__v": 0
+    }
+]

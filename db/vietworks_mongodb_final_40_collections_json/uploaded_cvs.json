@@ -1,1 +1,26 @@
-[]
+[
+    {
+        "_id": {
+            "$oid": "6a1af169836d0b85d22749a7"
+        },
+        "userId": {
+            "$oid": "6a1aef54ef7c684fc2cd0e0f"
+        },
+        "title": "Download Transformer json",
+        "fileUrl": "https://res.cloudinary.com/dy9klscsi/raw/upload/v1780150634/vietworks/uploaded-cvs/6a1aef54ef7c684fc2cd0e0f/vmtzvs9wrcdq6lakqf1o",
+        "fileName": "Download Transformer json.docx",
+        "fileType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "fileSize": 25184,
+        "textExtractStatus": "NOT_EXTRACTED",
+        "extractedText": null,
+        "aiReviewSummary": null,
+        "status": "ACTIVE",
+        "createdAt": {
+            "$date": "2026-05-30T14:17:13.725Z"
+        },
+        "updatedAt": {
+            "$date": "2026-05-30T14:17:13.725Z"
+        },
+        "__v": 0
+    }
+]
