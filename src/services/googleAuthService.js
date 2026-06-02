@@ -23,7 +23,7 @@ export const verifyGoogleToken = async (token) => {
       });
 
       const { email, name, picture, sub } = userInfo.data;
-      if (!email) throw new Error('Could not retrieve email from Google');
+      if (!email) throw new Error('Không thể lấy email từ Google');
 
       return {
         email,
@@ -33,6 +33,6 @@ export const verifyGoogleToken = async (token) => {
       };
     }
   } catch (error) {
-    throw new Error('Google token verification failed: ' + error.message);
+    throw new Error('Xác thực token Google thất bại: ' + error.message);
   }
 };

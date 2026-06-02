@@ -1,4 +1,7 @@
 import mongoose from 'mongoose';
+import axios from 'axios';
+import AdmZip from 'adm-zip';
+import { v2 as cloudinary } from 'cloudinary';
 import { UploadedCv } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
@@ -126,6 +129,53 @@ export const updateUploadedCv = async (req, res) => {
       return res.status(400).json({ success: false, message: firstMsg });
     }
     res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
+  }
+};
+
+export const getUploadedCvView = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh CV tải lên không hợp lệ' });
+    }
+
+    const uploadedCv = await UploadedCv.findOne({ _id: id, userId, status: CvStatus.ACTIVE });
+    if (!uploadedCv) return res.status(404).json({ success: false, message: 'Không tìm thấy CV' });
+
+    const isImageType = uploadedCv.fileUrl.includes('/image/upload/');
+    let pdfBuffer;
+
+    if (isImageType) {
+      // File image type bị CDN ACL chặn → dùng generate_archive (API auth, bypass ACL)
+      const match = uploadedCv.fileUrl.match(/\/upload\/(?:v\d+\/)?(.+)$/);
+      if (!match) throw new Error('Invalid file URL');
+      const publicId = match[1].replace(/\.[^/.]+$/, '');
+
+      const archiveUrl = cloudinary.utils.download_archive_url({
+        public_ids: [publicId],
+        resource_type: 'image',
+        flatten_folders: true,
+        type: 'upload',
+      });
+
+      const response = await axios.get(archiveUrl, { responseType: 'arraybuffer', timeout: 30000 });
+      const zip = new AdmZip(Buffer.from(response.data));
+      const entries = zip.getEntries();
+      pdfBuffer = zip.readFile(entries[0]);
+    } else {
+      // File raw type → public, fetch trực tiếp
+      const response = await axios.get(uploadedCv.fileUrl, { responseType: 'arraybuffer', timeout: 15000 });
+      pdfBuffer = Buffer.from(response.data);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${uploadedCv.fileName || 'cv.pdf'}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('getUploadedCvView error:', error.message);
+    res.status(500).json({ success: false, message: 'Không thể tải file để xem trước' });
   }
 };
 

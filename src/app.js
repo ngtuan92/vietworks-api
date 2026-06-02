@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Backend is running' });
+  res.status(200).json({ status: 'OK', message: 'Backend đang hoạt động' });
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -66,7 +66,7 @@ app.use('/api', companyMasterData);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
-    message: err.message,
+    message: 'Lỗi máy chủ',
     stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
 }); 

@@ -39,6 +39,6 @@ export const verifyLinkedinCode = async (code) => {
     };
   } catch (error) {
     console.error('LinkedIn Auth Error:', error.response?.data || error.message);
-    throw new Error('LinkedIn authentication failed');
+    throw new Error('Xác thực LinkedIn thất bại');
   }
 };

@@ -1,4 +1,4 @@
-import Transaction from '../models/transactionModels.js';
+﻿import Transaction from '../models/transactionModels.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/userModels.js';
 
@@ -9,25 +9,25 @@ export const requestInvoice = async (req, res) => {
 
     const transaction = await Transaction.findById(id);
     if (!transaction) {
-      return res.status(404).json({ success: false, message: 'Transaction not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy giao dịch' });
     }
 
     if (transaction.status !== 'SUCCESS') {
-      return res.status(400).json({ success: false, message: 'Transaction must be successful' });
+      return res.status(400).json({ success: false, message: 'Giao dịch phải ở trạng thái thành công' });
     }
 
     if (transaction.type !== 'PAYMENT') {
-      return res.status(400).json({ success: false, message: 'Only payment transactions can request invoice' });
+      return res.status(400).json({ success: false, message: 'Chỉ giao dịch thanh toán mới có thể yêu cầu xuất hóa đơn' });
     }
 
     const existingInvoice = await Invoice.findOne({ transactionId: id });
     if (existingInvoice) {
-      return res.status(400).json({ success: false, message: 'Invoice already requested' });
+      return res.status(400).json({ success: false, message: 'Hóa đơn đã được yêu cầu trước đó' });
     }
 
     const user = await User.findById(transaction.userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -46,7 +46,7 @@ export const requestInvoice = async (req, res) => {
 
     res.status(201).json({ success: true, data: invoice });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -79,7 +79,7 @@ export const getInvoiceRequests = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -90,11 +90,11 @@ export const updateInvoiceRequest = async (req, res) => {
 
     const invoice = await Invoice.findById(id);
     if (!invoice) {
-      return res.status(404).json({ success: false, message: 'Invoice not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn' });
     }
 
     if (!['PENDING', 'GENERATED', 'SENT', 'CANCELLED'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status' });
+      return res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ' });
     }
 
     invoice.status = status;
@@ -105,6 +105,7 @@ export const updateInvoiceRequest = async (req, res) => {
     await invoice.save();
     res.status(200).json({ success: true, data: invoice });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
+

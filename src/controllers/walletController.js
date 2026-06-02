@@ -15,7 +15,7 @@ export const createWallet = async (req, res) => {
     wallet = await Wallet.create({ userId, balance: 0 });
     res.status(201).json({ success: true, data: wallet });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -30,7 +30,7 @@ export const getWallet = async (req, res) => {
 
     res.status(200).json({ success: true, data: wallet });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -40,7 +40,7 @@ export const deposit = async (req, res) => {
     const { amount } = req.body;
 
     if (!amount || amount <= 0) {
-      return res.status(400).json({ success: false, message: 'Invalid amount' });
+      return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
     }
 
     let wallet = await Wallet.findOne({ userId });
@@ -85,7 +85,7 @@ export const deposit = async (req, res) => {
     });
   } catch (error) {
     console.error('Deposit Error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -146,7 +146,7 @@ export const sepayWebhook = async (req, res) => {
       // 7. Find transaction by _id (ObjectId from MongoDB)
       const transaction = await Transaction.findById(orderId);
       if (!transaction) {
-        console.error('SePay Webhook: Transaction not found', orderId);
+        console.error('SePay Webhook: Không tìm thấy giao dịch', orderId);
         return;
       }
 
@@ -211,6 +211,6 @@ export const getTransactions = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };

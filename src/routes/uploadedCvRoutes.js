@@ -5,6 +5,7 @@ import {
   uploadCv,
   getUserUploadedCvs,
   getUploadedCvById,
+  getUploadedCvView,
   updateUploadedCv,
   deleteUploadedCv
 } from '../controllers/uploadedCvController.js';
@@ -33,6 +34,7 @@ router.post('/upload', (req, res, next) => {
   });
 }, uploadCv);
 router.get('/', getUserUploadedCvs);
+router.get('/:id/view', getUploadedCvView);
 router.get('/:id', getUploadedCvById);
 router.put('/:id', updateUploadedCv);
 router.delete('/:id', deleteUploadedCv);

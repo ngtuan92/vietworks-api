@@ -12,7 +12,7 @@ export const getCareerGroups = async (req, res) => {
     const groups = await CareerGroup.find({ status: CommonStatus.ACTIVE }).sort({ order: 1, name: 1 });
     res.status(200).json({ success: true, data: groups });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -29,7 +29,7 @@ export const getCareers = async (req, res) => {
     const careers = await Career.find(filter).sort({ order: 1, name: 1 });
     res.status(200).json({ success: true, data: careers });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -45,7 +45,7 @@ export const getCareerPositions = async (req, res) => {
     const positions = await CareerPosition.find(filter).sort({ order: 1, name: 1 });
     res.status(200).json({ success: true, data: positions });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -65,7 +65,7 @@ export const getJobLevels = async (req, res) => {
     const levels = await JobLevel.find(filter).sort({ levelOrder: 1 });
     res.status(200).json({ success: true, data: levels });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -76,7 +76,7 @@ export const getExperienceLevels = async (req, res) => {
     const experiences = await ExperienceLevel.find({ status: CommonStatus.ACTIVE }).sort({ minYear: 1 });
     res.status(200).json({ success: true, data: experiences });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
