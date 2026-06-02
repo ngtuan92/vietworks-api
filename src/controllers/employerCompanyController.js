@@ -1,7 +1,8 @@
 ﻿import EmployerProfile from '../models/employerProfileModels.js';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
-import { CommonStatus } from '../enums/masterDataEnums.js';
+import { CommonStatus,  CompanyVerificationStatus
+ } from '../enums/masterDataEnums.js';
 
 export const getMyCompanyProfile = async (req, res) => {
   try {
@@ -122,9 +123,43 @@ export const updateMyCompanyProfile = async (req, res) => {
       updateData.coverUrl = coverUrl || null;
     }
 
-    if (businessLicenseFile !== undefined) {
-      updateData.businessLicenseFile = businessLicenseFile || null;
+   const currentCompany = await Company.findOne({
+  _id: employerProfile.companyId,
+  ownerUserId: req.user._id
+}).select('businessLicenseFile verificationStatus');
+
+if (!currentCompany) {
+  return res.status(404).json({
+    success: false,
+    message: 'Company not found or not owned by this employer'
+  });
+}
+
+if (businessLicenseFile !== undefined) {
+  const oldFileUrl = currentCompany.businessLicenseFile?.fileUrl || null;
+  const newFileUrl = businessLicenseFile?.fileUrl || null;
+  const isBusinessLicenseChanged = oldFileUrl !== newFileUrl;
+
+  updateData.businessLicenseFile = businessLicenseFile || null;
+
+  if (isBusinessLicenseChanged) {
+    updateData.rejectionReason = null;
+    updateData.verifiedBy = null;
+    updateData.verifiedAt = null;
+
+    if (currentCompany.verificationStatus === CompanyVerificationStatus.VERIFIED) {
+      updateData.verificationStatus = CompanyVerificationStatus.PENDING;
     }
+
+    if (currentCompany.verificationStatus === CompanyVerificationStatus.REJECTED) {
+      updateData.verificationStatus = CompanyVerificationStatus.UNVERIFIED;
+    }
+
+    if (currentCompany.verificationStatus === CompanyVerificationStatus.PENDING) {
+      updateData.verificationStatus = CompanyVerificationStatus.PENDING;
+    }
+  }
+}
 
     const company = await Company.findOneAndUpdate(
       {
@@ -182,3 +217,77 @@ export const updateMyCompanyProfile = async (req, res) => {
     });
   }
 };
+
+
+
+export const submitMyCompanyForVerification = async (req, res) => {
+  try {
+    const employerProfile = await EmployerProfile.findOne({
+      userId: req.user._id
+    }).select('companyId');
+
+    if (!employerProfile?.companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employer has no company'
+      });
+    }
+
+    const company = await Company.findOne({
+      _id: employerProfile.companyId,
+      ownerUserId: req.user._id
+    });
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: 'Company not found or not owned by this employer'
+      });
+    }
+
+    if (!company.name || !company.taxCode || !company.industryId || !company.sizeId || !company.email || !company.phone || !company.description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company profile is incomplete'
+      });
+    }
+
+    if (!company.businessLicenseFile?.fileUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'Business license file is required before submitting for verification'
+      });
+    }
+
+    if (company.verificationStatus === CompanyVerificationStatus.VERIFIED) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company is already verified'
+      });
+    }
+
+    company.verificationStatus = CompanyVerificationStatus.PENDING;
+    company.rejectionReason = null;
+    company.verifiedBy = null;
+    company.verifiedAt = null;
+
+    await company.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Company submitted for verification successfully',
+      data: {
+        id: company._id,
+        verificationStatus: company.verificationStatus,
+        rejectionReason: company.rejectionReason
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
