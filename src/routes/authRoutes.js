@@ -8,6 +8,7 @@ import {
   forgotPassword,
   resetPassword,
   changePassword,
+  getCurrentUser,
   login,
   loginEmployer,
   loginJobseeker,
@@ -203,6 +204,7 @@ router.post('/register/employer/resend-otp', resendEmployerOtp);
  *         description: Invalid credentials
  */
 router.patch('/change-password', protect, changePassword);
+router.get('/me', protect, getCurrentUser);
 
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
