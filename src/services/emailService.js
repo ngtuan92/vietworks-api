@@ -29,30 +29,16 @@ const createMailTransporter = async () => {
 };
 
 const sendHtmlEmail = async ({ toEmail, subject, html }) => {
-  try {
-    const transporter = await createMailTransporter();
+  const transporter = await createMailTransporter();
 
-    await transporter.sendMail({
-      from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,
-      to: toEmail,
-      subject,
-      html
-    });
+  await transporter.sendMail({
+    from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,
+    to: toEmail,
+    subject,
+    html
+  });
 
-    return { delivered: true, mode: 'SMTP' };
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development' || !process.env.MAIL_HOST) {
-      console.warn('⚠️ [EMAIL SERVICE] SMTP configuration is missing or incorrect. Falling back to console log:');
-      console.log('==================== EMAIL SENT ====================');
-      console.log(`To:      ${toEmail}`);
-      console.log(`Subject: ${subject}`);
-      console.log(`Body:`);
-      console.log(html);
-      console.log('====================================================');
-      return { delivered: true, mode: 'console' };
-    }
-    throw error;
-  }
+  return { delivered: true, mode: 'SMTP' };
 };
 
 export const sendOtpEmail = async ({ toEmail, fullName, otpCode }) => {
