@@ -473,6 +473,56 @@ const loginByRole = async (req, res, expectedRole = null) => {
 };
 
 
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword, confirmPassword } = req.body;
+    const passwordConfirmation = confirmNewPassword || confirmPassword;
+
+    if (!currentPassword || !newPassword || !passwordConfirmation) {
+      return badRequest(res, 'Current password, new password and confirm password are required');
+    }
+
+    if (newPassword !== passwordConfirmation) {
+      return badRequest(res, 'Confirm password does not match');
+    }
+
+    if (!isValidPassword(newPassword)) {
+      return badRequest(res, 'Password is too weak. Use at least 8 characters including letters and numbers');
+    }
+
+    if (currentPassword === newPassword) {
+      return badRequest(res, 'New password must be different from current password');
+    }
+
+    const user = await User.findById(req.user._id).select('+passwordHash');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    if (user.authProvider !== AuthProvider.LOCAL || !user.passwordHash) {
+      return res.status(400).json({ success: false, message: 'This account does not use a local password' });
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    user.passwordHash = newPassword;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 export const forgotPassword = async (req, res) => {
   try {
     const email = normalizeEmail(req.body?.email);
@@ -714,5 +764,6 @@ export const googleLoginEmployer = async (req, res) => googleLoginByRole(req, re
 export const linkedinLogin = async (req, res) => linkedinLoginByRole(req, res, null);
 export const linkedinLoginJobseeker = async (req, res) => linkedinLoginByRole(req, res, UserRole.JOBSEEKER);
 export const linkedinLoginEmployer = async (req, res) => linkedinLoginByRole(req, res, UserRole.EMPLOYER);
+
 
 

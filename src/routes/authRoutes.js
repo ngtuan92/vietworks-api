@@ -1,4 +1,5 @@
 ﻿import express from 'express';
+import { protect } from '../middlewares/authMiddleware.js';
 import {
   registerJobseeker,
   registerEmployer,
@@ -6,6 +7,7 @@ import {
   resendEmployerOtp,
   forgotPassword,
   resetPassword,
+  changePassword,
   login,
   loginEmployer,
   loginJobseeker,
@@ -200,6 +202,8 @@ router.post('/register/employer/resend-otp', resendEmployerOtp);
  *       401:
  *         description: Invalid credentials
  */
+router.patch('/change-password', protect, changePassword);
+
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 router.post('/reset-password', resetPassword);
@@ -287,4 +291,5 @@ router.post('/linkedin/jobseeker', linkedinLoginJobseeker);
 router.post('/linkedin/employer', linkedinLoginEmployer);
 
 export default router;
+
 
