@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { CvTemplate, Cv, CareerGroup } from '../models/index.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import { slugify } from '../utils/slugify.js';
@@ -6,6 +7,10 @@ import { uploadBufferToCloudinary } from '../utils/cloudinary.js';
 export const createCvTemplate = async (req, res) => {
   try {
     const { name, code, careerGroupId, description, templateCode, layoutConfig, isPremium } = req.body;
+
+    if (careerGroupId && !mongoose.Types.ObjectId.isValid(careerGroupId)) {
+      return res.status(400).json({ success: false, message: 'Nhóm ngành nghề không hợp lệ' });
+    }
 
     const slug = slugify(name);
     const codeValue = code || slug;
@@ -32,7 +37,13 @@ export const createCvTemplate = async (req, res) => {
 
     res.status(201).json({ success: true, data: newTemplate });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in createCvTemplate:', error);
+    if (error.name === 'ValidationError') {
+      const firstKey = Object.keys(error.errors || {})[0];
+      const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Dữ liệu không hợp lệ';
+      return res.status(400).json({ success: false, message: firstMsg });
+    }
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
@@ -40,6 +51,14 @@ export const updateCvTemplate = async (req, res) => {
   try {
     const { name, description, isPremium, status, layoutConfig, templateCode, careerGroupId } = req.body;
     
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh mẫu CV không hợp lệ' });
+    }
+
+    if (careerGroupId && !mongoose.Types.ObjectId.isValid(careerGroupId)) {
+      return res.status(400).json({ success: false, message: 'Nhóm ngành nghề không hợp lệ' });
+    }
+
     const template = await CvTemplate.findById(req.params.id);
     if (!template) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
@@ -73,12 +92,22 @@ export const updateCvTemplate = async (req, res) => {
 
     res.status(200).json({ success: true, data: updatedTemplate });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in updateCvTemplate:', error);
+    if (error.name === 'ValidationError') {
+      const firstKey = Object.keys(error.errors || {})[0];
+      const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Dữ liệu không hợp lệ';
+      return res.status(400).json({ success: false, message: firstMsg });
+    }
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
 export const toggleCvTemplateStatus = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh mẫu CV không hợp lệ' });
+    }
+
     const template = await CvTemplate.findById(req.params.id);
     if (!template) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
@@ -89,7 +118,8 @@ export const toggleCvTemplateStatus = async (req, res) => {
 
     res.status(200).json({ success: true, data: template });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in toggleCvTemplateStatus:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
@@ -97,6 +127,10 @@ export const uploadPreviewImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Vui lòng cung cấp file ảnh' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh mẫu CV không hợp lệ' });
     }
 
     const template = await CvTemplate.findById(req.params.id);
@@ -114,7 +148,7 @@ export const uploadPreviewImage = async (req, res) => {
     res.status(200).json({ success: true, data: template });
   } catch (error) {
     console.error("Upload error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
@@ -158,7 +192,8 @@ export const getAdminCvTemplates = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getAdminCvTemplates:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
@@ -177,12 +212,17 @@ export const getActiveCvTemplates = async (req, res) => {
 
     res.status(200).json({ success: true, data: templates });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getActiveCvTemplates:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
 export const getCvTemplatePreview = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh mẫu CV không hợp lệ' });
+    }
+
     const template = await CvTemplate.findById(req.params.id)
       .populate('careerGroupId', 'name code')
       .populate('layoutConfig.defaultFontId')
@@ -194,7 +234,8 @@ export const getCvTemplatePreview = async (req, res) => {
 
     res.status(200).json({ success: true, data: template });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getCvTemplatePreview:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
@@ -203,6 +244,7 @@ export const getCareerGroups = async (req, res) => {
     const groups = await CareerGroup.find({ status: CommonStatus.ACTIVE }).sort('order name');
     res.status(200).json({ success: true, data: groups });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getCareerGroups:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };

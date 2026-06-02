@@ -1,9 +1,14 @@
+import mongoose from 'mongoose';
 import { Cv, CvTemplate, CvSection } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
 
 export const createCv = async (req, res) => {
   try {
     const { templateId, title } = req.body;
+
+    if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
+      return res.status(400).json({ success: false, message: 'Mẫu thiết kế CV không hợp lệ' });
+    }
 
     const template = await CvTemplate.findById(templateId);
     if (!template) {
@@ -66,13 +71,23 @@ export const createCv = async (req, res) => {
 
     res.status(201).json({ success: true, data: newCv });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in createCv:', error);
+    if (error.name === 'ValidationError') {
+      const firstKey = Object.keys(error.errors || {})[0];
+      const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Dữ liệu không hợp lệ';
+      return res.status(400).json({ success: false, message: firstMsg });
+    }
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
 export const updateCv = async (req, res) => {
   try {
     const { title, sections, style, isMain } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
+    }
 
     const cv = await Cv.findOne({ _id: req.params.id, userId: req.user._id });
     if (!cv) {
@@ -94,12 +109,22 @@ export const updateCv = async (req, res) => {
 
     res.status(200).json({ success: true, data: cv });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in updateCv:', error);
+    if (error.name === 'ValidationError') {
+      const firstKey = Object.keys(error.errors || {})[0];
+      const firstMsg = firstKey ? error.errors[firstKey]?.message : 'Dữ liệu không hợp lệ';
+      return res.status(400).json({ success: false, message: firstMsg });
+    }
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
 export const getCvById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
+    }
+
     const cv = await Cv.findOne({ _id: req.params.id, userId: req.user._id })
       .populate('templateId')
       .populate('style.fontId')
@@ -112,7 +137,8 @@ export const getCvById = async (req, res) => {
 
     res.status(200).json({ success: true, data: cv });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getCvById:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
@@ -124,12 +150,17 @@ export const getUserCvs = async (req, res) => {
 
     res.status(200).json({ success: true, data: cvs });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in getUserCvs:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
 
 export const deleteCv = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
+    }
+
     const cv = await Cv.findOne({ _id: req.params.id, userId: req.user._id });
     
     if (!cv) {
@@ -150,6 +181,7 @@ export const deleteCv = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'CV đã được xóa' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error in deleteCv:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
