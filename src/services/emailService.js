@@ -1,4 +1,4 @@
-﻿const createMailTransporter = async () => {
+const createMailTransporter = async () => {
   const hasSmtpConfig =
     process.env.MAIL_HOST &&
     process.env.MAIL_PORT &&
