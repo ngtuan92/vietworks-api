@@ -58,9 +58,9 @@ const router = express.Router();
  *                 type: string
  *     responses:
  *       201:
- *         description: Jobseeker registered successfully
+ *         description: Đăng ký ứng viên thành công
  *       400:
- *         description: User already exists / validation error
+ *         description: Tài khoản đã tồn tại / validation error
  */
 router.post('/register/jobseeker', registerJobseeker);
 
@@ -115,7 +115,7 @@ router.post('/register/jobseeker', registerJobseeker);
  *       201:
  *         description: Employer registered successfully and OTP sent to email
  *       400:
- *         description: Validation error or duplicate data
+ *         description: Dữ liệu không hợp lệ or duplicate data
  */
 router.post('/register/employer', registerEmployer);
 
@@ -169,7 +169,7 @@ router.post('/register/employer/verify-otp', verifyEmployerOtp);
  *                 format: email
  *     responses:
  *       200:
- *         description: OTP resent successfully
+ *         description: Gửi lại OTP thành công
  *       429:
  *         description: Too many requests, wait cooldown time
  */
@@ -232,7 +232,7 @@ router.post('/refresh', refreshToken);
  *     tags: [Authentication]
  *     responses:
  *       200:
- *         description: Logged out successfully
+ *         description: Đăng xuất thành công
  */
 router.post('/logout', logout);
 

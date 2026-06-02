@@ -8,7 +8,7 @@
     process.env.MAIL_FROM_NAME;
 
   if (!hasSmtpConfig) {
-    throw new Error('Missing mail config (MAIL_HOST/MAIL_PORT/MAIL_USERNAME/MAIL_PASSWORD/MAIL_FROM_NAME/MAIL_FROM_ADDRESS)');
+    throw new Error('Thiếu cấu hình gửi email');
   }
 
   const nodemailerModule = await import('nodemailer');

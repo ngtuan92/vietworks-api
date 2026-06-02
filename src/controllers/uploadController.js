@@ -1,4 +1,4 @@
-// controllers/uploadController.js
+﻿// controllers/uploadController.js
 import { uploadBufferToCloudinary } from '../utils/cloudinary.js';
 
 export const uploadCompanyImage = async (req, res) => {
@@ -6,7 +6,7 @@ export const uploadCompanyImage = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'No image file uploaded'
+        message: 'Chưa tải lên file ảnh'
       });
     }
 
@@ -17,7 +17,7 @@ export const uploadCompanyImage = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Image uploaded successfully',
+      message: 'Tải ảnh lên thành công',
       data: {
         fileUrl: result.secure_url,
         publicId: result.public_id,
@@ -29,8 +29,8 @@ export const uploadCompanyImage = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Upload image failed',
-      error: error.message
+      message: 'Tải ảnh lên thất bại',
+      error: 'Lỗi máy chủ'
     });
   }
 };

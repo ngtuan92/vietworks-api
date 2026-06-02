@@ -12,14 +12,14 @@ export const createMyCompanyLocation = async (req, res) => {
     if (!employerProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Employer profile not found'
+        message: 'Không tìm thấy hồ sơ nhà tuyển dụng'
       });
     }
 
     if (!employerProfile.companyId) {
       return res.status(400).json({
         success: false,
-        message: 'Employer has no company'
+        message: 'Nhà tuyển dụng chưa có công ty'
       });
     }
 
@@ -37,21 +37,21 @@ export const createMyCompanyLocation = async (req, res) => {
     if (!name || !addressLine || !province) {
       return res.status(400).json({
         success: false,
-        message: 'Name, address line and province are required'
+        message: 'Tên địa điểm, địa chỉ chi tiết và tỉnh/thành phố là bắt buộc'
       });
     }
 
     if (latitude !== undefined && latitude !== null && (latitude < -90 || latitude > 90)) {
       return res.status(400).json({
         success: false,
-        message: 'Latitude must be between -90 and 90'
+        message: 'Vĩ độ phải nằm trong khoảng -90 đến 90'
       });
     }
 
     if (longitude !== undefined && longitude !== null && (longitude < -180 || longitude > 180)) {
       return res.status(400).json({
         success: false,
-        message: 'Longitude must be between -180 and 180'
+        message: 'Kinh độ phải nằm trong khoảng -180 đến 180'
       });
     }
 
@@ -76,14 +76,14 @@ export const createMyCompanyLocation = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Company location created successfully',
+      message: 'Tạo địa điểm công ty thành công',
       data: location
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };
@@ -98,14 +98,14 @@ export const getMyCompanyLocations = async (req, res) => {
     if (!employerProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Employer profile not found'
+        message: 'Không tìm thấy hồ sơ nhà tuyển dụng'
       });
     }
 
     if (!employerProfile.companyId) {
       return res.status(400).json({
         success: false,
-        message: 'Employer has no company'
+        message: 'Nhà tuyển dụng chưa có công ty'
       });
     }
 
@@ -124,8 +124,8 @@ export const getMyCompanyLocations = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Lỗi máy chủ',
+      error: 'Lỗi máy chủ'
     });
   }
 };

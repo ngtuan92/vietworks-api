@@ -34,7 +34,7 @@ export const getAllUsers = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -44,12 +44,12 @@ export const getUserById = async (req, res) => {
 
     const user = await User.findById(id).select('-passwordHash');
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -60,11 +60,11 @@ export const banUser = async (req, res) => {
 
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
     if (user.role === 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Cannot ban admin users' });
+      return res.status(403).json({ success: false, message: 'Không thể khóa tài khoản quản trị viên' });
     }
 
     user.accountStatus = AccountStatus.BANNED;
@@ -75,7 +75,7 @@ export const banUser = async (req, res) => {
     await user.save();
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -85,7 +85,7 @@ export const unbanUser = async (req, res) => {
 
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
     user.accountStatus = AccountStatus.ACTIVE;
@@ -96,6 +96,6 @@ export const unbanUser = async (req, res) => {
     await user.save();
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };

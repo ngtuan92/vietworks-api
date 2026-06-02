@@ -1,4 +1,4 @@
-import Job from '../models/jobModels.js';
+﻿import Job from '../models/jobModels.js';
 import { Cv, UploadedCv } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
 import { JobStatus } from '../enums/jobEnums.js';
@@ -14,28 +14,28 @@ export const getApplyOptions = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
     if (job.status !== JobStatus.PUBLISHED) {
       return res.status(400).json({
         success: false,
-        message: 'Job is not available for application'
+        message: 'Việc làm hiện không thể ứng tuyển'
       });
     }
 
     if (new Date(job.deadline) < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'Job deadline has passed'
+        message: 'Việc làm đã hết hạn nộp hồ sơ'
       });
     }
 
     if ([JobStatus.EXPIRED, JobStatus.CLOSED, JobStatus.BANNED, JobStatus.REJECTED].includes(job.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Job is no longer accepting applications'
+        message: 'Việc làm không còn nhận hồ sơ ứng tuyển'
       });
     }
 
@@ -79,8 +79,8 @@ export const getApplyOptions = async (req, res) => {
     const requireLocationSelection = workLocations.length >= 2;
 
     const personalDataAgreement = {
-      text: 'Tôi đã đọc và đồng ý với Thoả thuận sử dụng dữ liệu cá nhân của Nhà tuyển dụng. Dữ liệu cá nhân của tôi sẽ được xử lý theo chính sách bảo mật của nền tảng.',
-      checkboxLabel: 'Tôi đã đọc và đồng ý với Thoả thuận sử dụng dữ liệu cá nhân',
+      text: 'Tôi đã đọc và đồng ý với Thỏa thuận sử dụng dữ liệu cá nhân của Nhà tuyển dụng. Dữ liệu cá nhân của tôi sẽ được xử lý theo chính sách bảo mật của nền tảng.',
+      checkboxLabel: 'Tôi đã đọc và đồng ý với Thỏa thuận sử dụng dữ liệu cá nhân',
       required: true
     };
 
@@ -90,7 +90,7 @@ export const getApplyOptions = async (req, res) => {
         job: {
           id: job._id,
           title: job.title,
-          companyName: job.companyId?.name || 'Unknown Company',
+          companyName: job.companyId?.name || 'Công ty chưa xác định',
           companyAvatar: job.companyId?.avatarUrl || null,
           isVerified: job.companyId?.verificationStatus === 'VERIFIED',
           deadline: job.deadline,
@@ -105,7 +105,7 @@ export const getApplyOptions = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -134,21 +134,21 @@ export const applyJob = async (req, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found'
+        message: 'Không tìm thấy việc làm'
       });
     }
 
     if (job.status !== JobStatus.PUBLISHED) {
       return res.status(400).json({
         success: false,
-        message: 'Job is not available for application'
+        message: 'Việc làm hiện không thể ứng tuyển'
       });
     }
 
     if (new Date(job.deadline) < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'Job deadline has passed'
+        message: 'Việc làm đã hết hạn nộp hồ sơ'
       });
     }
 
@@ -213,7 +213,7 @@ export const applyJob = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -242,7 +242,7 @@ export const checkDuplicateApplication = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -261,7 +261,7 @@ export const getApplyCvPreview = async (req, res) => {
     if (!cv) {
       return res.status(404).json({
         success: false,
-        message: 'CV not found or access denied'
+        message: 'Không tìm thấy CV hoặc bạn không có quyền truy cập'
       });
     }
 
@@ -275,7 +275,7 @@ export const getApplyCvPreview = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -360,7 +360,7 @@ export const getMyApplications = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
@@ -433,8 +433,10 @@ export const getApplicationStatus = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Lỗi máy chủ'
     });
   }
 };
+
+
 

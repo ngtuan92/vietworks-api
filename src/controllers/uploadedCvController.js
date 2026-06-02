@@ -38,7 +38,7 @@ export const uploadCv = async (req, res) => {
 
     res.status(201).json({ success: true, data: uploadedCv });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -53,7 +53,7 @@ export const getUserUploadedCvs = async (req, res) => {
 
     res.status(200).json({ success: true, data: uploadedCvs });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -74,7 +74,7 @@ export const getUploadedCvById = async (req, res) => {
 
     res.status(200).json({ success: true, data: uploadedCv });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -102,7 +102,7 @@ export const updateUploadedCv = async (req, res) => {
 
     res.status(200).json({ success: true, data: uploadedCv });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -135,6 +135,6 @@ export const deleteUploadedCv = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Xóa CV thành công' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };

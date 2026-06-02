@@ -35,7 +35,7 @@ export const getAllTransactions = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -48,12 +48,12 @@ export const getTransactionById = async (req, res) => {
       .populate('packageId', 'name price duration');
 
     if (!transaction) {
-      return res.status(404).json({ success: false, message: 'Transaction not found' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy giao dịch' });
     }
 
     res.status(200).json({ success: true, data: transaction });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -102,6 +102,6 @@ export const getRevenueReport = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };

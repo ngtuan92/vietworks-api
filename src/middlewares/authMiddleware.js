@@ -18,7 +18,7 @@ const blockedAccountResponse = (res, user) => res.status(403).json({
 
 export const checkAccountStatus = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
+    return res.status(401).json({ success: false, message: 'Bạn chưa đăng nhập hoặc không có quyền truy cập' });
   }
 
   if (isBlockedAccount(req.user)) {
@@ -39,7 +39,7 @@ export const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
+    return res.status(401).json({ success: false, message: 'Bạn chưa đăng nhập hoặc không có quyền truy cập' });
   }
 
   try {
@@ -47,7 +47,7 @@ export const protect = async (req, res, next) => {
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
+      return res.status(401).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
     if (isBlockedAccount(req.user)) {
@@ -56,7 +56,7 @@ export const protect = async (req, res, next) => {
 
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Token expired or invalid' });
+    return res.status(401).json({ success: false, message: 'Token đã hết hạn hoặc không hợp lệ' });
   }
 };
 
@@ -65,10 +65,9 @@ export const authorize = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `User role ${req.user.role} is not authorized to access this route`
+        message: `Vai trò ${req.user.role} không có quyền truy cập route này`
       });
     }
     next();
   };
 };
-

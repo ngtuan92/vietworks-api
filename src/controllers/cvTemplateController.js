@@ -32,7 +32,7 @@ export const createCvTemplate = async (req, res) => {
 
     res.status(201).json({ success: true, data: newTemplate });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -73,7 +73,7 @@ export const updateCvTemplate = async (req, res) => {
 
     res.status(200).json({ success: true, data: updatedTemplate });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -89,7 +89,7 @@ export const toggleCvTemplateStatus = async (req, res) => {
 
     res.status(200).json({ success: true, data: template });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -114,7 +114,7 @@ export const uploadPreviewImage = async (req, res) => {
     res.status(200).json({ success: true, data: template });
   } catch (error) {
     console.error("Upload error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -158,7 +158,7 @@ export const getAdminCvTemplates = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -177,7 +177,7 @@ export const getActiveCvTemplates = async (req, res) => {
 
     res.status(200).json({ success: true, data: templates });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -194,7 +194,7 @@ export const getCvTemplatePreview = async (req, res) => {
 
     res.status(200).json({ success: true, data: template });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -203,6 +203,6 @@ export const getCareerGroups = async (req, res) => {
     const groups = await CareerGroup.find({ status: CommonStatus.ACTIVE }).sort('order name');
     res.status(200).json({ success: true, data: groups });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
