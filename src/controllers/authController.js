@@ -65,6 +65,22 @@ const blockedAccountResponse = (res, user) => res.status(403).json({
   bannedAt: user?.bannedAt || null
 });
 
+const formatCurrentUser = (user) => ({
+  _id: user._id,
+  userId: user._id,
+  fullName: user.fullName,
+  displayName: user.fullName,
+  email: user.email,
+  phone: user.phone || null,
+  role: user.role,
+  status: user.accountStatus,
+  accountStatus: user.accountStatus,
+  authProvider: user.authProvider,
+  isEmailVerified: Boolean(user.emailVerification?.verifiedAt) || user.accountStatus === AccountStatus.ACTIVE,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt
+});
+
 const handleMongoWriteError = (res, error) => {
   if (error?.code === 11000) {
     const key = Object.keys(error.keyPattern || error.keyValue || {})[0] || 'field';
@@ -523,6 +539,31 @@ export const changePassword = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    }
+
+    if (isBlockedAccount(user)) {
+      return blockedAccountResponse(res, user);
+    }
+
+    const currentUser = formatCurrentUser(user);
+
+    return res.status(200).json({
+      success: true,
+      data: currentUser,
+      user: currentUser
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
 export const forgotPassword = async (req, res) => {
   try {
     const email = normalizeEmail(req.body?.email);
