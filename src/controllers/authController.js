@@ -1,4 +1,4 @@
-﻿import User from '../models/userModels.js';
+import User from '../models/userModels.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -335,6 +335,7 @@ export const registerEmployer = async (req, res) => {
       await User.findByIdAndDelete(createdUserId);
     }
 
+    console.error('registerEmployer error:', error);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };

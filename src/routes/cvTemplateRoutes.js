@@ -19,10 +19,10 @@ router.get('/', getActiveCvTemplates);
 router.get('/career-groups', getCareerGroups);
 router.get('/:id/preview', getCvTemplatePreview);
 
-router.get('/admin', getAdminCvTemplates);
-router.post('/admin', createCvTemplate);
-router.put('/admin/:id', updateCvTemplate);
-router.patch('/admin/:id/status', toggleCvTemplateStatus);
-router.post('/admin/:id/preview-image', upload.single('previewImage'), uploadPreviewImage);
+router.get('/admin', protect, authorize(UserRole.ADMIN), getAdminCvTemplates);
+router.post('/admin', protect, authorize(UserRole.ADMIN), createCvTemplate);
+router.put('/admin/:id', protect, authorize(UserRole.ADMIN), updateCvTemplate);
+router.patch('/admin/:id/status', protect, authorize(UserRole.ADMIN), toggleCvTemplateStatus);
+router.post('/admin/:id/preview-image', protect, authorize(UserRole.ADMIN), upload.single('previewImage'), uploadPreviewImage);
 
 export default router;
