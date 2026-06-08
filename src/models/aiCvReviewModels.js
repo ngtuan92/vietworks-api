@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import {
   AiCvType,
-  AiFeedbackCategory,
-  AiFeedbackSeverity,
   AiJdInputType,
   AiReviewStatus
 } from '../enums/aiEnums.js';
@@ -17,17 +15,7 @@ const aiCvReviewSchema = new mongoose.Schema({
   jdText: { type: String, default: null },
   jobId: { type: objectId, ref: 'Job', default: null },
   status: { type: String, enum: Object.values(AiReviewStatus), default: AiReviewStatus.PENDING },
-  score: { type: mongoose.Schema.Types.Mixed, default: {} },
-  jdMatching: { type: mongoose.Schema.Types.Mixed, default: {} },
-  feedback: {
-    type: [{
-      category: { type: String, enum: Object.values(AiFeedbackCategory), required: true },
-      severity: { type: String, enum: Object.values(AiFeedbackSeverity), required: true },
-      message: { type: String, required: true },
-      suggestion: { type: String, required: true }
-    }],
-    default: []
-  },
+  score: { type: Number, default: 0 },
   aiProvider: { type: String, required: true },
   aiModel: { type: String, required: true },
   tokenUsage: { type: mongoose.Schema.Types.Mixed, default: null },
