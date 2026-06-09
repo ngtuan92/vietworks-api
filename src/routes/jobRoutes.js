@@ -510,7 +510,7 @@ router.get('/jobseeker/applications/:id/status', protect, getApplicationStatus);
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId', getJobById);
+router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
 
 /**
  * @swagger
