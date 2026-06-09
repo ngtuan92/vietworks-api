@@ -55,7 +55,11 @@ reviewedBy: {
 reviewNote: {
   type: String,
   default: null
-}
+},
+  applicationCount: {
+    type: Number,
+    default: 0
+  }
 }, { timestamps: true });
 
 const Job = mongoose.model('Job', jobSchema, 'jobs');

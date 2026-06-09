@@ -1,10 +1,5 @@
 import express from 'express';
-import { getCareerGroups, 
-  getCareers, 
-  getCareerPositions,
-  getSkillsByCareerGroup,
-  getJobLevels,
-  getExperienceLevels } from '../controllers/masterDataController.js';
+import * as adminCtrl from '../controllers/masterDataController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -31,7 +26,7 @@ const router = express.Router();
  *                   items:
  *                     type: object
  */
-router.get('/master-data/career-groups', getCareerGroups);
+router.get('/master-data/career-groups', adminCtrl.getCareerGroups);
 
 /**
  * @swagger
@@ -70,7 +65,7 @@ router.get('/master-data/career-groups', getCareerGroups);
  *                   items:
  *                     type: object
  */
-router.get('/master-data/careers', getCareers);
+router.get('/master-data/careers', adminCtrl.getCareers);
 
 /**
  * @swagger
@@ -106,7 +101,7 @@ router.get('/master-data/careers', getCareers);
  *                   items:
  *                     type: object
  */
-router.get('/master-data/career-positions', getCareerPositions);
+router.get('/master-data/career-positions', adminCtrl.getCareerPositions);
 
 /**
  * @swagger
@@ -137,7 +132,7 @@ router.get('/master-data/career-positions', getCareerPositions);
  *                   items:
  *                     type: object
  */
-router.get('/master-data/job-levels', getJobLevels);
+router.get('/master-data/job-levels', adminCtrl.getJobLevels);
 
 /**
  * @swagger
@@ -162,7 +157,7 @@ router.get('/master-data/job-levels', getJobLevels);
  *                   items:
  *                     type: object
  */
-router.get('/master-data/experience-levels', getExperienceLevels);
+router.get('/master-data/experience-levels', adminCtrl.getExperienceLevels);
 
 
 /**
@@ -213,5 +208,37 @@ router.get('/master-data/experience-levels', getExperienceLevels);
  *       500:
  *         description: Lỗi server
  */
-router.get('/master-data/career-groups/:careerGroupId/skills', getSkillsByCareerGroup);
+router.get('/master-data/career-groups/:careerGroupId/skills', adminCtrl.getSkillsByCareerGroup);
+
+
+router.post('/admin/master-data/career-groups', adminCtrl.createCareerGroup);
+router.put('/admin/master-data/career-groups/:id', adminCtrl.updateCareerGroup);
+router.delete('/admin/master-data/career-groups/:id', adminCtrl.deleteCareerGroup);
+
+
+router.post('/admin/master-data/careers', adminCtrl.createCareer);
+router.put('/admin/master-data/careers/:id', adminCtrl.updateCareer);
+router.delete('/admin/master-data/careers/:id', adminCtrl.deleteCareer);
+
+
+router.post('/admin/master-data/career-positions', adminCtrl.createCareerPosition);
+router.put('/admin/master-data/career-positions/:id', adminCtrl.updateCareerPosition);
+router.delete('/admin/master-data/career-positions/:id', adminCtrl.deleteCareerPosition);
+
+
+router.post('/admin/master-data/job-levels', adminCtrl.createJobLevel);
+router.put('/admin/master-data/job-levels/:id', adminCtrl.updateJobLevel);
+router.delete('/admin/master-data/job-levels/:id', adminCtrl.deleteJobLevel);
+
+
+
+router.post('/admin/master-data/skills', adminCtrl.createSkill);
+router.put('/admin/master-data/skills/:id', adminCtrl.updateSkill);
+router.delete('/admin/master-data/skills/:id', adminCtrl.deleteSkill);
+
+
+
+router.post('/admin/master-data/experience-levels', adminCtrl.createExperienceLevel);
+router.put('/admin/master-data/experience-levels/:id', adminCtrl.updateExperienceLevel);
+router.delete('/admin/master-data/experience-levels/:id', adminCtrl.deleteExperienceLevel);
 export default router;
