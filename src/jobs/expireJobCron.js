@@ -1,25 +1,26 @@
-import cron from 'node-cron';
-import Job from '../models/Job.js'; // Đường dẫn tới Model Job của bạn
+﻿import cron from 'node-cron';
+import { Job } from '../models/index.js';
+import { JobStatus } from '../enums/jobEnums.js';
 
-// Lên lịch chạy vào lúc 00:00 mỗi đêm
+// Chạy lúc 00:00 mỗi ngày để tự động đóng các tin tuyển dụng quá hạn.
 cron.schedule('0 0 * * *', async () => {
-  console.log('=== [CRON] Bắt đầu quét và xử lý các bài đăng quá hạn deadline ===');
-  try {
-    const today = new Date();
+  console.log('=== [CRON] Bắt đầu quét các tin tuyển dụng quá hạn ===');
 
-    // Tìm tất cả các tin đang mở (PUBLISHED) nhưng có deadline nhỏ hơn thời gian hiện tại
+  try {
+    const now = new Date();
+
     const result = await Job.updateMany(
       {
-        status: 'PUBLISHED', // hoặc JobStatus.PUBLISHED nếu bạn dùng enum
-        deadline: { $lt: today }
+        status: JobStatus.PUBLISHED,
+        deadline: { $lt: now }
       },
       {
-        $set: { status: 'EXPIRED' } // Chuyển trạng thái sang Hết hạn (Đảm bảo model có status này)
+        $set: { status: JobStatus.EXPIRED }
       }
     );
 
-    console.log(`=== [CRON] Thành công! Đã tự động chuyển đổi ${result.modifiedCount} tin tuyển dụng sang trạng thái EXPIRED. ===`);
+    console.log(`=== [CRON] Đã chuyển ${result.modifiedCount} tin tuyển dụng sang trạng thái EXPIRED ===`);
   } catch (error) {
-    console.error('=== [CRON] Lỗi trong quá trình quét gia hạn:', error.message);
+    console.error('=== [CRON] Lỗi khi xử lý tin tuyển dụng quá hạn:', error.message);
   }
 });
