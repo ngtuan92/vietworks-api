@@ -65,9 +65,10 @@ app.use('/api', invoiceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cvs', cvRoutes);
 app.use('/api/jobseeker/cvs', uploadedCvRoutes);
-app.use('/api/ai-cv-reviews', aiCvReviewRoutes);
 app.use('/api', jobAdminRoutes);
 app.use('/api', uploadRoutes);
+
+app.use('/api/ai-cv-reviews', aiCvReviewRoutes);
 app.use('/api', adminCompanyVerificationRoutes);
 app.use('/api', jobseekerProfileRoutes);
 app.use((err, req, res, next) => {
