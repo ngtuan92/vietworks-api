@@ -79,7 +79,8 @@ export const createJob = async (req, res) => {
       workingTime,
       applyInstruction,
       deadline,
-      isUrgent
+      isUrgent,
+      applicationCount
     } = req.body;
 
     // Validation
@@ -157,6 +158,7 @@ export const createJob = async (req, res) => {
       applyInstruction,
       deadline: new Date(deadline),
       isUrgent: isUrgent || false,
+      applicationCount: applicationCount || 0,
       status: JobStatus.DRAFT
     });
 
@@ -573,6 +575,8 @@ export const getJobById = async (req, res) => {
       });
     }
 
+    const isOwner = req.user && job.createdBy?._id && job.createdBy._id.toString() === req.user.id;
+
     // Check if job is not public - only creator can view
     if (job.status !== JobStatus.PUBLISHED && (!req.user || job.createdBy._id.toString() !== req.user.id)) {
       return res.status(403).json({
@@ -609,7 +613,7 @@ export const getJobById = async (req, res) => {
       cannotApplyReason
     });
   } catch (error) {
-    res.status(500).json({
+console.error("======= CHÍNH LÀ NÓ! LỖI TẠI ĐÂY: =======", error);    res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ'
     });
