@@ -9,6 +9,51 @@ import Career from '../models/careerModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
 import JobLevel from '../models/jobLevelModels.js';
 import ExperienceLevel from '../models/experienceLevelModels.js';
+import { CompanyVerificationStatus,CommonStatus } from '../enums/masterDataEnums.js';
+import CompanyLocation from '../models/companyLocationModels.js';
+
+const ensureCompanyVerifiedForEmployer = async (userId) => {
+  const employerProfile = await EmployerProfile.findOne({ userId }).select('companyId');
+
+  if (!employerProfile) {
+    return {
+      ok: false,
+      statusCode: 404,
+      message: 'Employer profile not found'
+    };
+  }
+
+  if (!employerProfile.companyId) {
+    return {
+      ok: false,
+      statusCode: 400,
+      message: 'Employer must have a company'
+    };
+  }
+
+  const company = await Company.findById(employerProfile.companyId).select('verificationStatus');
+
+  if (!company) {
+    return {
+      ok: false,
+      statusCode: 404,
+      message: 'Company not found'
+    };
+  }
+
+  if (company.verificationStatus !== CompanyVerificationStatus.VERIFIED) {
+    return {
+      ok: false,
+      statusCode: 403,
+      message: 'Company must be verified before submitting jobs'
+    };
+  }
+
+  return {
+    ok: true,
+    companyId: employerProfile.companyId
+  };
+};
 /**
  * @desc Create a new job (draft status)
  * @param {Object} req - Express request object
@@ -83,6 +128,14 @@ export const createJob = async (req, res) => {
       });
     }
 
+
+    if (company.verificationStatus !== CompanyVerificationStatus.VERIFIED) {
+  return res.status(403).json({
+    success: false,
+    message: 'Company must be verified before creating jobs'
+  });
+}
+
     // Create job
     const newJob = new Job({
       companyId: employerProfile.companyId,
@@ -135,6 +188,7 @@ export const createJob = async (req, res) => {
  * @access Private (Employer)
  */
 export const submitJobForReview = async (req, res) => {
+  
   try {
     const userId = req.user.id;
     const { jobId } = req.params;
@@ -170,6 +224,15 @@ export const submitJobForReview = async (req, res) => {
         message: `Only DRAFT jobs can be submitted for review. Current status: ${job.status}`
       });
     }
+      const companyCheck = await ensureCompanyVerifiedForEmployer(userId);
+
+
+    if (!companyCheck.ok) {
+  return res.status(companyCheck.statusCode).json({
+    success: false,
+    message: companyCheck.message
+  });
+}
 
     // Cập nhật status
     job.status = JobStatus.PENDING_APPROVAL;
@@ -688,4 +751,254 @@ export const closeJob = async (req, res) => {
 };
 
 
+
+
+const toObjectId = (value) => {
+  if (!value || !mongoose.Types.ObjectId.isValid(value)) return null;
+  return new mongoose.Types.ObjectId(value);
+};
+
+export const getPublicJobs = async (req, res) => {
+  try {
+    const {
+      keyword = '',
+      location = '',
+      careerGroupId,
+      careerId,
+      experienceLevelId,
+      jobLevelId,
+      salaryMin,
+      salaryMax,
+      saturdayPolicy,
+      page = 1,
+      limit = 12,
+      sortBy = 'publishedAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const now = new Date();
+
+    const filter = {
+      status: JobStatus.PUBLISHED,
+      deadline: { $gte: now },
+      $or: [
+        { bannedReason: null },
+        { bannedReason: { $exists: false } }
+      ]
+    };
+
+    if (keyword.trim()) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { title: { $regex: keyword.trim(), $options: 'i' } },
+          { description: { $regex: keyword.trim(), $options: 'i' } },
+          { requirements: { $regex: keyword.trim(), $options: 'i' } },
+          { benefits: { $regex: keyword.trim(), $options: 'i' } }
+        ]
+      });
+    }
+
+    if (location.trim()) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { 'workLocations.provinceName': { $regex: location.trim(), $options: 'i' } },
+          { 'workLocations.districtName': { $regex: location.trim(), $options: 'i' } },
+          { 'workLocations.wardName': { $regex: location.trim(), $options: 'i' } },
+          { 'workLocations.address': { $regex: location.trim(), $options: 'i' } }
+        ]
+      });
+    }
+
+    const careerGroupObjectId = toObjectId(careerGroupId);
+    if (careerGroupObjectId) filter.careerGroupId = careerGroupObjectId;
+
+    const careerObjectId = toObjectId(careerId);
+    if (careerObjectId) filter.careerId = careerObjectId;
+
+    const experienceObjectId = toObjectId(experienceLevelId);
+    if (experienceObjectId) filter.experienceLevelId = experienceObjectId;
+
+    const jobLevelObjectId = toObjectId(jobLevelId);
+    if (jobLevelObjectId) filter.jobLevelId = jobLevelObjectId;
+
+    if (saturdayPolicy) {
+      filter.saturdayPolicy = saturdayPolicy;
+    }
+
+    const minSalary = salaryMin ? Number(salaryMin) : null;
+    const maxSalary = salaryMax ? Number(salaryMax) : null;
+
+    if (minSalary !== null || maxSalary !== null) {
+      filter['salary.type'] = { $ne: 'NEGOTIABLE' };
+
+      if (minSalary !== null && maxSalary !== null) {
+        filter.$and = filter.$and || [];
+        filter.$and.push({
+          $or: [
+            {
+              'salary.minMillion': { $lte: maxSalary },
+              'salary.maxMillion': { $gte: minSalary }
+            },
+            {
+              'salary.minMillion': { $gte: minSalary, $lte: maxSalary },
+              'salary.maxMillion': null
+            },
+            {
+              'salary.minMillion': null,
+              'salary.maxMillion': { $gte: minSalary, $lte: maxSalary }
+            }
+          ]
+        });
+      } else if (minSalary !== null) {
+        filter.$and = filter.$and || [];
+        filter.$and.push({
+          $or: [
+            { 'salary.maxMillion': { $gte: minSalary } },
+            { 'salary.minMillion': { $gte: minSalary } }
+          ]
+        });
+      } else if (maxSalary !== null) {
+        filter.$and = filter.$and || [];
+        filter.$and.push({
+          $or: [
+            { 'salary.minMillion': { $lte: maxSalary } },
+            { 'salary.maxMillion': { $lte: maxSalary } }
+          ]
+        });
+      }
+    }
+
+    const pageNumber = Math.max(Number(page) || 1, 1);
+    const limitNumber = Math.min(Math.max(Number(limit) || 12, 1), 50);
+
+    const allowedSortFields = ['publishedAt', 'createdAt', 'deadline', 'salary.minMillion'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'publishedAt';
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
+    const [jobs, total] = await Promise.all([
+      Job.find(filter)
+        .populate('companyId', 'name avatarUrl coverUrl')
+        .populate('careerGroupId', 'name')
+        .populate('careerId', 'name')
+        .populate('careerPositionId', 'name')
+        .populate('jobLevelId', 'name')
+        .populate('experienceLevelId', 'name')
+        .populate('skills', 'name')
+        .sort({
+          'premium.isActive': -1,
+          isUrgent: -1,
+          [sortField]: sortDirection,
+          createdAt: -1
+        })
+        .skip((pageNumber - 1) * limitNumber)
+        .limit(limitNumber)
+        .lean(),
+      Job.countDocuments(filter)
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: jobs,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        pages: Math.ceil(total / limitNumber)
+      },
+      filters: {
+        keyword,
+        location,
+        careerGroupId,
+        careerId,
+        experienceLevelId,
+        jobLevelId,
+        salaryMin,
+        salaryMax,
+        saturdayPolicy,
+        sortBy: sortField,
+        sortOrder
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+
+
+
+export const getPublicJobDetail = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid job ID'
+      });
+    }
+
+    const today = new Date();
+
+    const job = await Job.findOne({
+      _id: jobId,
+      status: JobStatus.PUBLISHED,
+      deadline: { $gte: today },
+      $or: [
+        { bannedReason: null },
+        { bannedReason: '' },
+        { bannedReason: { $exists: false } }
+      ]
+    })
+      .populate({
+        path: 'companyId',
+        select: 'name website industryId sizeId avatarUrl coverUrl description verificationStatus',
+        populate: [
+          { path: 'industryId', select: 'name slug' },
+          { path: 'sizeId', select: 'code name minEmployees maxEmployees' }
+        ]
+      })
+      .populate('careerGroupId', 'name slug')
+      .populate('careerId', 'name slug')
+      .populate('careerPositionId', 'name')
+      .populate('jobLevelId', 'name')
+      .populate('experienceLevelId', 'name')
+      .populate('skills', 'name slug')
+      .lean();
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Published job not found or no longer available'
+      });
+    }
+
+    const companyLocations = await CompanyLocation.find({
+      companyId: job.companyId._id,
+      status: CommonStatus.ACTIVE
+    })
+      .select('name addressLine province district ward latitude longitude isPrimary')
+      .sort({ isPrimary: -1, createdAt: -1 })
+      .lean();
+
+    job.companyId.locations = companyLocations;
+
+    return res.status(200).json({
+      success: true,
+      data: job
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
 
