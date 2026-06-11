@@ -71,3 +71,18 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+// Shorthand: protect + must be JOBSEEKER
+export const requireJobseeker = [
+  protect,
+  (req, res, next) => {
+    if (req.user.role !== 'JOBSEEKER') {
+      return res.status(403).json({
+        success: false,
+        code: 'JOBSEEKER_ONLY',
+        message: 'Chức năng này chỉ dành cho Ứng viên (Jobseeker).',
+      });
+    }
+    next();
+  },
+];
