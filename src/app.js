@@ -43,6 +43,7 @@ import uploadedCvRoutes from './routes/uploadedCvRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
 import adminCompanyVerificationRoutes from './routes/adminCompanyVerificationRoutes.js';
 import addressRoutes from './routes/addressRoutes.js';
+import jobseekerProfileRoutes from './routes/jobseekerProfileRoutes.js';
 // Public & Static Routes
 app.use('/api', addressRoutes);
 
@@ -66,6 +67,7 @@ app.use('/api/jobseeker/cvs', uploadedCvRoutes);
 app.use('/api', jobAdminRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api', adminCompanyVerificationRoutes);
+app.use('/api', jobseekerProfileRoutes);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
