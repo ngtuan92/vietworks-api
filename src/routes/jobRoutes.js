@@ -10,7 +10,8 @@ import {
   submitJobForReview,
   closeJob,
   getPublicJobs,
-  getPublicJobDetail
+  getPublicJobDetail,
+  getSearchSuggestions
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { getApplyOptions } from '../controllers/applyController.js';
@@ -100,6 +101,53 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
+/**
+ * @swagger
+ * /api/jobs/search-suggestions:
+ *   get:
+ *     summary: Gợi ý từ khóa tìm kiếm
+ *     description: |
+ *       - Không có keyword: trả top từ khóa phổ biến nhất từ job đang tuyển.
+ *       - Có keyword: autocomplete từ title job, tên career, tên career position.
+ *     tags:
+ *       - Public Jobs
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: Từ khóa cần gợi ý (để trống để lấy từ khóa phổ biến)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 20
+ *     responses:
+ *       200:
+ *         description: Danh sách gợi ý từ khóa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       keyword:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                         enum: [popular, job_title, career, position]
+ *                       count:
+ *                         type: integer
+ */
+router.get('/jobs/search-suggestions', getSearchSuggestions);
+
 router.get('/jobs/public', getPublicJobs);
 
 router.get('/jobs/public/:jobId', protect,authorize('JOBSEEKER'), getPublicJobDetail);
