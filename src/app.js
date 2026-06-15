@@ -46,6 +46,7 @@ import adminCompanyVerificationRoutes from './routes/adminCompanyVerificationRou
 import addressRoutes from './routes/addressRoutes.js';
 import jobseekerProfileRoutes from './routes/jobseekerProfileRoutes.js';
 import jobseekerRoutes from './routes/jobseekerRoutes.js';
+import salaryRoutes from './routes/salaryRoutes.js';
 // Public & Static Routes
 app.use('/api', addressRoutes);
 
@@ -55,6 +56,11 @@ app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
 app.use('/api', companyLocationRoutes);
 app.use('/api', companyMasterData);
+// jobseekerRoutes chứa các route public (/companies, /companies/:id, /companies/:id/jobs)
+// nên phải mount TRƯỚC các router dùng router.use(protect) (packageRoutes, adminRoutes...)
+// để khách vãng lai không bị chặn 401.
+app.use('/api', jobseekerRoutes);
+app.use('/api', salaryRoutes);
 
 // Protected & Specific Routes
 app.use('/api', employerAccountRoutes);
@@ -72,7 +78,6 @@ app.use('/api', uploadRoutes);
 app.use('/api/ai-cv-reviews', aiCvReviewRoutes);
 app.use('/api', adminCompanyVerificationRoutes);
 app.use('/api', jobseekerProfileRoutes);
-app.use('/api', jobseekerRoutes);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({

@@ -92,6 +92,35 @@ router.get('/companies/:companyId', getPublicCompanyDetail);
  */
 router.get('/companies/:companyId/jobs', getCompanyOpenJobs);
 
+/**
+ * @swagger
+ * /api/companies/{companyId}/jobs/search:
+ *   get:
+ *     summary: Tìm kiếm job trong trang chi tiết công ty theo keyword hoặc địa điểm
+ *     tags: [Companies]
+ *     parameters:
+ *       - in: path
+ *         name: companyId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: keyword
+ *         schema: { type: string }
+ *       - in: query
+ *         name: location
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *     responses:
+ *       200:
+ *         description: Kết quả tìm kiếm job của công ty
+ */
+router.get('/companies/:companyId/jobs/search', getCompanyOpenJobs);
+
 // ─── JOBSEEKER (cần auth + role JOBSEEKER) ─────
 
 /**

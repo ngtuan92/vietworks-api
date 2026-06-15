@@ -20,6 +20,7 @@ import { getApplyCvPreview } from '../controllers/applyController.js';
 import { checkDuplicateApplication } from '../controllers/applyController.js';
 import { getMyApplications } from '../controllers/applyController.js';
 import { getApplicationStatus } from '../controllers/applyController.js';
+import { getSimilarAppliedJobs } from '../controllers/applyController.js';
 
 
 const router = express.Router();
@@ -150,7 +151,7 @@ router.get('/jobs/search-suggestions', getSearchSuggestions);
 
 router.get('/jobs/public', getPublicJobs);
 
-router.get('/jobs/public/:jobId', protect,authorize('JOBSEEKER'), getPublicJobDetail);
+router.get('/jobs/public/:jobId', getPublicJobDetail);
 
 /**
  * @swagger
@@ -519,6 +520,26 @@ router.get('/jobs/:jobId/apply/cv-preview/:cvId', protect, getApplyCvPreview);
  *         description: Danh sách applications của ứng viên
  */
 router.get('/jobseeker/applications', protect, getMyApplications);
+
+/**
+ * @swagger
+ * /api/jobseeker/applications/similar:
+ *   get:
+ *     summary: Gợi ý việc làm tương tự dựa trên job đã ứng tuyển
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 6
+ *     responses:
+ *       200:
+ *         description: Danh sách việc làm tương tự
+ */
+router.get('/jobseeker/applications/similar', protect, getSimilarAppliedJobs);
 
 /**
  * @swagger
