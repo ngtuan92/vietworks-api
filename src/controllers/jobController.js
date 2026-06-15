@@ -91,10 +91,10 @@ export const createJob = async (req, res) => {
       });
     }
 
-    if (!description || !requirements || !benefits || !workingTime || !applyInstruction) {
+    if (!description || !requirements || !benefits || !workingTime || !applyInstruction || !applicationCount) {
       return res.status(400).json({
         success: false,
-        message: 'Thiếu thông tin bắt buộc: mô tả, yêu cầu, quyền lợi, thời gian làm việc và hướng dẫn ứng tuyển'
+        message: 'Thiếu thông tin bắt buộc: mô tả, yêu cầu, quyền lợi, thời gian làm việc, hướng dẫn ứng tuyển và số lượng ứng tuyển'
       });
     }
 
@@ -158,7 +158,7 @@ export const createJob = async (req, res) => {
       applyInstruction,
       deadline: new Date(deadline),
       isUrgent: isUrgent || false,
-      applicationCount: applicationCount || 0,
+      applicationCount: applicationCount ? Number(applicationCount) : 0,
       status: JobStatus.DRAFT
     });
 

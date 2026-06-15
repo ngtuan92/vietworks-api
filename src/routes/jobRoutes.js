@@ -102,7 +102,7 @@ const router = express.Router();
  */
 router.get('/jobs/public', getPublicJobs);
 
-router.get('/jobs/public/:jobId', protect,authorize('JOBSEEKER'), getPublicJobDetail);
+router.get('/jobs/public/:jobId',protect, getPublicJobDetail);
 
 /**
  * @swagger
