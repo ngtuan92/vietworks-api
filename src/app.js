@@ -47,6 +47,8 @@ import addressRoutes from './routes/addressRoutes.js';
 import jobseekerProfileRoutes from './routes/jobseekerProfileRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import employerAtsRoutes from './routes/employerAtsRoutes.js';
+import jobseekerRoutes from './routes/jobseekerRoutes.js';
+import salaryRoutes from './routes/salaryRoutes.js';
 // Public & Static Routes
 app.use('/api', addressRoutes);
 
@@ -56,6 +58,11 @@ app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
 app.use('/api', companyLocationRoutes);
 app.use('/api', companyMasterData);
+// jobseekerRoutes chứa các route public (/companies, /companies/:id, /companies/:id/jobs)
+// nên phải mount TRƯỚC các router dùng router.use(protect) (packageRoutes, adminRoutes...)
+// để khách vãng lai không bị chặn 401.
+app.use('/api', jobseekerRoutes);
+app.use('/api', salaryRoutes);
 
 // Protected & Specific Routes
 app.use('/api', employerAccountRoutes);
