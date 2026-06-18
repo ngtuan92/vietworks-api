@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -45,6 +45,8 @@ import aiCvReviewRoutes from './routes/aiCvReviewRoutes.js';
 import adminCompanyVerificationRoutes from './routes/adminCompanyVerificationRoutes.js';
 import addressRoutes from './routes/addressRoutes.js';
 import jobseekerProfileRoutes from './routes/jobseekerProfileRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import employerAtsRoutes from './routes/employerAtsRoutes.js';
 // Public & Static Routes
 app.use('/api', addressRoutes);
 
@@ -71,6 +73,8 @@ app.use('/api', uploadRoutes);
 app.use('/api/ai-cv-reviews', aiCvReviewRoutes);
 app.use('/api', adminCompanyVerificationRoutes);
 app.use('/api', jobseekerProfileRoutes);
+app.use('/api', notificationRoutes);
+app.use('/api', employerAtsRoutes);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
@@ -80,3 +84,4 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
+
