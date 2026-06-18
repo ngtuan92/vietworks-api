@@ -151,7 +151,7 @@ router.get('/jobs/search-suggestions', getSearchSuggestions);
 
 router.get('/jobs/public', getPublicJobs);
 
-router.get('/jobs/public/:jobId', getPublicJobDetail);
+router.get('/jobs/public/:jobId', protect, getPublicJobDetail);
 
 /**
  * @swagger
@@ -579,7 +579,7 @@ router.get('/jobseeker/applications/:id/status', protect, getApplicationStatus);
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
+router.get('/jobs/:jobId', protect, authorize('EMPLOYER'), getJobById);
 
 /**
  * @swagger
