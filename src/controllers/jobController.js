@@ -1,6 +1,6 @@
 ﻿import Job from '../models/jobModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
-import CareerGroup from '../models/careerGroupModels.js'; 
+import CareerGroup from '../models/careerGroupModels.js';
 import Company from '../models/companyModels.js';
 import { JobStatus } from '../enums/jobEnums.js';
 import mongoose from 'mongoose';
@@ -9,7 +9,7 @@ import Career from '../models/careerModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
 import JobLevel from '../models/jobLevelModels.js';
 import ExperienceLevel from '../models/experienceLevelModels.js';
-import { CompanyVerificationStatus,CommonStatus } from '../enums/masterDataEnums.js';
+import { CompanyVerificationStatus, CommonStatus } from '../enums/masterDataEnums.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 
 const ensureCompanyVerifiedForEmployer = async (userId) => {
@@ -936,6 +936,91 @@ export const getPublicJobs = async (req, res) => {
 
 
 
+
+/**
+ * @desc Gợi ý từ khóa tìm kiếm
+ * - Có keyword: autocomplete từ title job, tên career, tên career position
+ * - Không có keyword: top từ khóa phổ biến từ job PUBLISHED
+ * @route GET /jobs/search-suggestions
+ * @access Public
+ */
+export const getSearchSuggestions = async (req, res) => {
+  try {
+    const { keyword = '', limit = 10 } = req.query;
+    const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 20);
+    const now = new Date();
+    const publishedFilter = {
+      status: JobStatus.PUBLISHED,
+      deadline: { $gte: now },
+      $or: [{ bannedReason: null }, { bannedReason: { $exists: false } }]
+    };
+
+    if (!keyword.trim()) {
+      // Không có keyword → trả top từ khóa phổ biến nhất từ title job PUBLISHED
+      const popular = await Job.aggregate([
+        { $match: publishedFilter },
+        { $group: { _id: '$title', count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+        { $limit: limitNum },
+        { $project: { _id: 0, keyword: '$_id', count: 1, type: { $literal: 'popular' } } }
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        data: popular
+      });
+    }
+
+    const kw = keyword.trim();
+    const regex = { $regex: kw, $options: 'i' };
+
+    // Chạy song song: tìm trong job title, career name, career position name
+    const [jobTitles, careers, positions] = await Promise.all([
+      Job.aggregate([
+        { $match: { ...publishedFilter, title: regex } },
+        { $group: { _id: '$title', count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+        { $limit: limitNum },
+        { $project: { _id: 0, keyword: '$_id', count: 1, type: { $literal: 'job_title' } } }
+      ]),
+      Career.find({ name: regex, status: CommonStatus.ACTIVE })
+        .select('name')
+        .limit(limitNum)
+        .lean(),
+      CareerPosition.find({ name: regex, status: CommonStatus.ACTIVE })
+        .select('name')
+        .limit(limitNum)
+        .lean()
+    ]);
+
+    const careerSuggestions = careers.map(c => ({ keyword: c.name, type: 'career' }));
+    const positionSuggestions = positions.map(p => ({ keyword: p.name, type: 'position' }));
+
+    // Gộp và loại trùng theo keyword (case-insensitive), ưu tiên job_title
+    const seen = new Set();
+    const results = [];
+
+    for (const item of [...jobTitles, ...careerSuggestions, ...positionSuggestions]) {
+      const key = item.keyword.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push(item);
+      }
+      if (results.length >= limitNum) break;
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
 
 export const getPublicJobDetail = async (req, res) => {
   try {
