@@ -18,7 +18,9 @@ const notificationsSchema = new mongoose.Schema({
     sentAt: { type: Date, default: null },
     failedReason: { type: String, default: null }
   },
-  metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
+  metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  deletedAt: { type: Date, default: null },
+  deletedByUserId: { type: objectId, ref: 'User', default: null }
 }, { timestamps: true });
 
 const Notification = mongoose.model('Notification', notificationsSchema, 'notifications');
