@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect } from '../middlewares/authMiddleware.js';
+import { getTransactions } from '../controllers/walletController.js';
 import { requireJobseeker } from '../middlewares/authMiddleware.js';
 import {
   getSearchHistory,
@@ -20,6 +20,9 @@ import {
 } from '../controllers/jobseekerController.js';
 
 const router = express.Router();
+
+// Lịch sử giao dịch của ứng viên (mua Boost CV, AI Premium...)
+router.get('/jobseeker/transactions', requireJobseeker, getTransactions);
 
 // ─── PUBLIC (không cần auth) ───────────────────
 /**

@@ -14,11 +14,10 @@ const paymentOrderSchema = new mongoose.Schema({
   purpose: { type: String, enum: Object.values(PaymentOrderPurpose), required: true },
   amount: { type: Number, required: true },
   currency: { type: String, enum: Object.values(Currency), default: Currency.VND },
-  provider: { type: String, enum: Object.values(PaymentProvider), default: PaymentProvider.PAYOS },
-  orderCode: { type: Number, required: true, unique: true },
-  payosPaymentLinkId: { type: String, default: null },
-  payosCheckoutUrl: { type: String, default: null },
-  payosQrCode: { type: String, default: null },
+  provider: { type: String, enum: Object.values(PaymentProvider), default: PaymentProvider.SEPAY },
+  orderCode: { type: String, required: true, unique: true },
+  sepayTransactionId: { type: String, default: null },
+  sepayReferenceCode: { type: String, default: null },
   returnUrl: { type: String, required: true },
   cancelUrl: { type: String, required: true },
   packageId: { type: objectId, ref: 'ServicePackage', default: null },
@@ -28,7 +27,7 @@ const paymentOrderSchema = new mongoose.Schema({
   paidAt: { type: Date, default: null },
   cancelledAt: { type: Date, default: null },
   expiredAt: { type: Date, required: true },
-  payosRawResponse: { type: mongoose.Schema.Types.Mixed, default: {} }
+  sepayRawResponse: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { timestamps: true });
 
 const PaymentOrder = mongoose.model('PaymentOrder', paymentOrderSchema, 'payment_orders');

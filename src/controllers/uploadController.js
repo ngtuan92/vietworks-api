@@ -1,23 +1,31 @@
 // controllers/uploadController.js
 import { uploadBufferToCloudinary } from '../utils/cloudinary.js';
 
+const isPdfFile = (file) => {
+  const fileName = (file?.originalname || '').toLowerCase();
+  const mimeType = file?.mimetype || '';
+  return mimeType === 'application/pdf' || mimeType === 'application/octet-stream' && fileName.endsWith('.pdf') || fileName.endsWith('.pdf');
+};
+
 export const uploadCompanyImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Chưa tải lên file ảnh'
+        message: 'Chưa tải lên file'
       });
     }
 
-    const result = await uploadBufferToCloudinary(
+const resourceType = isPdfFile(req.file) ? 'image' : 'auto';    
+const result = await uploadBufferToCloudinary(
       req.file.buffer,
-      'vietworks/company'
+      'vietworks/company',
+      resourceType
     );
 
     return res.status(200).json({
       success: true,
-      message: 'Tải ảnh lên thành công',
+      message: 'Tải file lên thành công',
       data: {
         fileUrl: result.secure_url,
         publicId: result.public_id,
@@ -27,10 +35,11 @@ export const uploadCompanyImage = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Upload company file failed:', error);
     return res.status(500).json({
       success: false,
-      message: 'Tải ảnh lên thất bại',
-      error: 'Lỗi máy chủ'
+      message: 'Tải file lên thất bại',
+      error: error.message || 'Lỗi máy chủ'
     });
   }
 };
@@ -40,7 +49,7 @@ export const uploadAvatarImage = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Chưa tải lên file ảnh'
+        message: 'Chưa tải lên file'
       });
     }
 
@@ -51,7 +60,7 @@ export const uploadAvatarImage = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Tải ảnh lên thành công',
+      message: 'Tải file lên thành công',
       data: {
         fileUrl: result.secure_url,
         publicId: result.public_id,
@@ -63,7 +72,7 @@ export const uploadAvatarImage = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Tải ảnh lên thất bại',
+      message: 'Tải file lên thất bại',
       error: 'Lỗi máy chủ'
     });
   }

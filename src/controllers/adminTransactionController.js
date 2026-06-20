@@ -1,14 +1,16 @@
 import Transaction from '../models/transactionModels.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/userModels.js';
+import { TransactionType } from '../enums/paymentEnums.js';
 
 export const getAllTransactions = async (req, res) => {
   try {
-    const { type, status, page = 1, limit = 20, startDate, endDate } = req.query;
+    const { type, status, userId, page = 1, limit = 20, startDate, endDate } = req.query;
 
     const filter = {};
     if (type) filter.type = type;
     if (status) filter.status = status;
+    if (userId) filter.userId = userId;
     if (startDate || endDate) {
       filter.createdAt = {};
       if (startDate) filter.createdAt.$gte = new Date(startDate);
@@ -61,7 +63,7 @@ export const getRevenueReport = async (req, res) => {
   try {
     const { startDate, endDate, groupBy = 'day' } = req.query;
 
-    const filter = { status: 'SUCCESS', type: { $in: ['DEPOSIT', 'PAYMENT'] } };
+    const filter = { status: 'SUCCESS', type: { $in: [TransactionType.WALLET_DEPOSIT, TransactionType.PACKAGE_PURCHASE] } };
     if (startDate || endDate) {
       filter.createdAt = {};
       if (startDate) filter.createdAt.$gte = new Date(startDate);

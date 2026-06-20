@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -24,15 +24,17 @@ app.get('/health', (req, res) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// ─── Route imports ───
 import authRoutes from './routes/authRoutes.js';
 import cvTemplateRoutes from './routes/cvTemplateRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import masterDataRoutes from './routes/masterDataRoutes.js';
+import addressRoutes from './routes/addressRoutes.js';
 import companyLocationRoutes from './routes/companyLocationRoutes.js';
 import companyMasterData from './routes/companyMasterDataRoutes.js';
 import employerCompanyRoutes from './routes/employerCompanyRoutes.js';
-import uploadRoutes from './routes/uploadRoutes.js';
 import employerAccountRoutes from './routes/employerAccountRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 import packageRoutes from './routes/packageRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -43,16 +45,21 @@ import uploadedCvRoutes from './routes/uploadedCvRoutes.js';
 import jobAdminRoutes from './routes/jobAdminRoutes.js';
 import aiCvReviewRoutes from './routes/aiCvReviewRoutes.js';
 import adminCompanyVerificationRoutes from './routes/adminCompanyVerificationRoutes.js';
-import addressRoutes from './routes/addressRoutes.js';
 import jobseekerProfileRoutes from './routes/jobseekerProfileRoutes.js';
+
+import jobseekerRoutes from './routes/jobseekerRoutes.js';
+import talentPoolRoutes from './routes/talentPoolRoutes.js';
+import jobseekerBoostRoutes from './routes/jobseekerBoostRoutes.js';
+import employerBoostRoutes from './routes/employerBoostRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
+
 import notificationRoutes from './routes/notificationRoutes.js';
 import employerAtsRoutes from './routes/employerAtsRoutes.js';
-import jobseekerRoutes from './routes/jobseekerRoutes.js';
 import salaryRoutes from './routes/salaryRoutes.js';
 import adminNotificationRoutes from './routes/adminNotificationRoutes.js';
-// Public & Static Routes
-app.use('/api', addressRoutes);
 
+// ─── Public & Static Routes ───
+app.use('/api', addressRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
 app.use('/api', jobRoutes);
@@ -66,7 +73,7 @@ app.use('/api', jobseekerRoutes);
 app.use('/api', salaryRoutes);
 app.use('/api', adminNotificationRoutes);
 
-// Protected & Specific Routes
+// ─── Protected & Specific Routes ───
 app.use('/api', employerAccountRoutes);
 app.use('/api', employerCompanyRoutes);
 app.use('/api', packageRoutes);
@@ -78,7 +85,10 @@ app.use('/api/cvs', cvRoutes);
 app.use('/api/jobseeker/cvs', uploadedCvRoutes);
 app.use('/api', jobAdminRoutes);
 app.use('/api', uploadRoutes);
-
+app.use('/api', talentPoolRoutes);
+app.use('/api', jobseekerBoostRoutes);
+app.use('/api', employerBoostRoutes);
+app.use('/api', systemRoutes);
 app.use('/api/ai-cv-reviews', aiCvReviewRoutes);
 app.use('/api', adminCompanyVerificationRoutes);
 app.use('/api', jobseekerProfileRoutes);
@@ -93,4 +103,5 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
+
 
