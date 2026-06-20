@@ -6,6 +6,7 @@ const cvSchema = new mongoose.Schema({
   userId: { type: objectId, ref: 'User', required: true },
   title: { type: String, required: true },
   templateId: { type: objectId, ref: 'CvTemplate', required: true },
+  previewImageUrl: { type: String, default: null },
   style: {
     fontId: { type: mongoose.Schema.Types.Mixed, default: null }, // Support either direct ID string or object
     themeColorId: { type: String, default: null }, // Support hex color strings or object ID

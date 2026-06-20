@@ -83,7 +83,7 @@ export const createCv = async (req, res) => {
 
 export const updateCv = async (req, res) => {
   try {
-    const { title, sections, style, isMain } = req.body;
+    const { title, sections, style, isMain, previewImageUrl } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
@@ -97,6 +97,7 @@ export const updateCv = async (req, res) => {
     if (title) cv.title = title;
     if (sections) cv.sections = sections;
     if (style) cv.style = { ...cv.style, ...style };
+    if (previewImageUrl !== undefined) cv.previewImageUrl = previewImageUrl;
 
     if (isMain === true) {
       await Cv.updateMany({ userId: req.user._id, _id: { $ne: cv._id } }, { isMain: false });
