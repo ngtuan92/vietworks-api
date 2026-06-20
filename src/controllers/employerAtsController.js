@@ -183,9 +183,23 @@ export const getApplicationsByJob = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy job hoặc bạn không có quyền xem' });
     }
 
-    const status = req.query.status;
+    const { status, search } = req.query;
     const query = { jobId: job._id };
-    if (status && status !== 'ALL') query.status = status;
+    
+    if (status && status !== 'ALL') {
+      query.status = status;
+    }
+
+    if (search) {
+      const users = await User.find({
+        $or: [
+          { fullName: new RegExp(search, 'i') },
+          { email: new RegExp(search, 'i') }
+        ]
+      }).select('_id');
+      const userIds = users.map(u => u._id);
+      query.jobseekerUserId = { $in: userIds };
+    }
 
     const applications = await Application.find(query)
       .populate('jobId', 'title status deadline')
@@ -352,7 +366,199 @@ export const previewEmployerApplicationCv = async (req, res) => {
     res.send(pdfBuffer);
   } catch (error) {
     console.error('previewEmployerApplicationCv error:', error.message);
-    res.status(500).json({ success: false, message: 'Kh?ng th? t?i file CV ?? xem tr??c' });
+    res.status(500).json({ success: false, message: 'Không thể tải file CV để xem trước' });
   }
 };
 
+export const approveApplication = async (req, res) => {
+  try {
+    const application = await findApplicationForEmployer(req.params.id, req.user._id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ hoặc bạn không có quyền' });
+    }
+
+    if (application.status === ApplicationStatus.REJECTED || application.status === ApplicationStatus.APPROVED) {
+      return res.status(400).json({ success: false, message: 'Hồ sơ đã được xử lý trước đó' });
+    }
+
+    const { note } = req.body;
+
+    const updated = await Application.findByIdAndUpdate(
+      application._id,
+      {
+        $set: { status: ApplicationStatus.APPROVED, approvedMessage: note },
+        $push: {
+          statusHistory: {
+            status: ApplicationStatus.APPROVED,
+            changedBy: req.user._id,
+            changedAt: new Date(),
+            note: note || 'Hồ sơ phù hợp'
+          }
+        }
+      },
+      { new: true }
+    )
+      .populate('jobId', 'title')
+      .populate('companyId', 'name avatarUrl')
+      .populate('jobseekerUserId', '_id');
+
+    const companyName = updated.companyId?.name || 'Nhà tuyển dụng';
+    const jobTitle = updated.jobId?.title || 'vị trí ứng tuyển';
+
+    await NotificationService.create({
+      receiverUserId: updated.jobseekerUserId._id,
+      typeCode: NotificationTypeCode.APPLICATION_RESULT,
+      title: 'Hồ sơ của bạn đã vượt qua vòng lọc CV!',
+      content: `Chúc mừng! Hồ sơ của bạn ứng tuyển vào vị trí ${jobTitle} tại ${companyName} đã được đánh giá phù hợp. Vui lòng chờ thông tin phỏng vấn tiếp theo.`,
+      metadata: {
+        applicationId: toId(updated),
+        jobId: toId(updated.jobId),
+        jobTitle: jobTitle,
+        companyId: toId(updated.companyId),
+        companyName: companyName,
+        companyLogo: updated.companyId?.avatarUrl,
+        status: 'APPROVED',
+        employerUserId: toId(req.user)
+      }
+    });
+
+    res.json({ success: true, message: 'Đã duyệt hồ sơ', data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi duyệt hồ sơ' });
+  }
+};
+
+export const rejectApplication = async (req, res) => {
+  try {
+    const application = await findApplicationForEmployer(req.params.id, req.user._id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ hoặc bạn không có quyền' });
+    }
+
+    if (application.status === ApplicationStatus.REJECTED) {
+      return res.status(400).json({ success: false, message: 'Hồ sơ đã bị từ chối trước đó' });
+    }
+
+    const { reason } = req.body;
+    if (!reason) {
+      return res.status(400).json({ success: false, message: 'Bắt buộc phải nhập lý do từ chối' });
+    }
+
+    const updated = await Application.findByIdAndUpdate(
+      application._id,
+      {
+        $set: { status: ApplicationStatus.REJECTED, rejectionReason: reason },
+        $push: {
+          statusHistory: {
+            status: ApplicationStatus.REJECTED,
+            changedBy: req.user._id,
+            changedAt: new Date(),
+            note: reason
+          }
+        }
+      },
+      { new: true }
+    )
+      .populate('jobId', 'title')
+      .populate('companyId', 'name avatarUrl')
+      .populate('jobseekerUserId', '_id');
+
+    const companyName = updated.companyId?.name || 'Nhà tuyển dụng';
+    const jobTitle = updated.jobId?.title || 'vị trí ứng tuyển';
+
+    await NotificationService.create({
+      receiverUserId: updated.jobseekerUserId._id,
+      typeCode: NotificationTypeCode.APPLICATION_RESULT,
+      title: 'Cập nhật kết quả ứng tuyển',
+      content: `Rất tiếc, hồ sơ của bạn ứng tuyển vào vị trí ${jobTitle} tại ${companyName} chưa phù hợp với yêu cầu hiện tại.`,
+      metadata: {
+        applicationId: toId(updated),
+        jobId: toId(updated.jobId),
+        jobTitle: jobTitle,
+        companyId: toId(updated.companyId),
+        companyName: companyName,
+        companyLogo: updated.companyId?.avatarUrl,
+        status: 'REJECTED',
+        reason: reason,
+        employerUserId: toId(req.user)
+      }
+    });
+
+    res.json({ success: true, message: 'Đã từ chối hồ sơ', data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi từ chối hồ sơ' });
+  }
+};
+
+export const createInterviewInvitation = async (req, res) => {
+  try {
+    const application = await findApplicationForEmployer(req.params.id, req.user._id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ hoặc bạn không có quyền' });
+    }
+
+    const { interviewTime, interviewType, location, contactPerson, note } = req.body;
+    if (!interviewTime || !interviewType || !location) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc (thời gian, hình thức, địa điểm)' });
+    }
+
+    const interviewInvitation = {
+      interviewTime,
+      interviewType,
+      location,
+      contactPerson,
+      note,
+      createdAt: new Date()
+    };
+
+    const updated = await Application.findByIdAndUpdate(
+      application._id,
+      {
+        $set: { 
+          status: ApplicationStatus.APPROVED,
+          interviewInvitation 
+        },
+        $push: {
+          statusHistory: {
+            status: ApplicationStatus.APPROVED,
+            changedBy: req.user._id,
+            changedAt: new Date(),
+            note: 'Gửi lời mời phỏng vấn'
+          }
+        }
+      },
+      { new: true }
+    )
+      .populate('jobId', 'title')
+      .populate('companyId', 'name avatarUrl')
+      .populate('jobseekerUserId', '_id fullName email');
+
+    const companyName = updated.companyId?.name || 'Nhà tuyển dụng';
+    const jobTitle = updated.jobId?.title || 'vị trí ứng tuyển';
+
+    await NotificationService.create({
+      receiverUserId: updated.jobseekerUserId._id,
+      typeCode: NotificationTypeCode.INTERVIEW_INVITATION,
+      title: 'Bạn nhận được lời mời phỏng vấn mới 🎉',
+      content: `${companyName} vừa gửi cho bạn một lời mời phỏng vấn cho vị trí ${jobTitle}.`,
+      metadata: {
+        applicationId: toId(updated),
+        jobId: toId(updated.jobId),
+        jobTitle: jobTitle,
+        companyId: toId(updated.companyId),
+        companyName: companyName,
+        companyLogo: updated.companyId?.avatarUrl,
+        interviewTime,
+        interviewType,
+        location,
+        contactPerson,
+        note,
+        employerUserId: toId(req.user)
+      }
+    });
+
+    res.json({ success: true, message: 'Đã gửi lời mời phỏng vấn', data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi gửi lời mời phỏng vấn' });
+  }
+};

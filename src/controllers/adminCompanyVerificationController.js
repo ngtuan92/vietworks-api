@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import { CommonStatus, CompanyVerificationStatus } from '../enums/masterDataEnums.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode } from '../enums/notificationEnums.js';
 
 export const getPendingCompanies = async (req, res) => {
   try {
@@ -142,6 +144,21 @@ export const approveCompanyVerification = async (req, res) => {
     company.rejectionReason = null;
 
     await company.save();
+
+    // Hook: Bắn thông báo cho Owner của Company
+    try {
+      if (company.ownerUserId) {
+        await NotificationService.create({
+          receiverUserId: company.ownerUserId,
+          typeCode: NotificationTypeCode.COMPANY_VERIFIED,
+          title: 'Công ty của bạn đã được xác thực',
+          content: `Chúc mừng! Công ty "${company.name}" đã được Admin phê duyệt. Bạn có thể bắt đầu đăng tin tuyển dụng.`,
+          metadata: { companyId: company._id }
+        });
+      }
+    } catch (notiError) {
+      console.error('Lỗi bắn thông báo duyệt công ty:', notiError.message);
+    }
 
     return res.status(200).json({
       success: true,

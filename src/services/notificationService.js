@@ -7,7 +7,7 @@ import {
   NotificationStatus,
   NotificationTypeCode
 } from '../enums/notificationEnums.js';
-import { sendBusinessEmail, sendCvViewedEmail } from './emailService.js';
+import { sendBusinessEmail, sendCvViewedEmail, sendRejectionEmail, sendInterviewInvitationEmail, sendMatchingJobsEmail } from './emailService.js';
 
 export const createNotification = async ({
   receiverUserId,
@@ -86,6 +86,37 @@ export const createNotification = async ({
         jobTitle: metadata.jobTitle,
         companyLogo: metadata.companyLogo,
         jobUrl: `${clientUrl}/jobs/${metadata.jobId}`,
+        notificationId: notification._id
+      });
+    } else if (typeCode === NotificationTypeCode.APPLICATION_RESULT && metadata.status === 'REJECTED') {
+      emailPromise = sendRejectionEmail({
+        receiverUserId,
+        toEmail: user.email,
+        jobseekerName: user.fullName,
+        companyName: metadata.companyName,
+        jobTitle: metadata.jobTitle,
+        reason: metadata.reason,
+        notificationId: notification._id
+      });
+    } else if (typeCode === NotificationTypeCode.INTERVIEW_INVITATION) {
+      emailPromise = sendInterviewInvitationEmail({
+        receiverUserId,
+        toEmail: user.email,
+        jobseekerName: user.fullName,
+        companyName: metadata.companyName,
+        jobTitle: metadata.jobTitle,
+        interviewTime: metadata.interviewTime,
+        interviewType: metadata.interviewType,
+        location: metadata.location,
+        note: metadata.note,
+        notificationId: notification._id
+      });
+    } else if (typeCode === NotificationTypeCode.MATCHING_JOB) {
+      emailPromise = sendMatchingJobsEmail({
+        receiverUserId,
+        toEmail: user.email,
+        jobseekerName: user.fullName,
+        jobs: metadata.jobs,
         notificationId: notification._id
       });
     } else {

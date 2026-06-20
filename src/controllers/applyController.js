@@ -1,4 +1,4 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import Job from '../models/jobModels.js';
 import { Company, Cv, UploadedCv } from '../models/index.js';
 import NotificationService from '../services/notificationService.js';
@@ -434,7 +434,39 @@ export const getSimilarAppliedJobs = async (req, res) => {
 
     return res.status(200).json({ success: true, data: jobs });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    return    res.status(500).json({ success: false, message: 'Lỗi server khi lấy gợi ý công việc' });
+  }
+};
+
+export const getInterviewInvitation = async (req, res) => {
+  try {
+    const Application = (await import('../models/applicationModels.js')).default;
+    const application = await Application.findOne({
+      _id: req.params.id,
+      jobseekerUserId: req.user._id
+    })
+      .populate('companyId', 'name avatarUrl')
+      .populate('jobId', 'title')
+      .lean();
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+    }
+
+    if (!application.interviewInvitation) {
+      return res.status(404).json({ success: false, message: 'Chưa có lời mời phỏng vấn' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        company: application.companyId,
+        job: application.jobId,
+        interviewInvitation: application.interviewInvitation
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy lời mời phỏng vấn' });
   }
 };
 
@@ -490,6 +522,7 @@ export const getApplicationStatus = async (req, res) => {
         viewedAt: application.viewedAt,
         approvedMessage: application.approvedMessage,
         rejectionReason: application.rejectionReason,
+        interviewInvitation: application.interviewInvitation,
         statusHistory: application.statusHistory || [],
         cv: cv ? {
           id: cv._id,

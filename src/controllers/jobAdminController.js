@@ -1,5 +1,7 @@
 import Job from '../models/jobModels.js'; // Thay đổi đường dẫn theo đúng cấu trúc thư mục của bạn
 import { JobStatus } from '../enums/jobEnums.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode } from '../enums/notificationEnums.js';
 
 const jobAdminController = {
   /**
@@ -121,6 +123,21 @@ const jobAdminController = {
       job.rejectedReason = null;
 
       await job.save();
+
+      // Hook: Bắn thông báo duyệt Job
+      try {
+        if (job.createdBy) {
+          await NotificationService.create({
+            receiverUserId: job.createdBy,
+            typeCode: NotificationTypeCode.JOB_APPROVED,
+            title: 'Tin tuyển dụng đã được duyệt',
+            content: `Tin tuyển dụng "${job.title}" của bạn đã được phê duyệt và hiển thị trên hệ thống.`,
+            metadata: { jobId: job._id }
+          });
+        }
+      } catch (notiError) {
+        console.error('Lỗi bắn thông báo duyệt Job:', notiError.message);
+      }
 
       return res.status(200).json({
         success: true,
