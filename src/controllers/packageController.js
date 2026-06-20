@@ -1,53 +1,84 @@
-﻿import Package from '../models/servicePackageModels.js';
+import ServicePackage from '../models/servicePackageModels.js';
+import { ServicePackageCode, ServicePackageTargetRole, ServicePackageType, ServicePackageUnit } from '../enums/paymentEnums.js';
 
 export const createPackage = async (req, res) => {
   try {
-    const { name, description, price, currency, duration, jobPostsAllowed, featuredDays, cvAccessLimit, features, sortOrder } = req.body;
+    const {
+      code, name, targetRole, packageType, price, currency,
+      durationDays, quantity, unit, benefits, description, sortOrder
+    } = req.body;
+
+    if (!code || !name || !targetRole || !packageType || !price || !unit) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: code, name, targetRole, packageType, price, unit'
+      });
+    }
 
     const packageData = {
+      code,
       name,
-      description,
+      targetRole,
+      packageType,
       price,
       currency: currency || 'VND',
-      duration,
-      jobPostsAllowed: jobPostsAllowed || 1,
-      featuredDays: featuredDays || 0,
-      cvAccessLimit: cvAccessLimit || 0,
-      features: features || [],
+      durationDays: durationDays || null,
+      quantity: quantity || 1,
+      unit,
+      benefits: benefits || {
+        jobPostsAllowed: 0,
+        featuredDays: 0,
+        cvAccessLimit: 0,
+        aiPremiumAccess: false,
+        priorityDisplay: false
+      },
+      description: description || '',
+      status: 'ACTIVE',
       sortOrder: sortOrder || 0
     };
 
-    const pkg = await Package.create(packageData);
+    const pkg = await ServicePackage.create(packageData);
     res.status(201).json({ success: true, data: pkg });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    console.error('Create package error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 export const updatePackage = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, currency, duration, jobPostsAllowed, featuredDays, cvAccessLimit, features, isActive, sortOrder } = req.body;
+    const {
+      name, targetRole, packageType, price, currency,
+      durationDays, quantity, unit, benefits, description, status, sortOrder
+    } = req.body;
 
-    const pkg = await Package.findById(id);
+    const pkg = await ServicePackage.findById(id);
     if (!pkg) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy gói dịch vụ' });
     }
 
-    if (name !== undefined) pkg.name = name;
-    if (description !== undefined) pkg.description = description;
-    if (price !== undefined) pkg.price = price;
-    if (currency !== undefined) pkg.currency = currency;
-    if (duration !== undefined) pkg.duration = duration;
-    if (jobPostsAllowed !== undefined) pkg.jobPostsAllowed = jobPostsAllowed;
-    if (featuredDays !== undefined) pkg.featuredDays = featuredDays;
-    if (cvAccessLimit !== undefined) pkg.cvAccessLimit = cvAccessLimit;
-    if (features !== undefined) pkg.features = features;
-    if (isActive !== undefined) pkg.isActive = isActive;
-    if (sortOrder !== undefined) pkg.sortOrder = sortOrder;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (targetRole !== undefined) updateData.targetRole = targetRole;
+    if (packageType !== undefined) updateData.packageType = packageType;
+    if (price !== undefined) updateData.price = price;
+    if (currency !== undefined) updateData.currency = currency;
+    if (durationDays !== undefined) updateData.durationDays = durationDays;
+    if (quantity !== undefined) updateData.quantity = quantity;
+    if (unit !== undefined) updateData.unit = unit;
+    if (benefits !== undefined) updateData.benefits = benefits;
+    if (description !== undefined) updateData.description = description;
+    if (status !== undefined) updateData.status = status;
+    if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
 
-    await pkg.save();
-    res.status(200).json({ success: true, data: pkg });
+    const updated = await ServicePackage.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
@@ -56,14 +87,18 @@ export const updatePackage = async (req, res) => {
 export const updatePackageStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
+    const { status } = req.body;
 
-    const pkg = await Package.findById(id);
+    if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ (chỉ ACTIVE hoặc INACTIVE)' });
+    }
+
+    const pkg = await ServicePackage.findById(id);
     if (!pkg) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy gói dịch vụ' });
     }
 
-    pkg.isActive = isActive;
+    pkg.status = status;
     await pkg.save();
     res.status(200).json({ success: true, data: pkg });
   } catch (error) {
@@ -73,16 +108,50 @@ export const updatePackageStatus = async (req, res) => {
 
 export const getPackages = async (req, res) => {
   try {
-    const { isActive } = req.query;
+    const { targetRole, packageType } = req.query;
 
-    const filter = {};
-    if (isActive !== undefined) {
-      filter.isActive = isActive === 'true';
+    const filter = { status: 'ACTIVE' };
+    if (targetRole) filter.targetRole = targetRole;
+    if (packageType) filter.packageType = packageType;
+
+    if (req.user?.role === 'EMPLOYER') {
+      filter.targetRole = { $in: ['EMPLOYER', 'ALL'] };
+    } else if (req.user?.role === 'JOBSEEKER') {
+      filter.targetRole = { $in: ['JOBSEEKER', 'ALL'] };
     }
 
-    const packages = await Package.find(filter).sort({ sortOrder: 1, createdAt: -1 });
+    const packages = await ServicePackage.find(filter).sort({ sortOrder: 1, createdAt: -1 });
     res.status(200).json({ success: true, data: packages });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+export const getAllPackages = async (req, res) => {
+  try {
+    const { status, targetRole, packageType } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (targetRole) filter.targetRole = targetRole;
+    if (packageType) filter.packageType = packageType;
+
+    const packages = await ServicePackage.find(filter).sort({ sortOrder: 1, createdAt: -1 });
+    res.status(200).json({ success: true, data: packages });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getPackageById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pkg = await ServicePackage.findById(id);
+    if (!pkg) {
+      return res.status(404).json({ success: false, message: 'Package not found' });
+    }
+    res.status(200).json({ success: true, data: pkg });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

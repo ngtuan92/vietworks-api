@@ -1,6 +1,7 @@
 ﻿import Transaction from '../models/transactionModels.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/userModels.js';
+import { TransactionType } from '../enums/paymentEnums.js';
 
 export const requestInvoice = async (req, res) => {
   try {
@@ -16,13 +17,17 @@ export const requestInvoice = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Giao dịch phải ở trạng thái thành công' });
     }
 
-    if (transaction.type !== 'PAYMENT') {
+    if (transaction.type !== TransactionType.PACKAGE_PURCHASE) {
       return res.status(400).json({ success: false, message: 'Chỉ giao dịch thanh toán mới có thể yêu cầu xuất hóa đơn' });
     }
 
     const existingInvoice = await Invoice.findOne({ transactionId: id });
     if (existingInvoice) {
       return res.status(400).json({ success: false, message: 'Hóa đơn đã được yêu cầu trước đó' });
+    }
+
+    if (transaction.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to request invoice for this transaction' });
     }
 
     const user = await User.findById(transaction.userId);
@@ -43,6 +48,9 @@ export const requestInvoice = async (req, res) => {
       currency: transaction.currency || 'VND',
       status: 'PENDING'
     });
+
+    transaction.invoiceRequested = true;
+    await transaction.save();
 
     res.status(201).json({ success: true, data: invoice });
   } catch (error) {
