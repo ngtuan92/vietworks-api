@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -46,11 +46,19 @@ import jobAdminRoutes from './routes/jobAdminRoutes.js';
 import aiCvReviewRoutes from './routes/aiCvReviewRoutes.js';
 import adminCompanyVerificationRoutes from './routes/adminCompanyVerificationRoutes.js';
 import jobseekerProfileRoutes from './routes/jobseekerProfileRoutes.js';
+
 import jobseekerRoutes from './routes/jobseekerRoutes.js';
 import talentPoolRoutes from './routes/talentPoolRoutes.js';
 import jobseekerBoostRoutes from './routes/jobseekerBoostRoutes.js';
 import employerBoostRoutes from './routes/employerBoostRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
+
+import notificationRoutes from './routes/notificationRoutes.js';
+import employerAtsRoutes from './routes/employerAtsRoutes.js';
+import jobseekerRoutes from './routes/jobseekerRoutes.js';
+import salaryRoutes from './routes/salaryRoutes.js';
+// Public & Static Routes
+app.use('/api', addressRoutes);
 
 // ─── Public & Static Routes ───
 app.use('/api', addressRoutes);
@@ -60,6 +68,11 @@ app.use('/api', jobRoutes);
 app.use('/api', masterDataRoutes);
 app.use('/api', companyLocationRoutes);
 app.use('/api', companyMasterData);
+// jobseekerRoutes chứa các route public (/companies, /companies/:id, /companies/:id/jobs)
+// nên phải mount TRƯỚC các router dùng router.use(protect) (packageRoutes, adminRoutes...)
+// để khách vãng lai không bị chặn 401.
+app.use('/api', jobseekerRoutes);
+app.use('/api', salaryRoutes);
 
 // ─── Protected & Specific Routes ───
 app.use('/api', employerAccountRoutes);
@@ -81,7 +94,8 @@ app.use('/api', systemRoutes);
 app.use('/api/ai-cv-reviews', aiCvReviewRoutes);
 app.use('/api', adminCompanyVerificationRoutes);
 app.use('/api', jobseekerProfileRoutes);
-
+app.use('/api', notificationRoutes);
+app.use('/api', employerAtsRoutes);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
@@ -91,3 +105,4 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
+

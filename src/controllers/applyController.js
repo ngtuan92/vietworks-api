@@ -1,7 +1,14 @@
-﻿import Job from '../models/jobModels.js';
+﻿import mongoose from 'mongoose';
+import Job from '../models/jobModels.js';
 import { Cv, UploadedCv } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
 import { JobStatus } from '../enums/jobEnums.js';
+
+const publicJobFilter = () => ({
+  status: JobStatus.PUBLISHED,
+  deadline: { $gte: new Date() },
+  $or: [{ bannedReason: null }, { bannedReason: { $exists: false } }]
+});
 
 export const getApplyOptions = async (req, res) => {
   try {
@@ -362,6 +369,47 @@ export const getMyApplications = async (req, res) => {
       success: false,
       message: 'Lỗi máy chủ'
     });
+  }
+};
+
+export const getSimilarAppliedJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { limit = 6 } = req.query;
+    const limitNum = Math.min(Number(limit) || 6, 20);
+
+    const Application = (await import('../models/applicationModels.js')).default;
+
+    // Lấy ngành nghề từ các job đã ứng tuyển
+    const applied = await Application.find({ jobseekerUserId: userId })
+      .populate('jobId', 'careerGroupId careerId')
+      .lean();
+
+    const careerGroupIds = [...new Set(applied.map((a) => a.jobId?.careerGroupId?.toString()).filter(Boolean))];
+    const careerIds = [...new Set(applied.map((a) => a.jobId?.careerId?.toString()).filter(Boolean))];
+    const appliedJobIds = applied.map((a) => a.jobId?._id).filter(Boolean);
+
+    if (!careerGroupIds.length && !careerIds.length) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    const jobs = await Job.find({
+      ...publicJobFilter(),
+      _id: { $nin: appliedJobIds },
+      $or: [
+        { careerGroupId: { $in: careerGroupIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+        { careerId: { $in: careerIds.map((id) => new mongoose.Types.ObjectId(id)) } }
+      ]
+    })
+      .populate('companyId', 'name avatarUrl')
+      .select('title salary workLocations deadline isUrgent premium companyId careerId careerGroupId')
+      .sort({ 'premium.isActive': -1, publishedAt: -1 })
+      .limit(limitNum)
+      .lean();
+
+    return res.status(200).json({ success: true, data: jobs });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 

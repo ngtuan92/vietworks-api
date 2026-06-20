@@ -10,7 +10,8 @@ import {
   submitJobForReview,
   closeJob,
   getPublicJobs,
-  getPublicJobDetail
+  getPublicJobDetail,
+  getSearchSuggestions
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { getApplyOptions } from '../controllers/applyController.js';
@@ -19,6 +20,7 @@ import { getApplyCvPreview } from '../controllers/applyController.js';
 import { checkDuplicateApplication } from '../controllers/applyController.js';
 import { getMyApplications } from '../controllers/applyController.js';
 import { getApplicationStatus } from '../controllers/applyController.js';
+import { getSimilarAppliedJobs } from '../controllers/applyController.js';
 
 
 const router = express.Router();
@@ -100,9 +102,56 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
+/**
+ * @swagger
+ * /api/jobs/search-suggestions:
+ *   get:
+ *     summary: Gợi ý từ khóa tìm kiếm
+ *     description: |
+ *       - Không có keyword: trả top từ khóa phổ biến nhất từ job đang tuyển.
+ *       - Có keyword: autocomplete từ title job, tên career, tên career position.
+ *     tags:
+ *       - Public Jobs
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: Từ khóa cần gợi ý (để trống để lấy từ khóa phổ biến)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 20
+ *     responses:
+ *       200:
+ *         description: Danh sách gợi ý từ khóa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       keyword:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                         enum: [popular, job_title, career, position]
+ *                       count:
+ *                         type: integer
+ */
+router.get('/jobs/search-suggestions', getSearchSuggestions);
+
 router.get('/jobs/public', getPublicJobs);
 
-router.get('/jobs/public/:jobId',protect, getPublicJobDetail);
+router.get('/jobs/public/:jobId', protect, getPublicJobDetail);
 
 /**
  * @swagger
@@ -474,6 +523,26 @@ router.get('/jobseeker/applications', protect, getMyApplications);
 
 /**
  * @swagger
+ * /api/jobseeker/applications/similar:
+ *   get:
+ *     summary: Gợi ý việc làm tương tự dựa trên job đã ứng tuyển
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 6
+ *     responses:
+ *       200:
+ *         description: Danh sách việc làm tương tự
+ */
+router.get('/jobseeker/applications/similar', protect, getSimilarAppliedJobs);
+
+/**
+ * @swagger
  * /api/jobseeker/applications/{id}/status:
  *   get:
  *     summary: Lấy trạng thái chi tiết của một hồ sơ đã nộp
@@ -510,7 +579,7 @@ router.get('/jobseeker/applications/:id/status', protect, getApplicationStatus);
  *       200:
  *         description: Job retrieved successfully
  */
-router.get('/jobs/:jobId',protect,authorize('EMPLOYER'), getJobById);
+router.get('/jobs/:jobId', protect, authorize('EMPLOYER'), getJobById);
 
 /**
  * @swagger
