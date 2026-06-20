@@ -1,9 +1,35 @@
 // routes/uploadRoutes.js
 import express from 'express';
+import multer from 'multer';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
 import { upload } from '../utils/cloudinary.js'
 import { uploadCompanyImage, uploadAvatarImage } from '../controllers/uploadController.js';
+
+const handleUploadError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({
+        success: false,
+        message: 'File tải lên vượt quá giới hạn 10MB.'
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'Lỗi tải file'
+    });
+  }
+
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'File không hợp lệ'
+    });
+  }
+
+  next();
+};
 
 const router = express.Router();
 
@@ -50,8 +76,12 @@ router.post(
   '/uploads/company-image',
   protect,
   authorize(UserRole.EMPLOYER),
-  upload.single('file'),
-  uploadCompanyImage
+  (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) return handleUploadError(err, req, res, next);
+      return uploadCompanyImage(req, res, next);
+    });
+  }
 );
 
 /**
@@ -87,8 +117,12 @@ router.post(
 router.post(
   '/uploads/avatar',
   protect,
-  upload.single('file'),
-  uploadAvatarImage
+  (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) return handleUploadError(err, req, res, next);
+      return uploadAvatarImage(req, res, next);
+    });
+  }
 );
 
 export default router;
