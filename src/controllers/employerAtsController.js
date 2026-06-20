@@ -1,4 +1,4 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
 import { v2 as cloudinary } from 'cloudinary';
@@ -283,7 +283,10 @@ export const markApplicationAsViewed = async (req, res) => {
         metadata: {
           applicationId: toId(updated),
           jobId: toId(updated.jobId),
+          jobTitle: jobTitle,
           companyId: toId(updated.companyId),
+          companyName: companyName,
+          companyLogo: updated.companyId?.avatarUrl,
           employerUserId: toId(req.user)
         }
       });
