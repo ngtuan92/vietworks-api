@@ -55,10 +55,7 @@ import systemRoutes from './routes/systemRoutes.js';
 
 import notificationRoutes from './routes/notificationRoutes.js';
 import employerAtsRoutes from './routes/employerAtsRoutes.js';
-import jobseekerRoutes from './routes/jobseekerRoutes.js';
 import salaryRoutes from './routes/salaryRoutes.js';
-// Public & Static Routes
-app.use('/api', addressRoutes);
 
 // ─── Public & Static Routes ───
 app.use('/api', addressRoutes);
@@ -79,7 +76,6 @@ app.use('/api', employerAccountRoutes);
 app.use('/api', employerCompanyRoutes);
 app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
-app.use('/api', jobseekerRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', invoiceRoutes);
 app.use('/api/analytics', analyticsRoutes);
