@@ -6,9 +6,7 @@ import { CommonStatus, CompanyVerificationStatus } from '../enums/masterDataEnum
 
 export const getPendingCompanies = async (req, res) => {
   try {
-    const companies = await Company.find({
-      verificationStatus: CompanyVerificationStatus.PENDING
-    })
+    const companies = await Company.find()
       .select('name taxCode email phone website industryId sizeId businessLicenseFile verificationStatus createdAt updatedAt')
       .populate('industryId', 'name slug')
       .populate('sizeId', 'code name minEmployees maxEmployees')
@@ -52,11 +50,7 @@ export const getCompanyVerificationDetail = async (req, res) => {
       });
     }
 
-    const company = await Company.findOne({
-      _id: companyId,
-      verificationStatus: CompanyVerificationStatus.PENDING
-    })
-      .select('ownerUserId name taxCode website industryId sizeId email phone avatarUrl coverUrl description businessLicenseFile verificationStatus rejectionReason verifiedBy verifiedAt followersCount createdAt updatedAt')
+const company = await Company.findById(companyId) // Dùng findById ngắn gọn hơn      .select('ownerUserId name taxCode website industryId sizeId email phone avatarUrl coverUrl description businessLicenseFile verificationStatus rejectionReason verifiedBy verifiedAt followersCount createdAt updatedAt')
       .populate('ownerUserId', 'fullName email phone')
       .populate('industryId', 'name slug')
       .populate('sizeId', 'code name minEmployees maxEmployees')

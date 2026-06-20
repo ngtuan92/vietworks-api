@@ -11,14 +11,23 @@ cloudinary.config({
 });
 
 const storage = multer.memoryStorage();
+const isAllowedUploadFile = (file) => {
+  const fileName = (file.originalname || '').toLowerCase();
+  const isPdfByMime = file.mimetype === 'application/pdf';
+  const isPdfByExtension = fileName.endsWith('.pdf');
+  const isOctetStreamPdf = file.mimetype === 'application/octet-stream' && isPdfByExtension;
+
+  return file.mimetype.startsWith('image/') || isPdfByMime || isPdfByExtension || isOctetStreamPdf;
+};
+
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (isAllowedUploadFile(file)) {
       cb(null, true);
     } else {
-      cb(new Error('Chỉ cho phép tải lên định dạng hình ảnh!'), false);
+      cb(new Error('Chỉ cho phép tải lên hình ảnh hoặc file PDF!'), false);
     }
   }
 });
