@@ -1,6 +1,8 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import Job from '../models/jobModels.js';
-import { Cv, UploadedCv } from '../models/index.js';
+import { Company, Cv, UploadedCv } from '../models/index.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode } from '../enums/notificationEnums.js';
 import { CvStatus } from '../enums/cvEnums.js';
 import { JobStatus } from '../enums/jobEnums.js';
 
@@ -206,6 +208,29 @@ export const applyJob = async (req, res) => {
       ]
     });
 
+    try {
+      const company = await Company.findById(job.companyId).select('name ownerUserId').lean();
+      const jobseekerName = req.user.fullName || req.user.email || 'Ứng viên';
+
+      if (company?.ownerUserId) {
+        await NotificationService.create({
+          receiverUserId: company.ownerUserId,
+          typeCode: NotificationTypeCode.NEW_APPLICATION,
+          title: 'Có hồ sơ ứng tuyển mới',
+          content: `${jobseekerName} vừa ứng tuyển vào vị trí ${job.title}.`,
+          metadata: {
+            applicationId: application._id,
+            jobId: job._id,
+            companyId: job.companyId,
+            jobseekerUserId: userId,
+            companyName: company.name
+          }
+        });
+      }
+    } catch (notificationError) {
+      console.error('Create new application notification error:', notificationError.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Ứng tuyển thành công',
@@ -409,7 +434,39 @@ export const getSimilarAppliedJobs = async (req, res) => {
 
     return res.status(200).json({ success: true, data: jobs });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    return    res.status(500).json({ success: false, message: 'Lỗi server khi lấy gợi ý công việc' });
+  }
+};
+
+export const getInterviewInvitation = async (req, res) => {
+  try {
+    const Application = (await import('../models/applicationModels.js')).default;
+    const application = await Application.findOne({
+      _id: req.params.id,
+      jobseekerUserId: req.user._id
+    })
+      .populate('companyId', 'name avatarUrl')
+      .populate('jobId', 'title')
+      .lean();
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+    }
+
+    if (!application.interviewInvitation) {
+      return res.status(404).json({ success: false, message: 'Chưa có lời mời phỏng vấn' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        company: application.companyId,
+        job: application.jobId,
+        interviewInvitation: application.interviewInvitation
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy lời mời phỏng vấn' });
   }
 };
 
@@ -465,6 +522,7 @@ export const getApplicationStatus = async (req, res) => {
         viewedAt: application.viewedAt,
         approvedMessage: application.approvedMessage,
         rejectionReason: application.rejectionReason,
+        interviewInvitation: application.interviewInvitation,
         statusHistory: application.statusHistory || [],
         cv: cv ? {
           id: cv._id,
