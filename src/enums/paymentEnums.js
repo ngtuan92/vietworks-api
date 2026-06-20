@@ -50,7 +50,7 @@ export const TransactionStatus = {
 
 export const PaymentMethod = {
   WALLET: 'WALLET',
-  PAYOS: 'PAYOS'
+  SEPAY: 'SEPAY'
 };
 
 export const PaymentOrderPurpose = {
@@ -59,7 +59,7 @@ export const PaymentOrderPurpose = {
 };
 
 export const PaymentProvider = {
-  PAYOS: 'PAYOS'
+  SEPAY: 'SETTLEMENT'
 };
 
 export const PaymentOrderStatus = {

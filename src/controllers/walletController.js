@@ -1,7 +1,11 @@
 import Wallet from '../models/walletModels.js';
-
 import Transaction from '../models/transactionModels.js';
+import CvBoost from '../models/cvBoostModels.js';
+import JobBoost from '../models/jobBoostModels.js';
+import ServicePackage from '../models/servicePackageModels.js';
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
+import { PaymentMethod, TransactionType, TransactionStatus } from '../enums/paymentEnums.js';
+import { UserRole } from '../enums/userEnums.js';
 
 export const createWallet = async (req, res) => {
   try {
@@ -50,11 +54,11 @@ export const deposit = async (req, res) => {
 
     const transaction = await Transaction.create({
       userId,
-      type: 'DEPOSIT',
+      type: TransactionType.WALLET_DEPOSIT,
       amount,
-      status: 'PENDING',
+      status: TransactionStatus.PENDING,
       description: `Nạp tiền qua SePay - ${amount} VND`,
-      paymentMethod: 'SEPAY'
+      paymentMethod: PaymentMethod.SEPAY
     });
 
     const orderCode = generateOrderCode(transaction._id.toString());
@@ -124,7 +128,7 @@ export const sepayWebhook = async (req, res) => {
         return;
       }
 
-      // 5. Deduplication - kiểm tra đã xử lý chưa
+      // 5. Deduplication sớm - đã có giao dịch nào ghi nhận sepayTransactionId này chưa
       const existingTxn = await Transaction.findOne({
         'metadata.sepayTransactionId': data.transactionId
       });
@@ -133,51 +137,89 @@ export const sepayWebhook = async (req, res) => {
         return;
       }
 
-      // 6. Parse orderCode để tìm transaction
-      // orderCode format: SEVN{ORDER_ID} -> cắt prefix lấy ORDER_ID
+      // 6. Parse orderCode để tìm transaction (format: SEVN{ORDER_ID})
       const orderCode = data.orderCode;
       if (!orderCode || !orderCode.startsWith('SEVN')) {
         console.error('SePay Webhook: Invalid order code format', orderCode);
         return;
       }
 
-      const orderId = orderCode.replace('SEVN', '').toLowerCase();
-
-      // 7. Find transaction by _id (ObjectId from MongoDB)
-      const transaction = await Transaction.findById(orderId);
+      // 7. Tìm transaction theo orderCode ĐÃ LƯU (không dựng lại _id vì orderCode bị rút gọn 12 ký tự)
+      const transaction = await Transaction.findOne({ 'metadata.orderCode': orderCode });
       if (!transaction) {
-        console.error('SePay Webhook: Không tìm thấy giao dịch', orderId);
+        console.error('SePay Webhook: Không tìm thấy giao dịch cho orderCode', orderCode);
         return;
       }
-
-      // 8. Verify business rules
-      if (transaction.status !== 'PENDING') {
-        console.log(`SePay Webhook: Transaction ${orderId} not PENDING (status: ${transaction.status})`);
-        return;
-      }
-
       if (transaction.amount !== data.amount) {
         console.error(`SePay Webhook: Amount mismatch. Expected ${transaction.amount}, got ${data.amount}`);
         return;
       }
 
-      // 9. Update transaction
-      transaction.status = 'SUCCESS';
-      transaction.metadata = {
-        ...transaction.metadata,
-        sepayTransactionId: data.transactionId,
-        sepayReferenceCode: data.referenceCode,
-        paidAt: data.transactionDate
-      };
-      await transaction.save();
+      // 8. Chuyển trạng thái NGUYÊN TỬ: chỉ MỘT webhook flip được PENDING -> SUCCESS.
+      //    findOneAndUpdate trả null nếu đã xử lý rồi (webhook trùng/đồng thời) -> KHÔNG cộng tiền lần 2.
+      const updated = await Transaction.findOneAndUpdate(
+        { _id: transaction._id, status: TransactionStatus.PENDING },
+        {
+          $set: {
+            status: TransactionStatus.SUCCESS,
+            'metadata.sepayTransactionId': data.transactionId,
+            'metadata.sepayReferenceCode': data.referenceCode,
+            'metadata.paidAt': data.transactionDate
+          }
+        },
+        { new: true }
+      );
+      if (!updated) {
+        console.log(`SePay Webhook: Transaction ${orderCode} đã xử lý hoặc không ở trạng thái PENDING`);
+        return;
+      }
 
-      // 10. Update wallet balance
+      // 9. Cộng tiền vào ví (đảm bảo đúng-một-lần nhờ bước 8)
       await Wallet.findOneAndUpdate(
-        { userId: transaction.userId },
-        { $inc: { balance: data.amount } }
+        { userId: updated.userId },
+        {
+          $inc: {
+            balance: data.amount,
+            totalDeposited: data.amount > 0 ? data.amount : 0,
+            totalSpent: data.amount < 0 ? Math.abs(data.amount) : 0
+          }
+        }
       );
 
-      console.log(`SePay Webhook: Successfully processed transaction ${orderId}, amount ${data.amount}`);
+      // 10. Nếu là mua gói boost → kích hoạt ngay sau khi thanh toán thành công
+      if (updated.type === TransactionType.PACKAGE_PURCHASE) {
+        const pkg = await ServicePackage.findById(updated.packageId);
+        if (pkg) {
+          const startAt = new Date();
+          const endAt = new Date(startAt.getTime() + (pkg.durationDays || 7) * 24 * 60 * 60 * 1000);
+
+          if (updated.targetType === 'CV') {
+            const existingBoost = await CvBoost.findOne({ cvId: updated.targetId, status: 'ACTIVE' });
+            if (!existingBoost) {
+              await CvBoost.create({
+                cvId: updated.targetId,
+                userId: updated.userId,
+                packageId: pkg._id,
+                startAt,
+                endAt
+              });
+            }
+          } else if (updated.targetType === 'JOB') {
+            const existingBoost = await JobBoost.findOne({ jobId: updated.targetId, status: 'ACTIVE' });
+            if (!existingBoost) {
+              await JobBoost.create({
+                jobId: updated.targetId,
+                employerId: updated.userId,
+                packageId: pkg._id,
+                startAt,
+                endAt
+              });
+            }
+          }
+        }
+      }
+
+      console.log(`SePay Webhook: Successfully processed transaction ${orderCode}, amount ${data.amount}`);
     } catch (error) {
       console.error('SePay Webhook Error:', error);
     }
