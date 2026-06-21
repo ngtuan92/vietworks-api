@@ -442,14 +442,57 @@ export const getPublicCompanies = async (req, res) => {
     }
 
     const [companies, total] = await Promise.all([
-      Company.find(filter)
-        .populate('industryId', 'name slug')
-        .populate('sizeId', 'name code')
-        .select('name avatarUrl coverUrl followersCount industryId sizeId description')
-        .sort({ followersCount: -1, createdAt: -1 })
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum)
-        .lean(),
+      Company.aggregate([
+        { $match: filter },
+        { $sort: { followersCount: -1, createdAt: -1 } },
+        { $skip: (pageNum - 1) * limitNum },
+        { $limit: limitNum },
+        {
+          $lookup: {
+            from: 'jobs',
+            let: { cid: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$companyId', '$$cid'] },
+                  status: 'PUBLISHED',
+                  deadline: { $gte: new Date() }
+                }
+              },
+              { $count: 'count' }
+            ],
+            as: 'openJobsArr'
+          }
+        },
+        {
+          $addFields: {
+            openJobsCount: { $ifNull: [{ $arrayElemAt: ['$openJobsArr.count', 0] }, 0] }
+          }
+        },
+        { $project: { openJobsArr: 0 } },
+        {
+          $lookup: {
+            from: 'company_industries',
+            localField: 'industryId',
+            foreignField: '_id',
+            as: 'industryId'
+          }
+        },
+        {
+          $unwind: { path: '$industryId', preserveNullAndEmptyArrays: true }
+        },
+        {
+          $lookup: {
+            from: 'company_sizes',
+            localField: 'sizeId',
+            foreignField: '_id',
+            as: 'sizeId'
+          }
+        },
+        {
+          $unwind: { path: '$sizeId', preserveNullAndEmptyArrays: true }
+        }
+      ]),
       Company.countDocuments(filter)
     ]);
 
