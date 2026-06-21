@@ -3,34 +3,41 @@ import { UserRole, AccountStatus } from '../enums/userEnums.js';
 
 export const getUserGrowth = async (req, res) => {
   try {
-    const { startDate, endDate, groupBy = 'day' } = req.query;
+    // FE gửi lên ?range = 30days | 90days | year | all
+    const { range = 'year' } = req.query;
+
+    const now = new Date();
+    let startDate = null;
+    if (range === '30days') {
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+    } else if (range === '90days') {
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 90);
+    } else if (range === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1); // 1/1 năm nay
+    }
+    // range === 'all' => không lọc thời gian
 
     const filter = {};
-    if (startDate || endDate) {
-      filter.createdAt = {};
-      if (startDate) filter.createdAt.$gte = new Date(startDate);
-      if (endDate) filter.createdAt.$lte = new Date(endDate);
-    }
+    if (startDate) filter.createdAt = { $gte: startDate };
 
     const users = await User.find(filter).sort({ createdAt: 1 });
 
-    let groupedData = {};
-    const dateFormat = groupBy === 'month' ? '%Y-%m' : '%Y-%m-%d';
-
+    // Gom theo THÁNG (key 'YYYY-MM') vì FE render mốc thời gian theo tháng (date + '-01').
+    const groupedData = {};
     users.forEach(user => {
-      const date = new Date(user.createdAt);
-      const key = groupBy === 'month'
-        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
+      const d = new Date(user.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (!groupedData[key]) {
         groupedData[key] = { date: key, JOBSEEKER: 0, EMPLOYER: 0, ADMIN: 0, total: 0 };
       }
-      groupedData[key][user.role]++;
+      groupedData[key][user.role] = (groupedData[key][user.role] || 0) + 1;
       groupedData[key].total++;
     });
 
-    const growthData = Object.values(groupedData);
+    // Sắp xếp theo thời gian tăng dần để biểu đồ vẽ đúng thứ tự
+    const growthData = Object.values(groupedData).sort((a, b) => a.date.localeCompare(b.date));
 
     const summary = {
       totalUsers: users.length,
