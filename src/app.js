@@ -80,7 +80,7 @@ app.use('/api', packageRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', invoiceRoutes);
-app.use('/api/analytics', analyticsRoutes);
+app.use('/api', analyticsRoutes);
 app.use('/api/cvs', cvRoutes);
 app.use('/api/jobseeker/cvs', uploadedCvRoutes);
 app.use('/api', jobAdminRoutes);
