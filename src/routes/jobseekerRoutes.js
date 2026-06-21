@@ -6,6 +6,7 @@ import {
   addSearchHistory,
   clearSearchHistory,
   updateJobPreferences,
+  getJobPreferences,
   getMatchedJobs,
   saveJob,
   unsaveJob,
@@ -206,6 +207,20 @@ router.delete('/jobseeker/search-history', requireJobseeker, clearSearchHistory)
  *         description: Đã cập nhật nhu cầu việc làm
  */
 router.put('/jobseeker/job-preferences', requireJobseeker, updateJobPreferences);
+
+/**
+ * @swagger
+ * /api/jobseeker/job-preferences:
+ *   get:
+ *     summary: Lấy nhu cầu việc làm đã lưu của ứng viên
+ *     tags: [Jobseeker]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Nhu cầu việc làm hiện tại
+ */
+router.get('/jobseeker/job-preferences', requireJobseeker, getJobPreferences);
 
 /**
  * @swagger

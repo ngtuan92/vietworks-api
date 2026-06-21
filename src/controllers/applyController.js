@@ -399,7 +399,7 @@ export const getMyApplications = async (req, res) => {
 
 export const getSimilarAppliedJobs = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { limit = 6 } = req.query;
     const limitNum = Math.min(Number(limit) || 6, 20);
 
