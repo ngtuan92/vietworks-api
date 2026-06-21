@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -57,6 +57,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import employerAtsRoutes from './routes/employerAtsRoutes.js';
 import salaryRoutes from './routes/salaryRoutes.js';
 import adminNotificationRoutes from './routes/adminNotificationRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 // ─── Public & Static Routes ───
 app.use('/api', addressRoutes);
@@ -94,6 +95,7 @@ app.use('/api', adminCompanyVerificationRoutes);
 app.use('/api', jobseekerProfileRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', employerAtsRoutes);
+app.use('/api', chatRoutes);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
