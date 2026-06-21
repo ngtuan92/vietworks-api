@@ -12,16 +12,28 @@ const jobAdminController = {
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
     
-    // SỬA TẠI ĐÂY: Nếu frontend không truyền status, mặc định sẽ gán là 'PENDING'
-    const status = req.query.status || 'PENDING_APPROVAL'; 
+    // LẤY TRỰC TIẾP TỪ REQ.QUERY (Không gán || mặc định ở đây nữa)
+    const status = req.query.status; 
     
     const skip = (page - 1) * limit;
 
     // Xây dựng query filter linh hoạt
     const query = {
-      ...(status && { status: status }), 
       ...(search && { title: { $regex: search, $options: 'i' } })
     };
+
+    // LOGIC MỚI: 
+    // 1. Nếu frontend truyền status cụ thể (ví dụ: 'PUBLISHED', 'BANNED'...) -> Lọc theo trạng thái đó.
+    // 2. Nếu frontend truyền chuỗi rỗng "" hoặc undefined (Admin chọn "Tất cả trạng thái") -> KHÔNG thêm status vào query (sẽ lấy tất cả).
+    // 3. Nếu frontend KHÔNG TRUYỀN HOÀN TOÀN (req.query.status === undefined - ví dụ khi gọi ở một trang ẩn nào khác cần mặc định) 
+    //    thì bạn có thể cân nhắc xử lý, nhưng ở đây tối ưu nhất cho bộ lọc filter là:
+    if (status) {
+      query.status = status;
+    } else if (status === undefined && !search) {
+      // Trường hợp trang mới tải lần đầu, chưa bấm filter gì cả, muốn mặc định hiện PENDING
+      // Bạn có thể bật dòng dưới nếu muốn vào trang là chỉ thấy tin chờ duyệt luôn:
+      // query.status = 'PENDING'; 
+    }
 
     // Thực hiện đếm tổng số bản ghi và lấy dữ liệu đồng thời
     const [jobs, totalJobs] = await Promise.all([
@@ -40,12 +52,7 @@ const jobAdminController = {
     return res.status(200).json({
       success: true,
       data: jobs,
-      pagination: {
-        page,
-        limit,
-        total: totalJobs,
-        pages: totalPages
-      }
+      pagination: { page, limit, total: totalJobs, pages: totalPages }
     });
   } catch (error) {
     return res.status(500).json({
