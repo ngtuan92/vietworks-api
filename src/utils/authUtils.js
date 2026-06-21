@@ -22,7 +22,7 @@ export const comparePassword = async (enteredPassword, hashedPassword) => {
   return await bcrypt.compare(enteredPassword, hashedPassword);
 };
 
-export const sendTokenResponse = (user, statusCode, res) => {
+export const sendTokenResponse = (user, statusCode, res, extraUserFields = {}) => {
   const accessToken = generateAccessToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
@@ -42,7 +42,8 @@ export const sendTokenResponse = (user, statusCode, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        ...extraUserFields
       }
     });
 };

@@ -152,7 +152,7 @@ router.get('/jobs/search-suggestions', getSearchSuggestions);
 
 router.get('/jobs/public', getPublicJobs);
 
-router.get('/jobs/public/:jobId', protect, getPublicJobDetail);
+router.get('/jobs/public/:jobId', getPublicJobDetail);
 
 /**
  * @swagger
