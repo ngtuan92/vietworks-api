@@ -480,7 +480,13 @@ const loginByRole = async (req, res, expectedRole = null) => {
       user.lastLoginAt = Date.now();
       await user.save();
 
-      sendTokenResponse(user, 200, res);
+      let avatarUrl = null;
+      if (user.role === UserRole.JOBSEEKER) {
+        const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+        avatarUrl = profile?.avatarUrl || null;
+      }
+
+      sendTokenResponse(user, 200, res, { avatarUrl });
     } else {
       res.status(401).json({ success: false, message: 'Email hoặc mật khẩu không chính xác' });
     }

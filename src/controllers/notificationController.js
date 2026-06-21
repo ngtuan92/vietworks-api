@@ -1,4 +1,4 @@
-﻿import { Notification } from '../models/index.js';
+import { Notification } from '../models/index.js';
 import { NotificationStatus } from '../enums/notificationEnums.js';
 
 export const getMyNotifications = async (req, res) => {
@@ -60,10 +60,10 @@ export const markAllNotificationsAsRead = async (req, res) => {
     res.json({
       success: true,
       modifiedCount: result.modifiedCount || 0,
-      message: '?? ??nh d?u t?t c? th?ng b?o l? ?? ??c'
+      message: 'Đã đánh dấu tất cả thông báo là đã đọc'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Kh?ng th? ??nh d?u t?t c? th?ng b?o' });
+    res.status(500).json({ success: false, message: 'Không thể đánh dấu tất cả thông báo' });
   }
 };
 
@@ -76,11 +76,44 @@ export const deleteNotification = async (req, res) => {
     );
 
     if (!notification) {
-      return res.status(404).json({ success: false, message: 'Kh?ng t?m th?y th?ng b?o' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy thông báo' });
     }
 
-    res.json({ success: true, message: '?? x?a th?ng b?o kh?i danh s?ch c?a b?n' });
+    res.json({ success: true, message: 'Đã xóa thông báo khỏi danh sách của bạn' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Kh?ng th? x?a th?ng b?o' });
+    res.status(500).json({ success: false, message: 'Không thể xóa thông báo' });
+  }
+};
+
+export const getNotificationSettings = async (req, res) => {
+  try {
+    const settings = req.user.notificationSettings || new Map();
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Không thể tải cài đặt thông báo' });
+  }
+};
+
+export const updateNotificationSettings = async (req, res) => {
+  try {
+    const { settings } = req.body;
+    
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({ success: false, message: 'Dữ liệu cài đặt không hợp lệ' });
+    }
+
+    if (!req.user.notificationSettings) {
+      req.user.notificationSettings = new Map();
+    }
+    
+    for (const key in settings) {
+      req.user.notificationSettings.set(key, settings[key]);
+    }
+
+    await req.user.save();
+
+    res.json({ success: true, data: req.user.notificationSettings, message: 'Cập nhật cài đặt thành công' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Không thể lưu cài đặt thông báo' });
   }
 };

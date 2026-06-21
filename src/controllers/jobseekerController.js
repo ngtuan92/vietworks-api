@@ -149,6 +149,52 @@ export const updateJobPreferences = async (req, res) => {
   }
 };
 
+export const getJobPreferences = async (req, res) => {
+  try {
+    const profile = await JobseekerProfile.findOne({ userId: req.user._id })
+      .populate('desiredJob.careerGroupId', 'name')
+      .populate('desiredJob.careerId', 'name')
+      .populate('desiredJob.careerPositionId', 'name')
+      .populate('desiredJob.experienceLevelId', 'name')
+      .populate('skills', 'name')
+      .lean();
+
+    if (!profile) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          desiredJob: {
+            careerGroupId: null,
+            careerId: null,
+            careerPositionId: null,
+            experienceLevelId: null,
+            salaryExpectationMillion: { min: null, max: null },
+            workLocations: []
+          },
+          skills: []
+        }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        desiredJob: profile.desiredJob || {
+          careerGroupId: null,
+          careerId: null,
+          careerPositionId: null,
+          experienceLevelId: null,
+          salaryExpectationMillion: { min: null, max: null },
+          workLocations: []
+        },
+        skills: profile.skills || []
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ', error: error.message });
+  }
+};
+
 export const getMatchedJobs = async (req, res) => {
   try {
     const { page = 1, limit = 12 } = req.query;
@@ -168,51 +214,72 @@ export const getMatchedJobs = async (req, res) => {
       });
     }
 
-    const { desiredJob, skills } = profile;
+    const { desiredJob } = profile;
     const filter = { ...publicJobFilter() };
-    const orConditions = [];
 
-    if (desiredJob.careerGroupId) orConditions.push({ careerGroupId: desiredJob.careerGroupId });
-    if (desiredJob.careerId) orConditions.push({ careerId: desiredJob.careerId });
-    if (desiredJob.careerPositionId) orConditions.push({ careerPositionId: desiredJob.careerPositionId });
-    if (desiredJob.experienceLevelId) orConditions.push({ experienceLevelId: desiredJob.experienceLevelId });
-    if (skills?.length) orConditions.push({ skills: { $in: skills } });
-
-    if (!orConditions.length) {
+    // ── Tiêu chí CHÍNH (bắt buộc): NGÀNH NGHỀ — khớp theo NGHỀ ─
+    // Lọc cứng theo Nghề (careerId); nếu ứng viên chỉ chọn tới Nhóm thì theo Nhóm.
+    if (desiredJob.careerId) {
+      filter.careerId = desiredJob.careerId;
+    } else if (desiredJob.careerGroupId) {
+      filter.careerGroupId = desiredJob.careerGroupId;
+    } else {
       return res.status(200).json({
         success: true,
         data: [],
         pagination: { page: pageNum, limit: limitNum, total: 0, pages: 0 },
-        message: 'Bạn chưa cài đặt nhu cầu việc làm đủ để gợi ý'
+        message: 'Bạn chưa cài đặt ngành nghề mong muốn để gợi ý'
       });
     }
 
-    filter.$or = orConditions;
-
-    // Lọc thêm theo lương nếu ứng viên có khai báo
-    const salaryMin = desiredJob.salaryExpectationMillion?.min;
-    const salaryMax = desiredJob.salaryExpectationMillion?.max;
-    if (salaryMin || salaryMax) {
-      filter['salary.type'] = { $ne: 'NEGOTIABLE' };
-      if (salaryMin) filter['salary.maxMillion'] = { $gte: salaryMin };
-      if (salaryMax) filter['salary.minMillion'] = { $lte: salaryMax };
+    // ── Lọc cứng thêm: ĐỊA ĐIỂM (theo tỉnh/thành) ─────────────
+    const desiredProvinceCodes = (desiredJob.workLocations || [])
+      .map((loc) => loc?.provinceCode)
+      .filter(Boolean);
+    if (desiredProvinceCodes.length) {
+      filter['workLocations.provinceCode'] = { $in: desiredProvinceCodes };
     }
 
-    const [jobs, total] = await Promise.all([
-      Job.find(filter)
-        .populate('companyId', 'name avatarUrl coverUrl')
-        .populate('careerGroupId', 'name')
-        .populate('careerId', 'name')
-        .populate('careerPositionId', 'name')
-        .populate('jobLevelId', 'name')
-        .populate('experienceLevelId', 'name')
-        .populate('skills', 'name')
-        .sort({ 'premium.isActive': -1, isUrgent: -1, publishedAt: -1 })
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum)
-        .lean(),
-      Job.countDocuments(filter)
-    ]);
+    // ── Tiêu chí phụ (chỉ XẾP HẠNG, không loại job) ───────────
+    const salaryMin = desiredJob.salaryExpectationMillion?.min;
+    const salaryMax = desiredJob.salaryExpectationMillion?.max;
+
+    const allMatched = await Job.find(filter)
+      .populate('companyId', 'name avatarUrl coverUrl')
+      .populate('careerGroupId', 'name')
+      .populate('careerId', 'name')
+      .populate('careerPositionId', 'name')
+      .populate('jobLevelId', 'name')
+      .populate('experienceLevelId', 'name')
+      .populate('skills', 'name')
+      .lean();
+
+    const idStr = (v) => String(v?._id || v || '');
+    const scoreJob = (job) => {
+      let score = 0;
+      if (job.premium?.isActive) score += 10;
+      if (job.isUrgent) score += 2;
+      // Khớp đúng vị trí mong muốn → ưu tiên cao.
+      if (desiredJob.careerPositionId && idStr(job.careerPositionId) === idStr(desiredJob.careerPositionId)) score += 5;
+      // Khớp mức kinh nghiệm mong muốn.
+      if (desiredJob.experienceLevelId && idStr(job.experienceLevelId) === idStr(desiredJob.experienceLevelId)) score += 3;
+      // Lương job nằm trong khoảng mong muốn.
+      if ((salaryMin || salaryMax) && job.salary?.type !== 'NEGOTIABLE') {
+        const okMin = !salaryMin || (job.salary?.maxMillion ?? 0) >= salaryMin;
+        const okMax = !salaryMax || (job.salary?.minMillion ?? Infinity) <= salaryMax;
+        if (okMin && okMax) score += 3;
+      }
+      return score;
+    };
+
+    allMatched.sort((a, b) => {
+      const diff = scoreJob(b) - scoreJob(a);
+      if (diff !== 0) return diff;
+      return new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt);
+    });
+
+    const total = allMatched.length;
+    const jobs = allMatched.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
     return res.status(200).json({
       success: true,
@@ -442,14 +509,57 @@ export const getPublicCompanies = async (req, res) => {
     }
 
     const [companies, total] = await Promise.all([
-      Company.find(filter)
-        .populate('industryId', 'name slug')
-        .populate('sizeId', 'name code')
-        .select('name avatarUrl coverUrl followersCount industryId sizeId description')
-        .sort({ followersCount: -1, createdAt: -1 })
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum)
-        .lean(),
+      Company.aggregate([
+        { $match: filter },
+        { $sort: { followersCount: -1, createdAt: -1 } },
+        { $skip: (pageNum - 1) * limitNum },
+        { $limit: limitNum },
+        {
+          $lookup: {
+            from: 'jobs',
+            let: { cid: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$companyId', '$$cid'] },
+                  status: 'PUBLISHED',
+                  deadline: { $gte: new Date() }
+                }
+              },
+              { $count: 'count' }
+            ],
+            as: 'openJobsArr'
+          }
+        },
+        {
+          $addFields: {
+            openJobsCount: { $ifNull: [{ $arrayElemAt: ['$openJobsArr.count', 0] }, 0] }
+          }
+        },
+        { $project: { openJobsArr: 0 } },
+        {
+          $lookup: {
+            from: 'company_industries',
+            localField: 'industryId',
+            foreignField: '_id',
+            as: 'industryId'
+          }
+        },
+        {
+          $unwind: { path: '$industryId', preserveNullAndEmptyArrays: true }
+        },
+        {
+          $lookup: {
+            from: 'company_sizes',
+            localField: 'sizeId',
+            foreignField: '_id',
+            as: 'sizeId'
+          }
+        },
+        {
+          $unwind: { path: '$sizeId', preserveNullAndEmptyArrays: true }
+        }
+      ]),
       Company.countDocuments(filter)
     ]);
 

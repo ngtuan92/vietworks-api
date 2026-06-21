@@ -1,5 +1,7 @@
 import User from '../models/userModels.js';
-import { AccountStatus } from '../enums/userEnums.js';
+
+// Escape ký tự đặc biệt để tránh regex injection / ReDoS từ ô tìm kiếm
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -9,9 +11,10 @@ export const getAllUsers = async (req, res) => {
     if (role) filter.role = role;
     if (accountStatus) filter.accountStatus = accountStatus;
     if (search) {
+      const safe = escapeRegex(search);
       filter.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { fullName: { $regex: safe, $options: 'i' } },
+        { email: { $regex: safe, $options: 'i' } }
       ];
     }
 
@@ -47,53 +50,6 @@ export const getUserById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
-  }
-};
-
-export const banUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
-    }
-
-    if (user.role === 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Không thể khóa tài khoản quản trị viên' });
-    }
-
-    user.accountStatus = AccountStatus.BANNED;
-    user.banReason = reason || 'Violated terms of service';
-    user.bannedAt = new Date();
-    user.bannedBy = req.user._id;
-
-    await user.save();
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
-  }
-};
-
-export const unbanUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
-    }
-
-    user.accountStatus = AccountStatus.ACTIVE;
-    user.banReason = null;
-    user.bannedAt = null;
-    user.bannedBy = null;
-
-    await user.save();
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });

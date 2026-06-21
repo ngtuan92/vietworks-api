@@ -2,9 +2,8 @@ import mongoose from 'mongoose';
 import { CommonStatus, JobLevelCode } from '../enums/masterDataEnums.js';
 
 const jobLevelSchema = new mongoose.Schema({
-  // Liên kết với nhóm nghề để lọc cascading
-  careerGroupId: { type: mongoose.Schema.Types.ObjectId, ref: 'CareerGroup', required: true }, 
-code: {
+  // Không còn liên kết cứng với careerGroupId để dùng chung toàn hệ thống
+  code: {
   type: String,
   required: true,
   trim: true // Tự động loại bỏ khoảng trắng thừa hai đầu
