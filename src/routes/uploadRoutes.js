@@ -125,4 +125,15 @@ router.post(
   }
 );
 
+router.post(
+  '/uploads/chat-file',
+  protect,
+  (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) return handleUploadError(err, req, res, next);
+      import('../controllers/uploadController.js').then(ctrl => ctrl.uploadChatFile(req, res, next));
+    });
+  }
+);
+
 export default router;

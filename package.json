@@ -30,6 +30,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
     "sepay-pg-node": "^1.0.0",
+    "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
