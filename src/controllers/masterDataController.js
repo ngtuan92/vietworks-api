@@ -54,13 +54,7 @@ export const getCareerPositions = async (req, res) => {
 
 export const getJobLevels = async (req, res) => {
   try {
-    const { careerGroupId } = req.query;
     const filter = { status: CommonStatus.ACTIVE };
-
-    // Nếu frontend truyền careerGroupId lên thì mới lọc, không thì trả về hết hoặc rỗng tùy bạn
-    if (careerGroupId) {
-      filter.careerGroupId = careerGroupId;
-    }
 
     // Sắp xếp theo thứ tự cấp bậc tăng dần (levelOrder: 1)
     const levels = await JobLevel.find(filter).sort({ levelOrder: 1 });
@@ -374,15 +368,15 @@ export const deleteCareerPosition = async (req, res) => {
 
 export const createJobLevel = async (req, res) => {
   try {
-    const { careerGroupId, code, name, levelOrder } = req.body;
+    const { code, name, levelOrder } = req.body;
 
-    // Một nhóm nghề không được trùng code cấp bậc (Ví dụ: IT không được có 2 nấc 'INTERN')
-    const existingLevel = await JobLevel.findOne({ careerGroupId, code });
+    // Kiểm tra trùng code cấp bậc trên toàn hệ thống
+    const existingLevel = await JobLevel.findOne({ code });
     if (existingLevel) {
-      return res.status(400).json({ success: false, message: 'Mã cấp bậc này đã tồn tại trong Nhóm nghề này!' });
+      return res.status(400).json({ success: false, message: 'Mã cấp bậc này đã tồn tại trong hệ thống!' });
     }
 
-    const newLevel = await JobLevel.create({ careerGroupId, code, name, levelOrder });
+    const newLevel = await JobLevel.create({ code, name, levelOrder });
     res.status(201).json({ success: true, data: newLevel });
   } catch (error) {
 console.log("=== LỖI THỰC TẾ ĐÂY RỒI: ===", error); // <-- Thêm dòng này

@@ -15,6 +15,14 @@ const applicationSchema = new mongoose.Schema({
   viewedAt: { type: Date, default: null },
   approvedMessage: { type: String, default: null },
   rejectionReason: { type: String, default: null },
+  interviewInvitation: {
+    interviewTime: { type: String },
+    interviewType: { type: String, enum: ['ONLINE', 'OFFLINE'] },
+    location: { type: String },
+    contactPerson: { type: String },
+    note: { type: String },
+    createdAt: { type: Date }
+  },
   statusHistory: { type: [mongoose.Schema.Types.Mixed], default: [] }
 }, { timestamps: true });
 

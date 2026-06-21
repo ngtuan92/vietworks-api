@@ -1,4 +1,4 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import { UserRole, AccountStatus, AuthProvider } from '../enums/userEnums.js';
 import { hashPassword, comparePassword } from '../utils/authUtils.js';
 
@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   },
   passwordHash: {
     type: String,
-    required: function() {
+    required: function () {
       return this.authProvider === AuthProvider.LOCAL;
     },
     select: false
@@ -87,19 +87,24 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
+  },
+  notificationSettings: {
+    type: Map,
+    of: Boolean,
+    default: {}
   }
 }, {
   timestamps: true
 });
 
-userSchema.pre('save', async function() {
+userSchema.pre('save', async function () {
   if (!this.isModified('passwordHash') || !this.passwordHash) {
     return;
   }
   this.passwordHash = await hashPassword(this.passwordHash);
 });
 
-userSchema.methods.matchPassword = async function(enteredPassword) {
+userSchema.methods.matchPassword = async function (enteredPassword) {
   return await comparePassword(enteredPassword, this.passwordHash);
 };
 
