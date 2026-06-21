@@ -8,24 +8,31 @@ import { CommonStatus } from '../enums/masterDataEnums.js';
 import Skill from '../models/skillModels.js';
 import mongoose from 'mongoose';
 // 1. Lấy toàn bộ Nhóm Nghề (Active)
+// 1. Lấy toàn bộ Nhóm Nghề (Có lọc theo status gửi từ Frontend)
 export const getCareerGroups = async (req, res) => {
   try {
-    const groups = await CareerGroup.find({ status: CommonStatus.ACTIVE }).sort({ order: 1, name: 1 });
+    const { status } = req.query; // Lấy status từ query string (?status=ACTIVE)
+    const filter = {};
+    
+    if (status) {
+      filter.status = status;
+    }
+
+    const groups = await CareerGroup.find(filter).sort({ order: 1, name: 1 });
     res.status(200).json({ success: true, data: groups });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
-// 2. Lấy Nghề (Có lọc theo careerGroupId nếu frontend truyền lên)
+// 2. Lấy Nghề (Có lọc theo careerGroupId và status)
 export const getCareers = async (req, res) => {
   try {
-    const { careerGroupId } = req.query;
-    const filter = { status: CommonStatus.ACTIVE };
+    const { careerGroupId, status } = req.query;
+    const filter = {};
     
-    if (careerGroupId) {
-      filter.careerGroupId = careerGroupId;
-    }
+    if (status) filter.status = status;
+    if (careerGroupId) filter.careerGroupId = careerGroupId;
 
     const careers = await Career.find(filter).sort({ order: 1, name: 1 });
     res.status(200).json({ success: true, data: careers });
@@ -34,12 +41,13 @@ export const getCareers = async (req, res) => {
   }
 };
 
-// 3. Lấy Vị trí chuyên môn (Có lọc theo careerGroupId hoặc careerId)
+// 3. Lấy Vị trí chuyên môn (Có lọc theo ngành cha và status)
 export const getCareerPositions = async (req, res) => {
   try {
-    const { careerGroupId, careerId } = req.query;
-    const filter = { status: CommonStatus.ACTIVE };
+    const { careerGroupId, careerId, status } = req.query;
+    const filter = {};
 
+    if (status) filter.status = status;
     if (careerGroupId) filter.careerGroupId = careerGroupId;
     if (careerId) filter.careerId = careerId;
 
@@ -50,17 +58,15 @@ export const getCareerPositions = async (req, res) => {
   }
 };
 
-
-
+// 4. Lấy danh sách Cấp bậc
 export const getJobLevels = async (req, res) => {
   try {
-    const { careerGroupId } = req.query;
-    const filter = { status: CommonStatus.ACTIVE };
+    const { careerGroupId, status } = req.query;
+    const filter = {};
 
-    // Nếu frontend truyền careerGroupId lên thì mới lọc, không thì trả về hết hoặc rỗng tùy bạn
-    if (careerGroupId) {
-      filter.careerGroupId = careerGroupId;
-    }
+    if (status) filter.status = status;
+    if (careerGroupId) filter.careerGroupId = careerGroupId;
+
 
     // Sắp xếp theo thứ tự cấp bậc tăng dần (levelOrder: 1)
     const levels = await JobLevel.find(filter).sort({ levelOrder: 1 });
@@ -70,22 +76,27 @@ export const getJobLevels = async (req, res) => {
   }
 };
 
-// 5. Lấy danh sách Kinh nghiệm (Global - Không cần lọc theo ngành)
+// 5. Lấy danh sách Kinh nghiệm
 export const getExperienceLevels = async (req, res) => {
   try {
-    // Sắp xếp theo số năm kinh nghiệm tối thiểu từ nhỏ đến lớn
-    const experiences = await ExperienceLevel.find({ status: CommonStatus.ACTIVE }).sort({ minYear: 1 });
+    const { status } = req.query;
+    const filter = {};
+
+    if (status) filter.status = status;
+
+    const experiences = await ExperienceLevel.find(filter).sort({ minYear: 1 });
     res.status(200).json({ success: true, data: experiences });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
+// 6. Lấy danh sách Kỹ năng theo Career Group
 export const getSkillsByCareerGroup = async (req, res) => {
   try {
     const { careerGroupId } = req.params;
+    const { status } = req.query; // Nhận thêm filter status từ query
 
-    // 1. Kiểm tra xem Id truyền lên có đúng định dạng ObjectId của MongoDB không
     if (!mongoose.Types.ObjectId.isValid(careerGroupId)) {
       return res.status(400).json({
         success: false,
@@ -93,16 +104,15 @@ export const getSkillsByCareerGroup = async (req, res) => {
       });
     }
 
-    // 2. Tìm các kỹ năng có trạng thái ACTIVE và thuộc nhóm nghề được truyền vào
-    // Mongoose tự hiểu careerGroupIds là mảng và tự tìm kiếm phần tử khớp bên trong mảng đó
-    const skills = await Skill.find({
-      careerGroupIds: careerGroupId,
-      status: 'ACTIVE'
-    })
-    .select('name slug aliases') // Chỉ lấy ra các trường cần thiết cho nhẹ băng thông
-    .sort({ name: 1 }); // Sắp xếp theo thứ tự bảng chữ cái A-Z từ tên skill
+    const filter = { careerGroupIds: careerGroupId };
+    if (status) {
+      filter.status = status;
+    }
 
-    // 3. Trả kết quả về cho Frontend
+    const skills = await Skill.find(filter)
+      .select('name slug aliases status') // Lấy thêm trường status để hiển thị badge ở front
+      .sort({ name: 1 });
+
     return res.status(200).json({
       success: true,
       count: skills.length,
@@ -374,15 +384,15 @@ export const deleteCareerPosition = async (req, res) => {
 
 export const createJobLevel = async (req, res) => {
   try {
-    const { careerGroupId, code, name, levelOrder } = req.body;
+    const { code, name, levelOrder } = req.body;
 
-    // Một nhóm nghề không được trùng code cấp bậc (Ví dụ: IT không được có 2 nấc 'INTERN')
-    const existingLevel = await JobLevel.findOne({ careerGroupId, code });
+    // Kiểm tra trùng code cấp bậc trên toàn hệ thống
+    const existingLevel = await JobLevel.findOne({ code });
     if (existingLevel) {
-      return res.status(400).json({ success: false, message: 'Mã cấp bậc này đã tồn tại trong Nhóm nghề này!' });
+      return res.status(400).json({ success: false, message: 'Mã cấp bậc này đã tồn tại trong hệ thống!' });
     }
 
-    const newLevel = await JobLevel.create({ careerGroupId, code, name, levelOrder });
+    const newLevel = await JobLevel.create({ code, name, levelOrder });
     res.status(201).json({ success: true, data: newLevel });
   } catch (error) {
 console.log("=== LỖI THỰC TẾ ĐÂY RỒI: ===", error); // <-- Thêm dòng này

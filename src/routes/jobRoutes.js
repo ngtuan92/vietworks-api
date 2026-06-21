@@ -21,6 +21,7 @@ import { checkDuplicateApplication } from '../controllers/applyController.js';
 import { getMyApplications } from '../controllers/applyController.js';
 import { getApplicationStatus } from '../controllers/applyController.js';
 import { getSimilarAppliedJobs } from '../controllers/applyController.js';
+import { getInterviewInvitation } from '../controllers/applyController.js';
 
 
 const router = express.Router();
@@ -151,7 +152,7 @@ router.get('/jobs/search-suggestions', getSearchSuggestions);
 
 router.get('/jobs/public', getPublicJobs);
 
-router.get('/jobs/public/:jobId', protect, getPublicJobDetail);
+router.get('/jobs/public/:jobId', getPublicJobDetail);
 
 /**
  * @swagger
@@ -543,9 +544,9 @@ router.get('/jobseeker/applications/similar', protect, getSimilarAppliedJobs);
 
 /**
  * @swagger
- * /api/jobseeker/applications/{id}/status:
+ * /api/jobseeker/applications/{id}/result:
  *   get:
- *     summary: Lấy trạng thái chi tiết của một hồ sơ đã nộp
+ *     summary: Lấy trạng thái chi tiết (kết quả) của một hồ sơ đã nộp
  *     tags: [Jobs]
  *     security:
  *       - bearerAuth: []
@@ -561,6 +562,27 @@ router.get('/jobseeker/applications/similar', protect, getSimilarAppliedJobs);
  *         description: Trạng thái chi tiết của hồ sơ
  */
 router.get('/jobseeker/applications/:id/status', protect, getApplicationStatus);
+router.get('/jobseeker/applications/:id/result', protect, getApplicationStatus);
+
+/**
+ * @swagger
+ * /api/jobseeker/applications/{id}/interview-invitation:
+ *   get:
+ *     summary: Jobseeker xem chi tiết lời mời phỏng vấn
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Trả về chi tiết thư mời phỏng vấn
+ */
+router.get('/jobseeker/applications/:id/interview-invitation', protect, getInterviewInvitation);
 
 
 /**

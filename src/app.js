@@ -56,6 +56,7 @@ import systemRoutes from './routes/systemRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import employerAtsRoutes from './routes/employerAtsRoutes.js';
 import salaryRoutes from './routes/salaryRoutes.js';
+import adminNotificationRoutes from './routes/adminNotificationRoutes.js';
 
 // ─── Public & Static Routes ───
 app.use('/api', addressRoutes);
@@ -70,6 +71,7 @@ app.use('/api', companyMasterData);
 // để khách vãng lai không bị chặn 401.
 app.use('/api', jobseekerRoutes);
 app.use('/api', salaryRoutes);
+app.use('/api', adminNotificationRoutes);
 
 // ─── Protected & Specific Routes ───
 app.use('/api', employerAccountRoutes);
@@ -101,4 +103,5 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
+
 

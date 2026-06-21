@@ -3,6 +3,10 @@ import { CvTemplate, Cv, CareerGroup } from '../models/index.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import { slugify } from '../utils/slugify.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinary.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode } from '../enums/notificationEnums.js';
+import User from '../models/userModels.js';
+import { Notification } from '../models/index.js';
 
 export const createCvTemplate = async (req, res) => {
   try {
@@ -34,6 +38,39 @@ export const createCvTemplate = async (req, res) => {
       status: CommonStatus.ACTIVE,
       createdBy: req.user?._id || '000000000000000000000001'
     });
+
+    // Bắn Broadcast ngầm cho toàn bộ JOBSEEKER (Tái sử dụng logic của Admin Notification)
+    try {
+      const users = await User.find({ role: 'JOBSEEKER' }).select('_id').lean();
+      if (users.length > 0) {
+        const broadcastLog = await Notification.create({
+          receiverUserId: req.user?._id || '000000000000000000000001',
+          typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+          title: `[Lịch sử Broadcast] Ra mắt mẫu CV: ${name}`,
+          content: 'Broadcast khi tạo mẫu CV mới',
+          metadata: { isBroadcastLog: true, targetRole: 'JOBSEEKER', sentCount: users.length }
+        });
+
+        // Chạy ngầm, không block
+        Promise.resolve().then(async () => {
+          const batchSize = 100;
+          for (let i = 0; i < users.length; i += batchSize) {
+            const batch = users.slice(i, i + batchSize);
+            await Promise.all(batch.map(user => 
+              NotificationService.create({
+                receiverUserId: user._id,
+                typeCode: NotificationTypeCode.NEW_CV_TEMPLATE,
+                title: 'Mẫu CV mới đã ra mắt!',
+                content: `Hệ thống vừa ra mắt mẫu CV mới: "${name}". Hãy thử ngay!`,
+                metadata: { templateId: newTemplate._id, broadcastId: broadcastLog._id.toString() }
+              })
+            ));
+          }
+        });
+      }
+    } catch (notiError) {
+      console.error('Lỗi bắn Broadcast mẫu CV mới:', notiError.message);
+    }
 
     res.status(201).json({ success: true, data: newTemplate });
   } catch (error) {

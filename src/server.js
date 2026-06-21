@@ -4,6 +4,7 @@ dotenv.config();
 import app from './app.js';
 import connectDB from './configs/db.js';
 import './jobs/expireJobCron.js';
+import './jobs/matchingJobCron.js';
 const PORT = process.env.PORT || 8080;
 
 connectDB();
