@@ -231,7 +231,7 @@ export const updateMyProfile = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Chỉ ứng viên mới được truy cập' });
     }
 
-    const { fullName, phone } = req.body;
+    const { fullName, phone, avatarUrl } = req.body;
 
     if (!fullName || fullName.trim() === '') {
       return res.status(400).json({ success: false, message: 'Họ tên không được để trống' });
@@ -243,6 +243,17 @@ export const updateMyProfile = async (req, res) => {
       { new: true, select: 'fullName email phone accountStatus' }
     );
 
+    // Ảnh đại diện được lưu trên JobseekerProfile (chỉ cập nhật khi client gửi lên).
+    let savedAvatarUrl;
+    if (avatarUrl !== undefined) {
+      const updatedProfile = await JobseekerProfile.findOneAndUpdate(
+        { userId: req.user._id },
+        { avatarUrl: avatarUrl || null },
+        { new: true, upsert: true, select: 'avatarUrl' }
+      );
+      savedAvatarUrl = updatedProfile?.avatarUrl ?? null;
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Cập nhật thông tin cá nhân thành công',
@@ -251,6 +262,7 @@ export const updateMyProfile = async (req, res) => {
         email: updatedUser.email,
         phone: updatedUser.phone,
         accountStatus: updatedUser.accountStatus,
+        ...(avatarUrl !== undefined ? { avatarUrl: savedAvatarUrl } : {}),
       }
     });
   } catch (error) {
