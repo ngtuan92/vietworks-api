@@ -497,7 +497,7 @@ export const createInterviewInvitation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ hoặc bạn không có quyền' });
     }
 
-    const { interviewTime, interviewType, location, contactPerson, note } = req.body;
+    const { interviewTime, interviewType, location, contactPerson, contactPhone, note } = req.body;
     if (!interviewTime || !interviewType || !location) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc (thời gian, hình thức, địa điểm)' });
     }
@@ -507,6 +507,7 @@ export const createInterviewInvitation = async (req, res) => {
       interviewType,
       location,
       contactPerson,
+      contactPhone,
       note,
       createdAt: new Date()
     };
@@ -515,12 +516,12 @@ export const createInterviewInvitation = async (req, res) => {
       application._id,
       {
         $set: { 
-          status: ApplicationStatus.APPROVED,
+          status: ApplicationStatus.INTERVIEW_INVITED,
           interviewInvitation 
         },
         $push: {
           statusHistory: {
-            status: ApplicationStatus.APPROVED,
+            status: ApplicationStatus.INTERVIEW_INVITED,
             changedBy: req.user._id,
             changedAt: new Date(),
             note: 'Gửi lời mời phỏng vấn'
@@ -552,6 +553,7 @@ export const createInterviewInvitation = async (req, res) => {
         interviewType,
         location,
         contactPerson,
+        contactPhone,
         note,
         employerUserId: toId(req.user)
       }

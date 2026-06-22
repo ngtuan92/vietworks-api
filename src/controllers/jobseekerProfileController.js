@@ -1,4 +1,4 @@
-import User from '../models/userModels.js';
+﻿import User from '../models/userModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import { UserRole } from '../enums/userEnums.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
@@ -52,18 +52,6 @@ const JOBSEEKER_NOTIFICATION_TYPES = [
     label: 'Kích hoạt gói dịch vụ thành công',
     description: 'Nhận thông báo khi gói Boost CV hoặc Premium được kích hoạt.',
     group: 'Thanh toán & Dịch vụ',
-  },
-  {
-    typeCode: NotificationTypeCode.AI_CV_REVIEW_COMPLETED,
-    label: 'AI đã hoàn thành phân tích CV',
-    description: 'Nhận thông báo khi AI hoàn tất báo cáo phân tích và chấm điểm CV.',
-    group: 'AI & Công cụ',
-  },
-  {
-    typeCode: NotificationTypeCode.SYSTEM_UPDATE,
-    label: 'Cập nhật hệ thống & tính năng mới',
-    description: 'Nhận thông báo về các tính năng mới và thay đổi quan trọng từ VietWorks.',
-    group: 'AI & Công cụ',
   },
 ];
 
@@ -269,3 +257,4 @@ export const updateMyProfile = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
+

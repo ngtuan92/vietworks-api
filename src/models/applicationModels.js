@@ -20,6 +20,7 @@ const applicationSchema = new mongoose.Schema({
     interviewType: { type: String, enum: ['ONLINE', 'OFFLINE'] },
     location: { type: String },
     contactPerson: { type: String },
+    contactPhone: { type: String },
     note: { type: String },
     createdAt: { type: Date }
   },

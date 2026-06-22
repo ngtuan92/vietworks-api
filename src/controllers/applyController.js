@@ -164,6 +164,16 @@ export const applyJob = async (req, res) => {
     const Application = (await import('../models/applicationModels.js')).default;
     const { ApplicationStatus } = await import('../enums/jobEnums.js');
 
+    if (job.applicationCount > 0) {
+      const currentAppliedCount = await Application.countDocuments({ jobId: job._id });
+      if (currentAppliedCount >= job.applicationCount) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tin tuyển dụng đã tuyển đủ số lượng'
+        });
+      }
+    }
+
     const existingApplication = await Application.findOne({
       jobId: job._id,
       jobseekerUserId: userId
