@@ -170,9 +170,11 @@ export const createJob = async (req, res) => {
       data: newJob
     });
   } catch (error) {
+    console.error('[createJob] error:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ'
+      message: 'Lỗi máy chủ',
+      error: process.env.NODE_ENV === 'production' ? undefined : error.message
     });
   }
 };
