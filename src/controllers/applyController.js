@@ -48,6 +48,17 @@ export const getApplyOptions = async (req, res) => {
       });
     }
 
+    if (job.applicationCount > 0) {
+      const Application = (await import('../models/applicationModels.js')).default;
+      const currentAppliedCount = await Application.countDocuments({ jobId: job._id });
+      if (currentAppliedCount >= job.applicationCount) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tin tuyển dụng đã tuyển đủ số lượng'
+        });
+      }
+    }
+
     const [onlineCvs, uploadedCvs] = await Promise.all([
       Cv.find({ userId: userId, status: CvStatus.ACTIVE })
         .populate('templateId', 'name thumbnailUrl')
