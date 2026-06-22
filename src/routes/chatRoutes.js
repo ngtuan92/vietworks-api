@@ -8,6 +8,7 @@ router.use(protect); // Ensure all routes are protected
 
 // Lấy danh sách hội thoại của user hiện tại
 router.get('/conversations', chatCtrl.getConversations);
+router.get('/conversations/unread-count', chatCtrl.getUnreadMessageCount);
 
 // Lấy hoặc tạo hội thoại mới (dựa vào applicationId)
 router.post('/conversations', chatCtrl.getOrCreateConversation);

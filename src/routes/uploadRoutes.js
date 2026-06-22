@@ -3,8 +3,8 @@ import express from 'express';
 import multer from 'multer';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
-import { upload } from '../utils/cloudinary.js'
-import { uploadCompanyImage, uploadAvatarImage } from '../controllers/uploadController.js';
+import { upload, uploadAny } from '../utils/cloudinary.js'
+import { uploadCompanyImage, uploadAvatarImage, viewCloudinaryPdf } from '../controllers/uploadController.js';
 
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -129,11 +129,13 @@ router.post(
   '/uploads/chat-file',
   protect,
   (req, res, next) => {
-    upload.single('file')(req, res, (err) => {
+    uploadAny.single('file')(req, res, (err) => {
       if (err) return handleUploadError(err, req, res, next);
       import('../controllers/uploadController.js').then(ctrl => ctrl.uploadChatFile(req, res, next));
     });
   }
 );
+
+router.get('/view-pdf', protect, viewCloudinaryPdf);
 
 export default router;
