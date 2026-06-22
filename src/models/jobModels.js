@@ -25,6 +25,7 @@ const jobSchema = new mongoose.Schema({
   benefits: { type: String, required: true },
   workingTime: { type: String, required: true },
   applyInstruction: { type: String, required: true },
+  headcount: { type: Number, default: 1 },
   deadline: { type: Date, required: true },
   status: { type: String, enum: Object.values(JobStatus), default: JobStatus.DRAFT },
   isUrgent: { type: Boolean, default: false },

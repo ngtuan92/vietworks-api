@@ -145,9 +145,9 @@ export const getCvById = async (req, res) => {
 
 export const getUserCvs = async (req, res) => {
   try {
-    const cvs = await Cv.find({ userId: req.user._id, status: CvStatus.ACTIVE })
-      .populate('templateId', 'name thumbnailUrl')
-      .sort('-updatedAt');
+      const cvs = await Cv.find({ userId: req.user._id, status: CvStatus.ACTIVE })
+        .populate('templateId', 'name thumbnailUrl previewImageUrl')
+        .sort('-updatedAt');
 
     res.status(200).json({ success: true, data: cvs });
   } catch (error) {

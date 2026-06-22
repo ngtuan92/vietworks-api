@@ -1,4 +1,4 @@
-import { Notification } from '../models/index.js';
+﻿import { Notification } from '../models/index.js';
 import User from '../models/userModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import {
@@ -7,7 +7,9 @@ import {
   NotificationStatus,
   NotificationTypeCode
 } from '../enums/notificationEnums.js';
-import { sendBusinessEmail, sendCvViewedEmail, sendRejectionEmail, sendInterviewInvitationEmail, sendMatchingJobsEmail } from './emailService.js';
+import { sendBusinessEmail, sendCvViewedEmail, sendRejectionEmail, sendInterviewInvitationEmail, sendMatchingJobsEmail, renderEmailActionButton } from './emailService.js';
+import { getIO } from '../sockets/chatSocket.js';
+import { getEmailNotificationTarget } from '../utils/emailNotificationLinks.js';
 
 export const createNotification = async ({
   receiverUserId,
@@ -23,7 +25,7 @@ export const createNotification = async ({
   }
 
   const [user, jsProfile] = await Promise.all([
-    User.findById(receiverUserId).select('email fullName notificationSettings').lean(),
+    User.findById(receiverUserId).select('email fullName role notificationSettings').lean(),
     JobseekerProfile.findOne({ userId: receiverUserId }).select('notificationSettings').lean()
   ]);
   
@@ -72,10 +74,19 @@ export const createNotification = async ({
     metadata
   });
 
+  if (finalChannels.includes(NotificationChannel.IN_APP)) {
+    try {
+      getIO().to(receiverUserId.toString()).emit('new_notification', notification.toObject());
+    } catch (socketError) {
+      console.error('Lỗi gửi thông báo realtime:', socketError.message);
+    }
+  }
+
   // Gửi email nền (non-blocking) nếu kênh EMAIL được bật
   if (shouldSendEmail && user?.email) {
     let emailPromise = null;
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const emailTarget = getEmailNotificationTarget(typeCode, metadata, user.role);
 
     if (typeCode === NotificationTypeCode.EMPLOYER_VIEWED_CV) {
       emailPromise = sendCvViewedEmail({
@@ -86,6 +97,8 @@ export const createNotification = async ({
         jobTitle: metadata.jobTitle,
         companyLogo: metadata.companyLogo,
         jobUrl: `${clientUrl}/jobs/${metadata.jobId}`,
+        actionUrl: emailTarget.url,
+        actionLabel: emailTarget.label,
         notificationId: notification._id
       });
     } else if (typeCode === NotificationTypeCode.APPLICATION_RESULT && metadata.status === 'REJECTED') {
@@ -96,6 +109,8 @@ export const createNotification = async ({
         companyName: metadata.companyName,
         jobTitle: metadata.jobTitle,
         reason: metadata.reason,
+        actionUrl: emailTarget.url,
+        actionLabel: emailTarget.label,
         notificationId: notification._id
       });
     } else if (typeCode === NotificationTypeCode.INTERVIEW_INVITATION) {
@@ -109,6 +124,8 @@ export const createNotification = async ({
         interviewType: metadata.interviewType,
         location: metadata.location,
         note: metadata.note,
+        actionUrl: emailTarget.url,
+        actionLabel: emailTarget.label,
         notificationId: notification._id
       });
     } else if (typeCode === NotificationTypeCode.MATCHING_JOB) {
@@ -117,6 +134,8 @@ export const createNotification = async ({
         toEmail: user.email,
         jobseekerName: user.fullName,
         jobs: metadata.jobs,
+        actionUrl: emailTarget.url,
+        actionLabel: emailTarget.label,
         notificationId: notification._id
       });
     } else {
@@ -129,6 +148,7 @@ export const createNotification = async ({
             <h2 style="color: #003f87;">${title}</h2>
             <p>Xin chào <strong>${user.fullName || 'bạn'}</strong>,</p>
             <p>${content}</p>
+            ${renderEmailActionButton(emailTarget.url, emailTarget.label)}
             <p style="margin-top: 24px;">Trân trọng,<br /><strong>Đội ngũ VietWorks</strong></p>
           </div>
         </div>
@@ -139,6 +159,8 @@ export const createNotification = async ({
         toEmail: user.email,
         subject: `VietWorks - ${title}`,
         html: emailHtml,
+        actionUrl: emailTarget.url,
+        actionLabel: emailTarget.label,
         notificationId: notification._id
       });
     }
@@ -162,3 +184,5 @@ const NotificationService = {
 };
 
 export default NotificationService;
+
+
