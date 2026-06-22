@@ -11,6 +11,7 @@ import JobLevel from '../models/jobLevelModels.js';
 import ExperienceLevel from '../models/experienceLevelModels.js';
 import { CompanyVerificationStatus, CommonStatus } from '../enums/masterDataEnums.js';
 import CompanyLocation from '../models/companyLocationModels.js';
+import Application from '../models/applicationModels.js';
 
 const ensureCompanyVerifiedForEmployer = async (userId) => {
   const employerProfile = await EmployerProfile.findOne({ userId }).select('companyId');
@@ -53,6 +54,29 @@ const ensureCompanyVerifiedForEmployer = async (userId) => {
     ok: true,
     companyId: employerProfile.companyId
   };
+};
+
+const attachHiringStats = async (jobs = []) => {
+  const jobIds = jobs.map((job) => job?._id).filter(Boolean);
+  if (!jobIds.length) return jobs;
+
+  const stats = await Application.aggregate([
+    { $match: { jobId: { $in: jobIds } } },
+    { $group: { _id: '$jobId', appliedCount: { $sum: 1 } } }
+  ]);
+
+  const statsMap = new Map(stats.map((item) => [String(item._id), item.appliedCount || 0]));
+
+  jobs.forEach((job) => {
+    const neededCount = Number(job.applicationCount || 0);
+    const appliedCount = statsMap.get(String(job._id)) || 0;
+    job.neededCount = neededCount;
+    job.appliedCount = appliedCount;
+    job.isHiringFull = neededCount > 0 && appliedCount >= neededCount;
+    job.remainingSlots = neededCount > 0 ? Math.max(neededCount - appliedCount, 0) : null;
+  });
+
+  return jobs;
 };
 /**
  * @desc Create a new job (draft status)
@@ -585,30 +609,36 @@ export const getJobById = async (req, res) => {
       });
     }
 
+    const jobObject = job.toObject();
+    await attachHiringStats([jobObject]);
+
     // Check if user can apply
     let canApply = true;
     let cannotApplyReason = null;
 
-    if (job.status === JobStatus.EXPIRED) {
+    if (jobObject.status === JobStatus.EXPIRED) {
       canApply = false;
       cannotApplyReason = 'Việc làm đã hết hạn';
-    } else if (job.status === JobStatus.CLOSED) {
+    } else if (jobObject.status === JobStatus.CLOSED) {
       canApply = false;
       cannotApplyReason = 'Việc làm đã đóng';
-    } else if (job.status === JobStatus.REJECTED) {
+    } else if (jobObject.status === JobStatus.REJECTED) {
       canApply = false;
       cannotApplyReason = 'Việc làm bị từ chối';
-    } else if (job.status === JobStatus.BANNED) {
+    } else if (jobObject.status === JobStatus.BANNED) {
       canApply = false;
       cannotApplyReason = 'Việc làm bị khóa';
-    } else if (new Date(job.deadline) < new Date()) {
+    } else if (new Date(jobObject.deadline) < new Date()) {
       canApply = false;
       cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
+    } else if (jobObject.isHiringFull) {
+      canApply = false;
+      cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
     }
 
     res.status(200).json({
       success: true,
-      data: job,
+      data: jobObject,
       canApply,
       cannotApplyReason
     });
@@ -902,6 +932,8 @@ export const getPublicJobs = async (req, res) => {
       Job.countDocuments(filter)
     ]);
 
+    await attachHiringStats(jobs);
+
     return res.status(200).json({
       success: true,
       data: jobs,
@@ -1077,10 +1109,16 @@ export const getPublicJobDetail = async (req, res) => {
       .lean();
 
     job.companyId.locations = companyLocations;
+    await attachHiringStats([job]);
+
+    const canApply = !job.isHiringFull;
+    const cannotApplyReason = job.isHiringFull ? 'Tin tuyển dụng đã tuyển đủ số lượng' : null;
 
     return res.status(200).json({
       success: true,
-      data: job
+      data: job,
+      canApply,
+      cannotApplyReason
     });
   } catch (error) {
     return res.status(500).json({
