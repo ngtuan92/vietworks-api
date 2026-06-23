@@ -26,5 +26,12 @@ const userServicePackageSchema = new mongoose.Schema({
   refundAmount: { type: Number, default: 0 }
 }, { timestamps: true });
 
+// Index để query nhanh "user X có gói active nào cho target Y" (chặn mua trùng)
+userServicePackageSchema.index({ userId: 1, targetType: 1, targetId: 1, status: 1 });
+// Index để query "danh sách gói đang active của user" (MySubscriptions page)
+userServicePackageSchema.index({ userId: 1, status: 1, expiredAt: 1 });
+// TTL: tự xoá record đã hết hạn sau 30 ngày (giữ lịch sử ngắn hạn)
+userServicePackageSchema.index({ expiredAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+
 const UserServicePackage = mongoose.model('UserServicePackage', userServicePackageSchema, 'user_service_packages');
 export default UserServicePackage;

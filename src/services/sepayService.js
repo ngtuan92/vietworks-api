@@ -24,25 +24,38 @@ export const createQRPaymentUrl = ({ account, bank, amount, orderCode }) => {
   return `https://qr.sepay.vn/img?${params}`;
 };
 
+// So sánh chuỗi theo thời-gian-hằng-số để tránh timing attack
+const timingSafeEqualStr = (a, b) => {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+};
+
 /**
- * Verify HMAC-SHA256 signature từ SePay webhook
- * @param {Object} payload - Request body từ SePay
- * @param {string} signature - Header x-sepay-signature
+ * Xác thực webhook SePay bằng chữ ký HMAC-SHA256.
+ * SePay gửi header x-sepay-signature (và tùy chọn x-sepay-timestamp).
+ * Thử cả 3 format ký vì SePay tùy cấu hình có thể khác nhau.
+ * ⚠️ HMAC tính trên RAW body (chuỗi gốc) — KHÔNG phải JSON.stringify lại.
+ * @param {string} rawBody   - body thô đúng như SePay gửi
+ * @param {string} signature - header x-sepay-signature
+ * @param {string} [timestamp] - header x-sepay-timestamp
  * @returns {boolean}
  */
-export const verifySepayWebhook = (payload, signature) => {
+export const verifySepayWebhook = (rawBody, signature, timestamp = '') => {
   const secret = process.env.SEPAY_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn('SEPAY_WEBHOOK_SECRET not configured - skipping verification');
+    console.warn('SEPAY_WEBHOOK_SECRET chưa cấu hình - BỎ QUA xác thực (chỉ dùng dev/mô phỏng)');
     return true;
   }
-
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
-    .digest('hex');
-
-  return signature === expectedSignature;
+  if (!signature || rawBody == null) return false;
+  const h = (data) => crypto.createHmac('sha256', secret).update(data).digest('hex');
+  const candidates = [
+    h(rawBody),                               // <hex>
+    'sha256=' + h(rawBody),                   // sha256=<hex>
+    'sha256=' + h(timestamp + '.' + rawBody)  // sha256=HMAC(timestamp + "." + body)
+  ];
+  return candidates.some(c => timingSafeEqualStr(c, signature));
 };
 
 /**
@@ -52,12 +65,25 @@ export const verifySepayWebhook = (payload, signature) => {
  * @param {Object} body - Request body từ SePay webhook
  * @returns {Object} Parsed data
  */
+/**
+ * Bóc mã đơn "SEVQR..." từ webhook.
+ * Ưu tiên field `code` (nếu SePay đã tách sẵn theo cấu hình mẫu mã thanh toán),
+ * nếu không có thì TỰ tìm trong nội dung chuyển khoản `content`.
+ * Mã = "SEVQR" + 12 ký tự. VietinBank BẮT BUỘC nội dung CK bắt đầu bằng SEVQR.
+ */
+const extractOrderCode = (body) => {
+  if (body.code) return String(body.code).toUpperCase();
+  const content = (body.content || '').toUpperCase();
+  const match = content.match(/SEVQR[A-Z0-9]{12}/);
+  return match ? match[0] : null;
+};
+
 export const parseSepayWebhook = (body) => {
   return {
     // ID duy nhất của giao dịch - dùng để chống trùng lặp
     transactionId: body.id,
-    // Mã đơn hàng trích xuất từ nội dung CK (VD: SEVN63DC8E5C)
-    orderCode: body.code,
+    // Mã đơn hàng: ưu tiên body.code, fallback bóc từ nội dung CK (body.content)
+    orderCode: extractOrderCode(body),
     // Số tiền VND
     amount: body.transferAmount,
     // "in" = tiền vào, "out" = tiền ra
@@ -84,10 +110,10 @@ export const parseSepayWebhook = (body) => {
  * Format: {PREFIX}{ORDER_ID}
  *
  * @param {string} transactionId - MongoDB ObjectId hoặc custom ID
- * @param {string} prefix - Prefix mã đơn (default: SEVN)
+ * @param {string} prefix - Prefix mã đơn (default: SEVQR — VietinBank yêu cầu)
  * @returns {string} Mã đơn hàng cho nội dung CK
  */
-export const generateOrderCode = (transactionId, prefix = 'SEVN') => {
+export const generateOrderCode = (transactionId, prefix = 'SEVQR') => {
   const cleanId = transactionId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(-12);
   return `${prefix}${cleanId}`;
 };
@@ -100,4 +126,36 @@ export const generateOrderCode = (transactionId, prefix = 'SEVN') => {
  */
 export const buildTransferContent = (orderCode) => {
   return `${orderCode} chuyen tien`;
+};
+
+/**
+ * FALLBACK khi SePay miss webhook (VietinBank hay miss):
+ * Hỏi thẳng API SePay xem có giao dịch nào khớp orderCode + đúng số tiền chưa.
+ * @returns {{transactionId:number, amount:number, referenceCode:string|null, transactionDate:string|null}|null}
+ */
+export const findSepayTransactionByCode = async (orderCode, amount) => {
+  const token = process.env.SEPAY_API_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch('https://my.sepay.vn/userapi/transactions/list?limit=20', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    const { transactions = [] } = await res.json();
+    const code = String(orderCode).toUpperCase();
+    const m = transactions.find(t =>
+      (t.transaction_content || '').toUpperCase().includes(code) &&
+      Number(t.amount_in) === Number(amount)
+    );
+    if (!m) return null;
+    return {
+      transactionId: Number(m.id),
+      amount: Number(m.amount_in),
+      referenceCode: m.reference_number || null,
+      transactionDate: m.transaction_date || null
+    };
+  } catch (e) {
+    console.error('findSepayTransactionByCode error:', e.message);
+    return null;
+  }
 };

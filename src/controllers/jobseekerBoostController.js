@@ -3,7 +3,8 @@ import Transaction from '../models/transactionModels.js';
 import CvBoost from '../models/cvBoostModels.js';
 import Wallet from '../models/walletModels.js';
 import UploadedCV from '../models/uploadedCvModels.js';
-import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod } from '../enums/paymentEnums.js';
+import UserServicePackage from '../models/userServicePackageModels.js';
+import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 
 export const getBoostPackages = async (req, res) => {
@@ -12,9 +13,41 @@ export const getBoostPackages = async (req, res) => {
       packageType: ServicePackageType.CV_BOOST,
       targetRole: ServicePackageTargetRole.JOBSEEKER,
       status: 'ACTIVE'
-    }).sort({ price: 1 });
+    }).sort({ price: 1 }).lean();
 
-    res.status(200).json({ success: true, data: packages });
+    // Nếu user login → enrich isOwned + activeSubscriptions cho từng package
+    let activeSubsByPackage = new Map();
+    if (req.user?._id) {
+      const activeSubs = await UserServicePackage.find({
+        userId: req.user._id,
+        status: UserServicePackageStatus.ACTIVE,
+        packageId: { $in: packages.map(p => p._id) }
+      })
+        .select('packageId targetType targetId startedAt expiredAt')
+        .lean();
+
+      for (const sub of activeSubs) {
+        const key = sub.packageId.toString();
+        if (!activeSubsByPackage.has(key)) activeSubsByPackage.set(key, []);
+        activeSubsByPackage.get(key).push({
+          _id: sub._id,
+          targetType: sub.targetType,
+          targetId: sub.targetId,
+          startedAt: sub.startedAt,
+          expiredAt: sub.expiredAt,
+          daysRemaining: sub.expiredAt
+            ? Math.max(0, Math.ceil((new Date(sub.expiredAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+            : null
+        });
+      }
+    }
+
+    const enriched = packages.map(pkg => {
+      const subs = activeSubsByPackage.get(pkg._id.toString()) || [];
+      return { ...pkg, isOwned: subs.length > 0, activeSubscriptions: subs, activeCount: subs.length };
+    });
+
+    res.status(200).json({ success: true, data: enriched });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -24,7 +57,7 @@ export const createBoostPayment = async (req, res) => {
   try {
     const userId = req.user._id;
     const { cvId } = req.params;
-    const { packageId } = req.body;
+    const { packageId, action = 'new' } = req.body;
 
     const cv = await UploadedCV.findOne({ _id: cvId, userId });
     if (!cv) {
@@ -34,6 +67,49 @@ export const createBoostPayment = async (req, res) => {
     const pkg = await ServicePackage.findById(packageId);
     if (!pkg || pkg.packageType !== ServicePackageType.CV_BOOST) {
       return res.status(400).json({ success: false, message: 'Invalid package' });
+    }
+
+    // ─── Check user đã có gói ACTIVE cho CV này chưa ───
+    const activeSubscription = await UserServicePackage.findOne({
+      userId,
+      targetType: PackageTargetType.CV,
+      targetId: cvId,
+      status: UserServicePackageStatus.ACTIVE
+    }).populate('packageId', 'name code price durationDays');
+
+    if (activeSubscription) {
+      if (action !== 'upgrade') {
+        // Chặn mua trùng, trả thông tin gói hiện tại để FE hiển thị modal upgrade
+        const daysRemaining = Math.max(
+          0,
+          Math.ceil((new Date(activeSubscription.expiredAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        );
+        return res.status(400).json({
+          success: false,
+          code: 'ALREADY_HAS_ACTIVE_PACKAGE',
+          message: `Bạn đang dùng gói "${activeSubscription.packageId?.name || activeSubscription.packageCode}" cho CV này (còn ${daysRemaining} ngày). Hãy nâng cấp hoặc đợi gói hết hạn.`,
+          data: {
+            currentPackage: {
+              name: activeSubscription.packageId?.name,
+              code: activeSubscription.packageCode,
+              expiredAt: activeSubscription.expiredAt,
+              daysRemaining
+            }
+          }
+        });
+      }
+
+      // action === 'upgrade': huỷ gói cũ
+      activeSubscription.status = UserServicePackageStatus.CANCELLED;
+      activeSubscription.cancelledAt = new Date();
+      activeSubscription.cancelledReason = 'UPGRADED';
+      await activeSubscription.save();
+
+      // Đồng bộ CvBoost sang EXPIRED
+      await CvBoost.updateMany(
+        { cvId, status: UserServicePackageStatus.ACTIVE },
+        { $set: { status: UserServicePackageStatus.EXPIRED } }
+      );
     }
 
     const transaction = await Transaction.create({
