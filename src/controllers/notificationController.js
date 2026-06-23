@@ -8,7 +8,9 @@ export const getMyNotifications = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const query = { receiverUserId: req.user._id, deletedAt: null };
-
+    if (req.query.status && req.query.status !== 'ALL') {
+      query.status = req.query.status;
+    }
     const [items, total, unreadCount] = await Promise.all([
       Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Notification.countDocuments(query),

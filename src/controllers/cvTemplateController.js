@@ -48,7 +48,7 @@ export const createCvTemplate = async (req, res) => {
           typeCode: NotificationTypeCode.SYSTEM_UPDATE,
           title: `[Lịch sử Broadcast] Ra mắt mẫu CV: ${name}`,
           content: 'Broadcast khi tạo mẫu CV mới',
-          metadata: { isBroadcastLog: true, targetRole: 'JOBSEEKER', sentCount: users.length }
+          metadata: { isBroadcastLog: true, targetRole: 'JOBSEEKER', sentCount: users.length, actionUrl: '/admin/cv-templates' }
         });
 
         // Chạy ngầm, không block
@@ -62,7 +62,7 @@ export const createCvTemplate = async (req, res) => {
                 typeCode: NotificationTypeCode.NEW_CV_TEMPLATE,
                 title: 'Mẫu CV mới đã ra mắt!',
                 content: `Hệ thống vừa ra mắt mẫu CV mới: "${name}". Hãy thử ngay!`,
-                metadata: { templateId: newTemplate._id, broadcastId: broadcastLog._id.toString() }
+                metadata: { templateId: newTemplate._id, broadcastId: broadcastLog._id.toString(), actionUrl: `/cv-templates/gallery?templateId=${newTemplate._id}` }
               })
             ));
           }
