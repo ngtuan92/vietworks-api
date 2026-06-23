@@ -1,4 +1,4 @@
-﻿import cron from 'node-cron';
+import cron from 'node-cron';
 import Job from '../models/jobModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import User from '../models/userModels.js';
@@ -10,9 +10,12 @@ const buildMatchingJobFilter = (profile, since) => {
   const desiredJob = profile.desiredJob || {};
   const skills = profile.skills || [];
 
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
   const filter = {
     status: JobStatus.PUBLISHED,
-    deadline: { $gte: new Date() },
+    deadline: { $gte: startOfToday },
     publishedAt: { $gte: since }
   };
 

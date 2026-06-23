@@ -285,3 +285,27 @@ export const getCareerGroups = async (req, res) => {
     res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
+
+export const deleteCvTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // The imported index.js already exported mongoose, but wait, mongoose is imported at the top.
+    
+    const template = await CvTemplate.findById(id);
+    if (!template) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
+    }
+
+    const cvCount = await Cv.countDocuments({ templateId: template._id });
+    if (cvCount > 0) {
+      return res.status(400).json({ success: false, message: 'Không thể xóa mẫu CV đã có người dùng sử dụng' });
+    }
+
+    await CvTemplate.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: 'Xóa mẫu CV thành công' });
+  } catch (error) {
+    console.error('Error in deleteCvTemplate:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
+  }
+};
