@@ -1,5 +1,6 @@
 import ServicePackage from '../models/servicePackageModels.js';
-import { ServicePackageCode, ServicePackageTargetRole, ServicePackageType, ServicePackageUnit } from '../enums/paymentEnums.js';
+import UserServicePackage from '../models/userServicePackageModels.js';
+import { ServicePackageCode, ServicePackageTargetRole, ServicePackageType, ServicePackageUnit, UserServicePackageStatus } from '../enums/paymentEnums.js';
 
 export const createPackage = async (req, res) => {
   try {
@@ -120,8 +121,47 @@ export const getPackages = async (req, res) => {
       filter.targetRole = { $in: ['JOBSEEKER', 'ALL'] };
     }
 
-    const packages = await ServicePackage.find(filter).sort({ sortOrder: 1, createdAt: -1 });
-    res.status(200).json({ success: true, data: packages });
+    const packages = await ServicePackage.find(filter).sort({ sortOrder: 1, createdAt: -1 }).lean();
+
+    // Nếu có user → enrich thêm isOwned + activeSubscription
+    let activeSubsByPackage = new Map();
+    if (req.user?._id) {
+      const activeSubs = await UserServicePackage.find({
+        userId: req.user._id,
+        status: UserServicePackageStatus.ACTIVE,
+        packageId: { $in: packages.map(p => p._id) }
+      })
+        .select('packageId targetType targetId startedAt expiredAt')
+        .lean();
+
+      // Group theo packageId (1 user có thể có nhiều subscription cùng gói cho nhiều target khác nhau)
+      for (const sub of activeSubs) {
+        const key = sub.packageId.toString();
+        if (!activeSubsByPackage.has(key)) activeSubsByPackage.set(key, []);
+        activeSubsByPackage.get(key).push({
+          _id: sub._id,
+          targetType: sub.targetType,
+          targetId: sub.targetId,
+          startedAt: sub.startedAt,
+          expiredAt: sub.expiredAt,
+          daysRemaining: sub.expiredAt
+            ? Math.max(0, Math.ceil((new Date(sub.expiredAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+            : null
+        });
+      }
+    }
+
+    const enriched = packages.map(pkg => {
+      const subs = activeSubsByPackage.get(pkg._id.toString()) || [];
+      return {
+        ...pkg,
+        isOwned: subs.length > 0,
+        activeSubscriptions: subs,
+        activeCount: subs.length
+      };
+    });
+
+    res.status(200).json({ success: true, data: enriched });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }

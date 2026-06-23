@@ -1,5 +1,6 @@
 import CvBoost from '../models/cvBoostModels.js';
 import JobBoost from '../models/jobBoostModels.js';
+import UserServicePackage from '../models/userServicePackageModels.js';
 import { UserServicePackageStatus } from '../enums/paymentEnums.js';
 
 export const expirePremiumServices = async (req, res) => {
@@ -16,11 +17,18 @@ export const expirePremiumServices = async (req, res) => {
       { $set: { status: UserServicePackageStatus.EXPIRED } }
     );
 
+    // Đồng bộ expire UserServicePackage (source of truth)
+    const uspResult = await UserServicePackage.updateMany(
+      { status: UserServicePackageStatus.ACTIVE, expiredAt: { $lte: now } },
+      { $set: { status: UserServicePackageStatus.EXPIRED } }
+    );
+
     res.status(200).json({
       success: true,
       data: {
         cvBoostsExpired: cvResult.modifiedCount,
         jobBoostsExpired: jobResult.modifiedCount,
+        userServicePackagesExpired: uspResult.modifiedCount,
         executedAt: now
       }
     });
