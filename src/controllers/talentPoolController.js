@@ -4,6 +4,7 @@ import UnlockedCandidate from '../models/unlockedCandidateModels.js';
 import Wallet from '../models/walletModels.js';
 import Transaction from '../models/transactionModels.js';
 import ServicePackage from '../models/servicePackageModels.js';
+import CvBoost from '../models/cvBoostModels.js';
 import { UserRole, AccountStatus } from '../enums/userEnums.js';
 import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType } from '../enums/paymentEnums.js';
 
@@ -33,7 +34,25 @@ export const getTalentPool = async (req, res) => {
           'user.role': UserRole.JOBSEEKER,
           'user.accountStatus': AccountStatus.ACTIVE
         }
-      }
+      },
+      // Lookup CvBoost ACTIVE để ưu tiên CV đang boost
+      {
+        $lookup: {
+          from: 'cv_boosts',
+          let: { cvId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$cvId', '$$cvId'] },
+                status: 'ACTIVE'
+              }
+            },
+            { $limit: 1 }
+          ],
+          as: 'activeBoost'
+        }
+      },
+      { $addFields: { isBoosted: { $gt: [{ $size: '$activeBoost' }, 0] } } }
     ];
 
     if (search) {
@@ -51,7 +70,8 @@ export const getTalentPool = async (req, res) => {
     const [countResult] = await UploadedCV.aggregate(countPipeline);
     const total = countResult?.total || 0;
 
-    pipeline.push({ $sort: { createdAt: -1 } }, { $skip: skip }, { $limit: parseInt(limit) });
+    // Sort: CV đang boost lên đầu, sau đó theo createdAt desc
+    pipeline.push({ $sort: { isBoosted: -1, createdAt: -1 } }, { $skip: skip }, { $limit: parseInt(limit) });
 
     const candidates = await UploadedCV.aggregate(pipeline);
 
@@ -71,7 +91,8 @@ export const getTalentPool = async (req, res) => {
       skills: c.skills,
       location: c.location,
       experienceYears: c.experienceYears,
-      isUnlocked: unlockedMap[c.user._id.toString()] || false
+      isUnlocked: unlockedMap[c.user._id.toString()] || false,
+      isBoosted: c.isBoosted || false
     }));
 
     res.status(200).json({

@@ -2,12 +2,13 @@ import Wallet from '../models/walletModels.js';
 import Transaction from '../models/transactionModels.js';
 import CvBoost from '../models/cvBoostModels.js';
 import JobBoost from '../models/jobBoostModels.js';
+import Job from '../models/jobModels.js';
 import ServicePackage from '../models/servicePackageModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
+import UploadedCV from '../models/uploadedCvModels.js';
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent, findSepayTransactionByCode } from '../services/sepayService.js';
-import { createNotification } from '../services/notificationService.js';
+import { notifyWalletDepositSuccess, notifyPackagePurchaseSuccess, notifyPaymentFailed } from '../services/paymentNotificationService.js';
 import { PaymentMethod, TransactionType, TransactionStatus, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
-import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
 import { UserRole } from '../enums/userEnums.js';
 
 export const createWallet = async (req, res) => {
@@ -127,6 +128,22 @@ async function processPaidTransaction(orderCode, sepay) {
   }
   if (transaction.amount !== sepay.amount) {
     console.error(`SePay: Lệch số tiền ${orderCode}: cần ${transaction.amount}, nhận ${sepay.amount}`);
+    // Mark transaction FAILED + notify user
+    await Transaction.findOneAndUpdate(
+      { _id: transaction._id, status: TransactionStatus.PENDING },
+      {
+        $set: {
+          status: TransactionStatus.FAILED,
+          'metadata.failedAt': new Date(),
+          'metadata.failedReason': `Số tiền chuyển ${sepay.amount} không khớp yêu cầu ${transaction.amount}`
+        }
+      }
+    );
+    notifyPaymentFailed({
+      userId: transaction.userId,
+      transaction: { ...transaction.toObject?.() ?? transaction, status: TransactionStatus.FAILED },
+      reason: `Số tiền chuyển ${sepay.amount.toLocaleString('vi-VN')} VND không khớp yêu cầu ${transaction.amount.toLocaleString('vi-VN')} VND`
+    });
     return false;
   }
 
@@ -190,53 +207,52 @@ async function processPaidTransaction(orderCode, sepay) {
       }
 
       // ─── Tạo CvBoost / JobBoost (giữ backward compat - dùng cho query nhanh) ───
+      // ─── ĐỒNG THỜI: cập nhật field "premium" / "boosted" trên Job/CV để query sort ───
       if (updated.targetType === 'CV') {
         const ex = await CvBoost.findOne({ cvId: updated.targetId, status: 'ACTIVE' });
-        if (!ex) await CvBoost.create({ cvId: updated.targetId, userId: updated.userId, packageId: pkg._id, startAt, endAt });
+        if (!ex) {
+          await CvBoost.create({ cvId: updated.targetId, userId: updated.userId, packageId: pkg._id, startAt, endAt });
+          // Set CV thành "boosted" để Talent Pool sort ưu tiên
+          await UploadedCV.updateOne(
+            { _id: updated.targetId, userId: updated.userId },
+            { $set: { isBoosted: true, boostedUntil: endAt } }
+          );
+        }
       } else if (updated.targetType === 'JOB') {
         const ex = await JobBoost.findOne({ jobId: updated.targetId, status: 'ACTIVE' });
-        if (!ex) await JobBoost.create({ jobId: updated.targetId, employerId: updated.userId, packageId: pkg._id, startAt, endAt });
+        if (!ex) {
+          await JobBoost.create({ jobId: updated.targetId, employerId: updated.userId, packageId: pkg._id, startAt, endAt });
+          // Set Job.premium.isActive = true + isUrgent = true (nhãn GẤP) để search/list ưu tiên
+          await Job.updateOne(
+            { _id: updated.targetId, createdBy: updated.userId },
+            {
+              $set: {
+                'premium.isActive': true,
+                'premium.startedAt': startAt,
+                'premium.expiredAt': endAt,
+                'premium.deactivatedAt': null,
+                'premium.deactivatedReason': null,
+                isUrgent: true
+              }
+            }
+          );
+        }
       }
 
       // ─── Tạo Notification (in-app) ───
-      try {
-        await createNotification({
-          receiverUserId: updated.userId,
-          typeCode: NotificationTypeCode.PACKAGE_PURCHASE_SUCCESS,
-          title: 'Mua gói dịch vụ thành công',
-          content: `Bạn đã kích hoạt gói "${pkg.name}" thành công. Hạn sử dụng đến ${endAt.toLocaleDateString('vi-VN')}.`,
-          channels: [NotificationChannel.IN_APP],
-          metadata: {
-            transactionId: updated._id.toString(),
-            orderCode: updated.metadata?.orderCode,
-            packageId: pkg._id.toString(),
-            packageName: pkg.name,
-            amount: updated.amount,
-            expiredAt: endAt
-          }
-        });
-      } catch (err) {
-        console.error('Tạo notification PACKAGE_PURCHASE_SUCCESS lỗi:', err.message);
-      }
+      notifyPackagePurchaseSuccess({
+        userId: updated.userId,
+        transaction: updated,
+        pkg,
+        endAt
+      });
     }
   } else if (updated.type === TransactionType.WALLET_DEPOSIT) {
     // ─── Notification cho nạp ví ───
-    try {
-      await createNotification({
-        receiverUserId: updated.userId,
-        typeCode: NotificationTypeCode.WALLET_DEPOSIT_SUCCESS,
-        title: 'Nạp tiền ví thành công',
-        content: `Bạn đã nạp thành công ${sepay.amount.toLocaleString('vi-VN')} VND vào ví.`,
-        channels: [NotificationChannel.IN_APP],
-        metadata: {
-          transactionId: updated._id.toString(),
-          orderCode: updated.metadata?.orderCode,
-          amount: sepay.amount
-        }
-      });
-    } catch (err) {
-      console.error('Tạo notification WALLET_DEPOSIT_SUCCESS lỗi:', err.message);
-    }
+    notifyWalletDepositSuccess({
+      userId: updated.userId,
+      transaction: updated
+    });
   }
 
   console.log(`SePay: ✅ Đã xử lý giao dịch ${orderCode}, amount ${sepay.amount}`);

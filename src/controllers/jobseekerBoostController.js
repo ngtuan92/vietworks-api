@@ -6,6 +6,7 @@ import UploadedCV from '../models/uploadedCvModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
+import { notifyPaymentCancelled } from '../services/paymentNotificationService.js';
 
 export const getBoostPackages = async (req, res) => {
   try {
@@ -104,6 +105,18 @@ export const createBoostPayment = async (req, res) => {
       activeSubscription.cancelledAt = new Date();
       activeSubscription.cancelledReason = 'UPGRADED';
       await activeSubscription.save();
+
+      // Notify user rằng subscription cũ đã bị huỷ (kèm giao dịch gốc nếu có)
+      if (activeSubscription.transactionId) {
+        const oldTxn = await Transaction.findById(activeSubscription.transactionId).lean();
+        if (oldTxn) {
+          notifyPaymentCancelled({
+            userId,
+            transaction: oldTxn,
+            reason: 'Nâng cấp lên gói mới'
+          });
+        }
+      }
 
       // Đồng bộ CvBoost sang EXPIRED
       await CvBoost.updateMany(
