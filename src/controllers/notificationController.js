@@ -91,6 +91,24 @@ export const deleteNotification = async (req, res) => {
   }
 };
 
+export const bulkDeleteNotifications = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Danh sách thông báo không hợp lệ' });
+    }
+
+    const result = await Notification.updateMany(
+      { _id: { $in: ids }, receiverUserId: req.user._id, deletedAt: null },
+      { $set: { deletedAt: new Date(), deletedByUserId: req.user._id } }
+    );
+
+    res.json({ success: true, modifiedCount: result.modifiedCount || 0, message: `Đã xóa ${result.modifiedCount || 0} thông báo` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Không thể xóa hàng loạt thông báo' });
+  }
+};
+
 export const getNotificationSettings = async (req, res) => {
   try {
     const settings = req.user.notificationSettings || new Map();

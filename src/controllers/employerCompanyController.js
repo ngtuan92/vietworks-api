@@ -1,4 +1,4 @@
-﻿import EmployerProfile from '../models/employerProfileModels.js';
+import EmployerProfile from '../models/employerProfileModels.js';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import { CommonStatus,  CompanyVerificationStatus
@@ -126,7 +126,7 @@ export const updateMyCompanyProfile = async (req, res) => {
    const currentCompany = await Company.findOne({
   _id: employerProfile.companyId,
   ownerUserId: req.user._id
-}).select('businessLicenseFile verificationStatus');
+}).select('name taxCode businessLicenseFile verificationStatus');
 
 if (!currentCompany) {
   return res.status(404).json({
@@ -135,29 +135,32 @@ if (!currentCompany) {
   });
 }
 
+let isCrucialInfoChanged = false;
+
+if (currentCompany.name !== name || currentCompany.taxCode !== taxCode) {
+  isCrucialInfoChanged = true;
+}
+
 if (businessLicenseFile !== undefined) {
   const oldFileUrl = currentCompany.businessLicenseFile?.fileUrl || null;
   const newFileUrl = businessLicenseFile?.fileUrl || null;
-  const isBusinessLicenseChanged = oldFileUrl !== newFileUrl;
-
+  if (oldFileUrl !== newFileUrl) {
+    isCrucialInfoChanged = true;
+  }
   updateData.businessLicenseFile = businessLicenseFile || null;
+}
 
-  if (isBusinessLicenseChanged) {
-    updateData.rejectionReason = null;
-    updateData.verifiedBy = null;
-    updateData.verifiedAt = null;
+if (isCrucialInfoChanged) {
+  updateData.rejectionReason = null;
+  updateData.verifiedBy = null;
+  updateData.verifiedAt = null;
 
-    if (currentCompany.verificationStatus === CompanyVerificationStatus.VERIFIED) {
-      updateData.verificationStatus = CompanyVerificationStatus.PENDING;
-    }
+  if (currentCompany.verificationStatus === CompanyVerificationStatus.VERIFIED) {
+    updateData.verificationStatus = CompanyVerificationStatus.PENDING;
+  }
 
-    if (currentCompany.verificationStatus === CompanyVerificationStatus.REJECTED) {
-      updateData.verificationStatus = CompanyVerificationStatus.UNVERIFIED;
-    }
-
-    if (currentCompany.verificationStatus === CompanyVerificationStatus.PENDING) {
-      updateData.verificationStatus = CompanyVerificationStatus.PENDING;
-    }
+  if (currentCompany.verificationStatus === CompanyVerificationStatus.REJECTED) {
+    updateData.verificationStatus = CompanyVerificationStatus.UNVERIFIED;
   }
 }
 

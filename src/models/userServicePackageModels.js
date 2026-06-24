@@ -10,7 +10,15 @@ import { objectId } from './sharedModels.js';
 const userServicePackageSchema = new mongoose.Schema({
   userId: { type: objectId, ref: 'User', required: true },
   companyId: { type: objectId, ref: 'Company', default: null },
-  packageId: { type: objectId, ref: 'ServicePackage', required: true },
+  packageId: { type: objectId, required: true }, // Removed ref
+  packageSnapshot: {
+    id: { type: objectId, required: true },
+    code: { type: String, required: true },
+    name: { type: String, required: true },
+    type: { type: String, required: true },
+    price: { type: Number, required: true },
+    durationDays: { type: Number, required: true }
+  },
   packageCode: { type: String, required: true },
   packageType: { type: String, enum: Object.values(ServicePackageType), required: true },
   targetType: { type: String, enum: Object.values(PackageTargetType), required: true },
