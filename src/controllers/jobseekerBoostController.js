@@ -134,6 +134,14 @@ export const createBoostPayment = async (req, res) => {
       targetType: 'CV',
       targetId: cvId,
       packageId,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
       description: `Boost CV ${cv.title} - ${pkg.name}`
     });
 

@@ -12,6 +12,17 @@ export const uploadCv = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Vui lòng chọn file CV để tải lên' });
     }
 
+    const userId = req.user._id;
+
+    const existingUploadedCvsCount = await UploadedCv.countDocuments({
+      userId,
+      status: CvStatus.ACTIVE
+    });
+
+    if (existingUploadedCvsCount >= 5) {
+      return res.status(400).json({ success: false, message: 'Bạn đã đạt giới hạn tải lên 5 file CV. Vui lòng xóa bớt file cũ để tải lên tệp mới.' });
+    }
+
     const { title } = req.body;
     let fileName = req.file.originalname;
     if (fileName.includes('%')) {
@@ -24,7 +35,7 @@ export const uploadCv = async (req, res) => {
     const fileType = req.file.mimetype;
     const fileSize = req.file.size;
 
-    const userId = req.user._id;
+    // userId variable is already defined above
 
     const folder = `vietworks/uploaded-cvs/${userId}`;
     const result = await uploadBufferToCloudinary(req.file.buffer, folder, 'raw');

@@ -6,6 +6,15 @@ export const createCv = async (req, res) => {
   try {
     const { templateId, title } = req.body;
 
+    const existingCvsCount = await Cv.countDocuments({
+      userId: req.user._id,
+      status: { $in: [CvStatus.ACTIVE, CvStatus.DRAFT] }
+    });
+
+    if (existingCvsCount >= 5) {
+      return res.status(400).json({ success: false, message: 'Bạn đã đạt giới hạn tạo 5 CV trực tuyến. Vui lòng xóa bớt CV cũ để tạo mới.' });
+    }
+
     if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
       return res.status(400).json({ success: false, message: 'Mẫu thiết kế CV không hợp lệ' });
     }
@@ -43,7 +52,7 @@ export const createCv = async (req, res) => {
           column: column,
           position: { x: 0, y: 0 },
           isVisible: true,
-          items: [] 
+          items: []
         };
       });
     }
@@ -101,7 +110,7 @@ export const updateCv = async (req, res) => {
     if (style) cv.style = { ...cv.style, ...style };
     if (previewImageUrl !== undefined) cv.previewImageUrl = previewImageUrl;
     if (status) cv.status = status;
-    
+
     if (templateId && templateId !== cv.templateId?.toString()) {
       const newTemplate = await CvTemplate.findById(templateId);
       if (newTemplate) {
@@ -159,9 +168,9 @@ export const getCvById = async (req, res) => {
 
 export const getUserCvs = async (req, res) => {
   try {
-      const cvs = await Cv.find({ userId: req.user._id, status: { $in: [CvStatus.ACTIVE, CvStatus.DRAFT] } })
-        .populate('templateId', 'name thumbnailUrl previewImageUrl')
-        .sort('-updatedAt');
+    const cvs = await Cv.find({ userId: req.user._id, status: { $in: [CvStatus.ACTIVE, CvStatus.DRAFT] } })
+      .populate('templateId', 'name thumbnailUrl previewImageUrl')
+      .sort('-updatedAt');
 
     res.status(200).json({ success: true, data: cvs });
   } catch (error) {
@@ -177,7 +186,7 @@ export const deleteCv = async (req, res) => {
     }
 
     const cv = await Cv.findOne({ _id: req.params.id, userId: req.user._id });
-    
+
     if (!cv) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy CV' });
     }

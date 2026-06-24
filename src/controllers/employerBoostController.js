@@ -98,6 +98,14 @@ export const createBoostPayment = async (req, res) => {
       targetType: 'JOB',
       targetId: jobId,
       packageId,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
       description: `Boost Job ${job.title} - ${pkg.name}`
     });
 
