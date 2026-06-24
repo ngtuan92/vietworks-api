@@ -3,14 +3,16 @@ import Transaction from '../models/transactionModels.js';
 import JobBoost from '../models/jobBoostModels.js';
 import Wallet from '../models/walletModels.js';
 import Job from '../models/jobModels.js';
-import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod } from '../enums/paymentEnums.js';
+import UserServicePackage from '../models/userServicePackageModels.js';
+import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
+import { notifyPaymentCancelled } from '../services/paymentNotificationService.js';
 
 export const createBoostPayment = async (req, res) => {
   try {
     const employerId = req.user._id;
     const { jobId } = req.params;
-    const { packageId } = req.body;
+    const { packageId, action = 'new' } = req.body;
 
     const job = await Job.findOne({ _id: jobId, employerId, status: 'PUBLISHED' });
     if (!job) {
@@ -23,14 +25,68 @@ export const createBoostPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Job deadline has passed' });
     }
 
-    const existing = await JobBoost.findOne({ jobId, status: 'ACTIVE' });
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'Job already boosted' });
-    }
-
     const pkg = await ServicePackage.findById(packageId);
     if (!pkg || pkg.packageType !== ServicePackageType.PREMIUM_JOB) {
       return res.status(400).json({ success: false, message: 'Invalid package' });
+    }
+
+    // ─── Check user đã có gói ACTIVE cho Job này chưa ───
+    const activeSubscription = await UserServicePackage.findOne({
+      userId: employerId,
+      targetType: PackageTargetType.JOB,
+      targetId: jobId,
+      status: UserServicePackageStatus.ACTIVE
+    }).populate('packageId', 'name code price durationDays');
+
+    if (activeSubscription) {
+      if (action !== 'upgrade') {
+        const daysRemaining = Math.max(
+          0,
+          Math.ceil((new Date(activeSubscription.expiredAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        );
+        return res.status(400).json({
+          success: false,
+          code: 'ALREADY_HAS_ACTIVE_PACKAGE',
+          message: `Tin tuyển dụng đang dùng gói "${activeSubscription.packageId?.name || activeSubscription.packageCode}" (còn ${daysRemaining} ngày). Hãy nâng cấp hoặc đợi gói hết hạn.`,
+          data: {
+            currentPackage: {
+              name: activeSubscription.packageId?.name,
+              code: activeSubscription.packageCode,
+              expiredAt: activeSubscription.expiredAt,
+              daysRemaining
+            }
+          }
+        });
+      }
+
+      // action === 'upgrade': huỷ gói cũ
+      activeSubscription.status = UserServicePackageStatus.CANCELLED;
+      activeSubscription.cancelledAt = new Date();
+      activeSubscription.cancelledReason = 'UPGRADED';
+      await activeSubscription.save();
+
+      // Notify user rằng subscription cũ đã bị huỷ (kèm giao dịch gốc nếu có)
+      if (activeSubscription.transactionId) {
+        const oldTxn = await Transaction.findById(activeSubscription.transactionId).lean();
+        if (oldTxn) {
+          notifyPaymentCancelled({
+            userId: employerId,
+            transaction: oldTxn,
+            reason: 'Nâng cấp lên gói mới'
+          });
+        }
+      }
+
+      await JobBoost.updateMany(
+        { jobId, status: UserServicePackageStatus.ACTIVE },
+        { $set: { status: UserServicePackageStatus.EXPIRED } }
+      );
+    } else {
+      // Backward compat: vẫn check JobBoost (legacy data trước khi có UserServicePackage)
+      const existingBoost = await JobBoost.findOne({ jobId, status: 'ACTIVE' });
+      if (existingBoost) {
+        return res.status(400).json({ success: false, message: 'Job already boosted' });
+      }
     }
 
     const transaction = await Transaction.create({

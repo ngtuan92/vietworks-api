@@ -553,13 +553,43 @@ export const getMyJobs = async (req, res) => {
       .populate('skills', 'name')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
+
+    // Enrich: thêm activeBoost cho mỗi job (nếu có UserServicePackage ACTIVE cho job đó)
+    const UserServicePackage = (await import('../models/userServicePackageModels.js')).default;
+    const jobIds = jobs.map(j => j._id);
+    const activeBoosts = await UserServicePackage.find({
+      userId,
+      status: 'ACTIVE',
+      targetType: 'JOB',
+      targetId: { $in: jobIds }
+    })
+      .populate('packageId', 'name code packageType durationDays')
+      .select('packageId targetId startedAt expiredAt')
+      .lean();
+
+    const boostMap = new Map();
+    for (const b of activeBoosts) {
+      boostMap.set(b.targetId.toString(), {
+        packageId: b.packageId?._id,
+        packageName: b.packageId?.name,
+        packageCode: b.packageId?.code,
+        startedAt: b.startedAt,
+        expiredAt: b.expiredAt,
+        daysRemaining: b.expiredAt
+          ? Math.max(0, Math.ceil((new Date(b.expiredAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+          : null
+      });
+    }
+
+    const enrichedJobs = jobs.map(j => ({ ...j, activeBoost: boostMap.get(j._id.toString()) || null }));
 
     const total = await Job.countDocuments(filter);
 
     res.status(200).json({
       success: true,
-      data: jobs,
+      data: enrichedJobs,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

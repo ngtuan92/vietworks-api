@@ -60,6 +60,33 @@ export const protect = async (req, res, next) => {
   }
 };
 
+/**
+ * Optional auth: gắn req.user nếu có token hợp lệ, KHÔNG chặn nếu thiếu.
+ * Dùng cho các route public muốn personalize response (ví dụ: list packages
+ * vẫn trả về cho khách, nhưng nếu user login thì thêm field isOwned).
+ */
+export const optionalAuth = async (req, res, next) => {
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const user = await User.findById(decoded.id);
+    if (user && !isBlockedAccount(user)) {
+      req.user = user;
+    }
+  } catch (err) {
+    // Token invalid - ignore, treat as anonymous
+  }
+  next();
+};
+
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

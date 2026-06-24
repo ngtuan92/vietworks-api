@@ -1,12 +1,12 @@
 import express from 'express';
 import { createPackage, updatePackage, updatePackageStatus, getPackages, getAllPackages, getPackageById } from '../controllers/packageController.js';
-import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { protect, authorize, optionalAuth } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
 
 const router = express.Router();
 
-// Public routes
-router.get('/packages', getPackages);
+// Public route, nhưng nếu user login thì BE enrich thêm field isOwned + activeSubscriptions cho mỗi package
+router.get('/packages', optionalAuth, getPackages);
 
 // Admin routes — áp dụng protect + authorize THEO TỪNG ROUTE.
 // KHÔNG dùng router.use(...) vì router này mount ở '/api' (dùng chung),
