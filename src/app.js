@@ -58,8 +58,10 @@ import employerAtsRoutes from './routes/employerAtsRoutes.js';
 import salaryRoutes from './routes/salaryRoutes.js';
 import adminNotificationRoutes from './routes/adminNotificationRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import aiChatbotRoutes from './routes/aiChatbotRoutes.js';
 
 // ─── Public & Static Routes ───
+app.use('/api/ai-chatbot', aiChatbotRoutes);
 app.use('/api', addressRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
