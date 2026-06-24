@@ -104,7 +104,7 @@ export const createJob = async (req, res) => {
       applyInstruction,
       deadline,
       isUrgent,
-      applicationCount
+      headcount
     } = req.body;
 
     // Validation
@@ -115,10 +115,10 @@ export const createJob = async (req, res) => {
       });
     }
 
-    if (!description || !requirements || !benefits || !workingTime || !applyInstruction || !applicationCount) {
+    if (!description || !requirements || !benefits || !workingTime || !applyInstruction || !headcount) {
       return res.status(400).json({
         success: false,
-        message: 'Thiếu thông tin bắt buộc: mô tả, yêu cầu, quyền lợi, thời gian làm việc, hướng dẫn ứng tuyển và số lượng ứng tuyển'
+        message: 'Thiếu thông tin bắt buộc: mô tả, yêu cầu, quyền lợi, thời gian làm việc, hướng dẫn ứng tuyển và số lượng cần tuyển'
       });
     }
 
@@ -182,7 +182,7 @@ export const createJob = async (req, res) => {
       applyInstruction,
       deadline: new Date(deadline),
       isUrgent: isUrgent || false,
-      applicationCount: applicationCount ? Number(applicationCount) : 0,
+      headcount: headcount ? Number(headcount) : 1,
       status: JobStatus.DRAFT
     });
 
@@ -327,7 +327,7 @@ export const updateJob = async (req, res) => {
     // Bao gồm các thông tin cốt lõi ảnh hưởng trực tiếp đến người lao động
     const coreFields = [
       'title', 'salary', 'description', 'requirements', 'benefits', 
-      'careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'experienceLevelId'
+      'careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'experienceLevelId', 'headcount'
     ];
 
     const allowedUpdates = [
@@ -719,10 +719,15 @@ export const getJobs = async (req, res) => {
       page = 1,
       limit = 20,
       sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      isUrgent,
+      isPremium
     } = req.query;
 
     const filter = { status: JobStatus.PUBLISHED };
+
+    if (isUrgent === 'true') filter.isUrgent = true;
+    if (isPremium === 'true') filter['premium.isActive'] = true;
 
     if (search) {
       filter.$or = [

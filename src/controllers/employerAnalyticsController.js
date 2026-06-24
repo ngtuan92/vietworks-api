@@ -88,6 +88,8 @@ export const getEmployerDashboardAnalytics = async (req, res) => {
       return {
         name: s.label,
         'Tổng hồ sơ': found?.total || 0,
+        'Chưa xem': found?.unread || 0,
+        'Đã xem': found?.viewed || 0,
         'Đã duyệt': found?.approved || 0,
         'Từ chối': found?.rejected || 0,
       };
