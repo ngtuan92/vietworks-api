@@ -27,6 +27,7 @@ export const CvBackgroundType = {
 
 export const CvStatus = {
   ACTIVE: 'ACTIVE',
+  DRAFT: 'DRAFT',
   DELETED: 'DELETED'
 };
 

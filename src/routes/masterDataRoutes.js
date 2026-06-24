@@ -250,7 +250,14 @@ router.get('/master-data/salary-ranges', adminCtrl.getSalaryRanges);
  */
 router.get('/master-data/career-groups/:careerGroupId/skills', adminCtrl.getSkillsByCareerGroup);
 
-
+/**
+ * @swagger
+ * /api/master-data/skills:
+ *   get:
+ *     summary: Get all active skills
+ *     tags: [Master Data]
+ */
+router.get('/master-data/skills', adminCtrl.getAllSkills);
 router.post('/admin/master-data/career-groups', adminCtrl.createCareerGroup);
 router.put('/admin/master-data/career-groups/:id', adminCtrl.updateCareerGroup);
 router.delete('/admin/master-data/career-groups/:id', adminCtrl.deleteCareerGroup);

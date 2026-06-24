@@ -19,7 +19,9 @@ export const createBoostPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Job not found or not owned' });
     }
 
-    if (new Date(job.deadline) < new Date()) {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (new Date(job.deadline) < startOfToday) {
       return res.status(400).json({ success: false, message: 'Job deadline has passed' });
     }
 

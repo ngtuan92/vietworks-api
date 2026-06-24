@@ -7,8 +7,14 @@ export const getMyNotifications = async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
     const skip = (page - 1) * limit;
 
-    const query = { receiverUserId: req.user._id, deletedAt: null };
-
+    const query = { 
+      receiverUserId: req.user._id, 
+      deletedAt: null,
+      'metadata.isBroadcastLog': { $ne: true } // Không hiện Lịch sử Broadcast trong chuông thông báo
+    };
+    if (req.query.status && req.query.status !== 'ALL') {
+      query.status = req.query.status;
+    }
     const [items, total, unreadCount] = await Promise.all([
       Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Notification.countDocuments(query),

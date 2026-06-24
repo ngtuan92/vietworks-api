@@ -1,4 +1,4 @@
-﻿import Job from '../models/jobModels.js';
+import Job from '../models/jobModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
 import Company from '../models/companyModels.js';
@@ -648,6 +648,9 @@ export const getJobById = async (req, res) => {
     let canApply = true;
     let cannotApplyReason = null;
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     if (jobObject.status === JobStatus.EXPIRED) {
       canApply = false;
       cannotApplyReason = 'Việc làm đã hết hạn';
@@ -660,7 +663,7 @@ export const getJobById = async (req, res) => {
     } else if (jobObject.status === JobStatus.BANNED) {
       canApply = false;
       cannotApplyReason = 'Việc làm bị khóa';
-    } else if (new Date(jobObject.deadline) < new Date()) {
+    } else if (new Date(jobObject.deadline) < startOfToday) {
       canApply = false;
       cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
     } else if (jobObject.isHiringFull) {
@@ -843,6 +846,7 @@ export const getPublicJobs = async (req, res) => {
     } = req.query;
 
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
     const filter = {
       status: JobStatus.PUBLISHED,
@@ -1013,6 +1017,7 @@ export const getSearchSuggestions = async (req, res) => {
     const { keyword = '', limit = 10 } = req.query;
     const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 20);
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const publishedFilter = {
       status: JobStatus.PUBLISHED,
       deadline: { $gte: now },
@@ -1098,6 +1103,7 @@ export const getPublicJobDetail = async (req, res) => {
     }
 
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const job = await Job.findOne({
       _id: jobId,

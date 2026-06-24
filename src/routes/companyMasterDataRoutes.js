@@ -2,7 +2,13 @@
 import express from 'express';
 import {
   getCompanyIndustries,
-  getCompanySizes
+  getCompanySizes,
+  createCompanyIndustry,
+  updateCompanyIndustry,
+  deleteCompanyIndustry,
+  createCompanySize,
+  updateCompanySize,
+  deleteCompanySize
 } from '../controllers/companyMasterDataController.js';
 
 const router = express.Router();
@@ -104,5 +110,13 @@ router.get('/company-master-data/industries', getCompanyIndustries);
  *         description: Lỗi server
  */
 router.get('/company-master-data/sizes', getCompanySizes);
+
+router.post('/admin/company-master-data/industries', createCompanyIndustry);
+router.put('/admin/company-master-data/industries/:id', updateCompanyIndustry);
+router.delete('/admin/company-master-data/industries/:id', deleteCompanyIndustry);
+
+router.post('/admin/company-master-data/sizes', createCompanySize);
+router.put('/admin/company-master-data/sizes/:id', updateCompanySize);
+router.delete('/admin/company-master-data/sizes/:id', deleteCompanySize);
 
 export default router;

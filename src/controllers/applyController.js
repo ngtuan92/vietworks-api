@@ -6,11 +6,15 @@ import { NotificationTypeCode } from '../enums/notificationEnums.js';
 import { CvStatus } from '../enums/cvEnums.js';
 import { JobStatus } from '../enums/jobEnums.js';
 
-const publicJobFilter = () => ({
-  status: JobStatus.PUBLISHED,
-  deadline: { $gte: new Date() },
-  $or: [{ bannedReason: null }, { bannedReason: { $exists: false } }]
-});
+const publicJobFilter = () => {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return {
+    status: JobStatus.PUBLISHED,
+    deadline: { $gte: startOfToday },
+    $or: [{ bannedReason: null }, { bannedReason: { $exists: false } }]
+  };
+};
 
 export const getApplyOptions = async (req, res) => {
   try {
@@ -34,7 +38,9 @@ export const getApplyOptions = async (req, res) => {
       });
     }
 
-    if (new Date(job.deadline) < new Date()) {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (new Date(job.deadline) < startOfToday) {
       return res.status(400).json({
         success: false,
         message: 'Việc làm đã hết hạn nộp hồ sơ'
@@ -165,7 +171,9 @@ export const applyJob = async (req, res) => {
       });
     }
 
-    if (new Date(job.deadline) < new Date()) {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (new Date(job.deadline) < startOfToday) {
       return res.status(400).json({
         success: false,
         message: 'Việc làm đã hết hạn nộp hồ sơ'
