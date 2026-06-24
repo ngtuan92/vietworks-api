@@ -536,11 +536,25 @@ export const deleteJob = async (req, res) => {
 export const getMyJobs = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { status, page = 1, limit = 20 } = req.query;
+    const { status, search, location, package: pkg, page = 1, limit = 20 } = req.query;
 
     const filter = { createdBy: userId };
     if (status) {
       filter.status = status;
+    }
+    if (search) {
+      filter.title = { $regex: search, $options: 'i' };
+    }
+    if (location) {
+      filter['workLocations.provinceName'] = { $regex: location, $options: 'i' };
+    }
+    if (pkg === 'GẤP') {
+      filter.isUrgent = true;
+    } else if (pkg === 'Nổi bật') {
+      filter['premium.isActive'] = true;
+    } else if (pkg === 'Thường') {
+      filter.isUrgent = { $ne: true };
+      filter['premium.isActive'] = { $ne: true };
     }
 
     const jobs = await Job.find(filter)

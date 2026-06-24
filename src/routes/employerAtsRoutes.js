@@ -9,10 +9,12 @@ import {
   rejectApplication,
   createInterviewInvitation
 } from '../controllers/employerAtsController.js';
+import { getEmployerDashboardAnalytics } from '../controllers/employerAnalyticsController.js';
 import { authorize, protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
+router.get('/employer/analytics/dashboard', protect, authorize('EMPLOYER'), getEmployerDashboardAnalytics);
 router.get('/employer/ats/jobs', protect, authorize('EMPLOYER'), getEmployerAtsJobs);
 router.get('/employer/jobs/:jobId/applications', protect, authorize('EMPLOYER'), getApplicationsByJob);
 router.get('/employer/applications/:id/cv-view', protect, authorize('EMPLOYER'), previewEmployerApplicationCv);
