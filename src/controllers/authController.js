@@ -484,6 +484,9 @@ const loginByRole = async (req, res, expectedRole = null) => {
       if (user.role === UserRole.JOBSEEKER) {
         const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
         avatarUrl = profile?.avatarUrl || null;
+      } else if (user.role === UserRole.EMPLOYER) {
+        const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+        avatarUrl = company?.avatarUrl || null;
       }
 
       sendTokenResponse(user, 200, res, { avatarUrl });
@@ -559,7 +562,16 @@ export const getCurrentUser = async (req, res) => {
       return blockedAccountResponse(res, user);
     }
 
-    const currentUser = formatCurrentUser(user);
+    let avatarUrl = null;
+    if (user.role === UserRole.JOBSEEKER) {
+      const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+      avatarUrl = profile?.avatarUrl || null;
+    } else if (user.role === UserRole.EMPLOYER) {
+      const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+      avatarUrl = company?.avatarUrl || null;
+    }
+
+    const currentUser = { ...formatCurrentUser(user), avatarUrl };
 
     return res.status(200).json({
       success: true,
@@ -754,7 +766,16 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
       await user.save();
     }
 
-    return sendTokenResponse(user, 200, res);
+    let avatarUrl = null;
+    if (user.role === UserRole.JOBSEEKER) {
+      const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+      avatarUrl = profile?.avatarUrl || null;
+    } else if (user.role === UserRole.EMPLOYER) {
+      const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+      avatarUrl = company?.avatarUrl || null;
+    }
+
+    return sendTokenResponse(user, 200, res, { avatarUrl });
   } catch (error) {
     console.error('Google Login Error:', error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' || 'Xác thực Google thất bại' });
@@ -799,7 +820,16 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
       await user.save();
     }
 
-    return sendTokenResponse(user, 200, res);
+    let avatarUrl = null;
+    if (user.role === UserRole.JOBSEEKER) {
+      const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+      avatarUrl = profile?.avatarUrl || null;
+    } else if (user.role === UserRole.EMPLOYER) {
+      const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+      avatarUrl = company?.avatarUrl || null;
+    }
+
+    return sendTokenResponse(user, 200, res, { avatarUrl });
   } catch (error) {
     console.error('LinkedIn Login Error:', error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' || 'Xác thực LinkedIn thất bại' });

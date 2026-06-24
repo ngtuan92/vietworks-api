@@ -101,9 +101,6 @@ export const updateCvTemplate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
     }
 
-    const cvCount = await Cv.countDocuments({ templateId: template._id });
-    
-    // Nếu có người dùng rồi, KHÔNG cho sửa layoutConfig, templateCode
     let updateData = {
       name,
       description,
@@ -112,13 +109,11 @@ export const updateCvTemplate = async (req, res) => {
       careerGroupId
     };
 
+    if (layoutConfig) updateData.layoutConfig = layoutConfig;
+    if (templateCode) updateData.templateCode = templateCode;
+
     if (name && name !== template.name) {
       updateData.slug = slugify(name);
-    }
-
-    if (cvCount === 0) {
-      if (layoutConfig) updateData.layoutConfig = layoutConfig;
-      if (templateCode) updateData.templateCode = templateCode;
     }
 
     const updatedTemplate = await CvTemplate.findByIdAndUpdate(
@@ -214,8 +209,8 @@ export const getAdminCvTemplates = async (req, res) => {
     const total = await CvTemplate.countDocuments(query);
 
     const templatesWithStats = await Promise.all(templates.map(async (tpl) => {
-      const usersCount = await Cv.countDocuments({ templateId: tpl._id });
-      return { ...tpl.toObject(), usersCount };
+      const uniqueUsers = await Cv.distinct('userId', { templateId: tpl._id });
+      return { ...tpl.toObject(), usersCount: uniqueUsers.length };
     }));
 
     res.status(200).json({
@@ -295,11 +290,6 @@ export const deleteCvTemplate = async (req, res) => {
     const template = await CvTemplate.findById(id);
     if (!template) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
-    }
-
-    const cvCount = await Cv.countDocuments({ templateId: template._id });
-    if (cvCount > 0) {
-      return res.status(400).json({ success: false, message: 'Không thể xóa mẫu CV đã có người dùng sử dụng' });
     }
 
     await CvTemplate.findByIdAndDelete(id);
