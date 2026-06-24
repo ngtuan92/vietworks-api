@@ -10,6 +10,15 @@ router.get('/employer/wallet', protect, authorize(UserRole.EMPLOYER), getWallet)
 router.post('/employer/wallet/deposit', protect, authorize(UserRole.EMPLOYER), deposit);
 router.get('/employer/transactions', protect, authorize(UserRole.EMPLOYER), getTransactions);
 
+// ─── Jobseeker wallet ───
+// Jobseeker cũng cần ví để nạp tiền mua Boost CV / AI Premium.
+// Tận dụng cùng controller (createWallet / getWallet / deposit)
+// — chúng không phụ thuộc role, chỉ lọc theo req.user._id.
+// Lưu ý: /jobseeker/transactions đã được khai báo trong jobseekerRoutes.js
+router.post('/jobseeker/wallet', protect, authorize(UserRole.JOBSEEKER), createWallet);
+router.get('/jobseeker/wallet', protect, authorize(UserRole.JOBSEEKER), getWallet);
+router.post('/jobseeker/wallet/deposit', protect, authorize(UserRole.JOBSEEKER), deposit);
+
 router.post('/payments/sepay/webhook', sepayWebhook);
 
 // Fallback: FE hỏi xem giao dịch đã thanh toán chưa (khi SePay miss webhook - VietinBank hay miss).
