@@ -12,6 +12,8 @@ import EmployerProfile from '../models/employerProfileModels.js';
 import { verifyGoogleToken } from '../services/googleAuthService.js';
 import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
 
 const normalizeEmail = (email) => {
   if (typeof email !== 'string') return null;
@@ -310,6 +312,20 @@ export const registerEmployer = async (req, res) => {
     });
 
     await sendOtpEmail({ toEmail: user.email, fullName: user.fullName, otpCode });
+
+    // Notify admins about new company registration
+    User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+      admins.forEach(admin => {
+        NotificationService.create({
+          receiverUserId: admin._id,
+          typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+          title: 'Có công ty đăng ký mới',
+          content: `Nhà tuyển dụng "${fullName}" vừa đăng ký công ty mới "${companyName}" và đang chờ duyệt.`,
+          channels: [NotificationChannel.IN_APP],
+          metadata: { actionUrl: '/admin/companies' }
+        }).catch(err => console.error('Notify admin error:', err));
+      });
+    }).catch(err => console.error('Find admins error:', err));
 
     return res.status(201).json({
       success: true,
