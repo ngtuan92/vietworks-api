@@ -3,6 +3,10 @@ import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import { CommonStatus,  CompanyVerificationStatus
  } from '../enums/masterDataEnums.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
+import User from '../models/userModels.js';
+import { UserRole } from '../enums/userEnums.js';
 
 export const getMyCompanyProfile = async (req, res) => {
   try {
@@ -185,9 +189,41 @@ if (isCrucialInfoChanged) {
       });
     }
 
+    if (isCrucialInfoChanged && company.verificationStatus === CompanyVerificationStatus.PENDING) {
+      // Notify employer
+      NotificationService.create({
+        receiverUserId: req.user._id,
+        typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+        title: 'Hồ sơ công ty cần duyệt lại',
+        content: `Hồ sơ công ty "${company.name}" vừa được cập nhật thông tin quan trọng (Tên công ty, Mã số thuế, hoặc Giấy phép kinh doanh) và đã chuyển sang trạng thái "Chờ duyệt". Vui lòng chờ Admin kiểm tra và xác nhận.`,
+        channels: [NotificationChannel.IN_APP]
+      }).catch(err => console.error('Notify employer error:', err));
+
+      // Notify admins
+      User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+        admins.forEach(admin => {
+          NotificationService.create({
+            receiverUserId: admin._id,
+            typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+            title: 'Công ty yêu cầu duyệt lại',
+            content: `Công ty "${company.name}" vừa cập nhật thông tin quan trọng và đang chờ duyệt lại.`,
+            channels: [NotificationChannel.IN_APP],
+            metadata: {
+              actionUrl: '/admin/companies'
+            }
+          }).catch(err => console.error('Notify admin error:', err));
+        });
+      }).catch(err => console.error('Find admins error:', err));
+    }
+
+    let responseMessage = 'Cập nhật hồ sơ công ty thành công';
+    if (isCrucialInfoChanged && company.verificationStatus === CompanyVerificationStatus.PENDING) {
+      responseMessage = 'Cập nhật thành công. Do bạn thay đổi thông tin quan trọng (Tên, Mã số thuế, Giấy phép) nên hồ sơ đang chờ Admin duyệt lại.';
+    }
+
     return res.status(200).json({
       success: true,
-      message: 'Cập nhật hồ sơ công ty thành công',
+      message: responseMessage,
       data: {
         id: company._id,
         name: company.name,
