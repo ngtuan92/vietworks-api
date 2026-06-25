@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+﻿import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import dotenv from 'dotenv';
 
@@ -44,10 +44,25 @@ export const uploadPdf = multer({
   }
 });
 
-export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates', resourceType = 'auto') => {
+export const uploadAny = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit for chat files
+  fileFilter: (req, file, cb) => {
+    // Cho phép tất cả các loại file an toàn
+    const blockedExtensions = ['.exe', '.bat', '.sh', '.cmd', '.msi'];
+    const fileName = (file.originalname || '').toLowerCase();
+    if (blockedExtensions.some(ext => fileName.endsWith(ext))) {
+      cb(new Error('Loại file này không được phép tải lên!'), false);
+    } else {
+      cb(null, true);
+    }
+  }
+});
+
+export const uploadBufferToCloudinary = (buffer, folder = 'vietworks/cv-templates', resourceType = 'auto', options = {}) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: resourceType },
+      { folder, resource_type: resourceType, ...options },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
@@ -78,3 +93,4 @@ export const generateSignedUrl = (fileUrl) => {
 
   return cloudinary.url(publicId, options);
 };
+

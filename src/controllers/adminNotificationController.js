@@ -1,4 +1,4 @@
-﻿import User from '../models/userModels.js';
+import User from '../models/userModels.js';
 import { Notification } from '../models/index.js';
 import NotificationService from '../services/notificationService.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
@@ -6,7 +6,7 @@ import { runMatchingJobScan } from '../jobs/matchingJobCron.js';
 
 export const createBroadcast = async (req, res) => {
   try {
-    const { title, content, targetRole, sendEmail } = req.body;
+    const { title, content, targetRole, sendEmail, actionUrl } = req.body;
     
     if (!title || !content || !targetRole) {
       return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đủ tiêu đề, nội dung và targetRole' });
@@ -42,7 +42,8 @@ export const createBroadcast = async (req, res) => {
         isBroadcastLog: true,
         targetRole,
         sentCount: users.length,
-        sendEmail: !!sendEmail
+        sendEmail: !!sendEmail,
+        actionUrl: actionUrl || undefined
       }
     });
 
@@ -57,7 +58,8 @@ export const createBroadcast = async (req, res) => {
           content,
           metadata: { 
             broadcastId: broadcastLog._id.toString(),
-            forceEmail: !!sendEmail 
+            forceEmail: !!sendEmail,
+            actionUrl: actionUrl || undefined
           }
         })
       ));
@@ -75,7 +77,7 @@ export const createBroadcast = async (req, res) => {
 export const sendToUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { title, content, sendEmail } = req.body;
+    const { title, content, sendEmail, actionUrl } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tiêu đề và nội dung' });
@@ -91,7 +93,7 @@ export const sendToUser = async (req, res) => {
       typeCode: NotificationTypeCode.SYSTEM_UPDATE,
       title,
       content,
-      metadata: { forceEmail: !!sendEmail }
+      metadata: { forceEmail: !!sendEmail, actionUrl: actionUrl || undefined }
     });
 
     res.status(200).json({ success: true, message: 'Gửi thông báo thành công' });

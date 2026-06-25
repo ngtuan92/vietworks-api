@@ -4,7 +4,9 @@ import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
 import {
   createMyCompanyLocation,
-  getMyCompanyLocations
+  getMyCompanyLocations,
+  updateMyCompanyLocation,
+  deleteMyCompanyLocation
 } from '../controllers/companyLocationController.js';
 
 const router = express.Router();
@@ -111,6 +113,20 @@ router.post(
   protect,
   authorize(UserRole.EMPLOYER),
   createMyCompanyLocation
+);
+
+router.put(
+  '/employer/company/locations/:id',
+  protect,
+  authorize(UserRole.EMPLOYER),
+  updateMyCompanyLocation
+);
+
+router.delete(
+  '/employer/company/locations/:id',
+  protect,
+  authorize(UserRole.EMPLOYER),
+  deleteMyCompanyLocation
 );
 
 export default router;

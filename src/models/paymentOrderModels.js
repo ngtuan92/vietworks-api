@@ -20,7 +20,15 @@ const paymentOrderSchema = new mongoose.Schema({
   sepayReferenceCode: { type: String, default: null },
   returnUrl: { type: String, required: true },
   cancelUrl: { type: String, required: true },
-  packageId: { type: objectId, ref: 'ServicePackage', default: null },
+  packageId: { type: objectId, default: null }, // Removed ref
+  packageSnapshot: {
+    id: { type: objectId, default: null },
+    code: { type: String, default: null },
+    name: { type: String, default: null },
+    type: { type: String, default: null },
+    price: { type: Number, default: null },
+    durationDays: { type: Number, default: null }
+  },
   targetType: { type: String, enum: Object.values(PackageTargetType), default: null },
   targetId: { type: objectId, default: null },
   status: { type: String, enum: Object.values(PaymentOrderStatus), default: PaymentOrderStatus.PENDING },

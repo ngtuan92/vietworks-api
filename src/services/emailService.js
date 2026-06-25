@@ -1,4 +1,4 @@
-import EmailLog from '../models/emailLogModels.js';
+﻿import EmailLog from '../models/emailLogModels.js';
 import { EmailDeliveryStatus, EmailProvider } from '../enums/notificationEnums.js';
 
 const createMailTransporter = async () => {
@@ -85,12 +85,24 @@ export const sendBusinessEmail = async ({ receiverUserId, toEmail, subject, html
   return log;
 };
 
+
+export const renderEmailActionButton = (url, label = 'Xem chi tiết') => {
+  if (!url) return '';
+  return `
+    <div style="margin: 28px 0 8px; text-align: center;">
+      <a href="${url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #0056B3; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 999px; font-size: 14px; font-weight: 800; letter-spacing: .2px; box-shadow: 0 12px 24px rgba(0, 86, 179, 0.22);">
+        ${label}
+      </a>
+      <p style="margin: 12px 0 0; color: #64748b; font-size: 12px; line-height: 1.5;">Nếu nút không hoạt động, hãy sao chép liên kết này vào trình duyệt:<br><span style="color: #0056B3; word-break: break-all;">${url}</span></p>
+    </div>
+  `;
+};
 // ─── Email templates cho từng loại sự kiện nghiệp vụ ───────────────────────
 
 /**
  * Gửi email thông báo nhà tuyển dụng đã xem CV.
  */
-export const sendCvViewedEmail = ({ receiverUserId, toEmail, jobseekerName, employerName, jobTitle, companyName, companyLogo, jobUrl, notificationId }) => {
+export const sendCvViewedEmail = ({ receiverUserId, toEmail, jobseekerName, employerName, jobTitle, companyName, companyLogo, jobUrl, actionUrl, actionLabel, notificationId }) => {
   const subject = `VietWorks - ${employerName || companyName} đã xem CV của bạn`;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto;">
@@ -112,7 +124,7 @@ export const sendCvViewedEmail = ({ receiverUserId, toEmail, jobseekerName, empl
               <td style="padding-left: 16px; vertical-align: top;">
                 <h3 style="margin: 0 0 4px 0; color: #003f87; font-size: 16px;">${jobTitle}</h3>
                 <p style="margin: 0 0 12px 0; color: #4b5563; font-size: 14px; font-weight: bold;">${companyName}</p>
-                <a href="${jobUrl || '#'}" style="display: inline-block; background: #003f87; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold;">Xem chi tiết công việc</a>
+                <a href="${actionUrl || jobUrl || '#'}" style="display: inline-block; background: #0056B3; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: bold; box-shadow: 0 10px 18px rgba(0,86,179,.2);">${actionLabel || 'Xem chi tiết công việc'}</a>
               </td>
             </tr>
           </table>
@@ -128,7 +140,19 @@ export const sendCvViewedEmail = ({ receiverUserId, toEmail, jobseekerName, empl
 /**
  * Gửi email thông báo lời mời phỏng vấn.
  */
-export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseekerName, companyName, jobTitle, interviewTime, interviewType, location, note, notificationId }) => {
+export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseekerName, companyName, jobTitle, interviewTime, interviewType, location, note, actionUrl, actionLabel, notificationId }) => {
+  const formatTime = (timeStr) => {
+    if (!timeStr) return 'Sẽ được thông báo';
+    const date = new Date(timeStr);
+    if (isNaN(date.getTime())) return timeStr;
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const mo = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${h}:${m} - ${d}/${mo}/${y}`;
+  };
+
   const subject = `VietWorks - Bạn nhận được lời mời phỏng vấn từ ${companyName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto;">
@@ -140,12 +164,13 @@ export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseeke
         <p>Xin chào <strong>${jobseekerName || 'bạn'}</strong>,</p>
         <p>Chúc mừng! Bạn đã được <strong>${companyName}</strong> mời phỏng vấn cho vị trí <strong>${jobTitle}</strong>.</p>
         <table style="width:100%; border-collapse:collapse; margin: 16px 0;">
-          <tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold; width:40%;">Thời gian</td><td style="padding:8px; border:1px solid #e5e7eb;">${interviewTime || 'Sẽ được thông báo'}</td></tr>
+          <tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold; width:40%;">Thời gian</td><td style="padding:8px; border:1px solid #e5e7eb;">${formatTime(interviewTime)}</td></tr>
           <tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Hình thức</td><td style="padding:8px; border:1px solid #e5e7eb;">${interviewType === 'ONLINE' ? 'Trực tuyến (Online)' : 'Trực tiếp (Offline)'}</td></tr>
           ${location ? `<tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Địa điểm / Link</td><td style="padding:8px; border:1px solid #e5e7eb;">${location}</td></tr>` : ''}
           ${note ? `<tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Ghi chú</td><td style="padding:8px; border:1px solid #e5e7eb;">${note}</td></tr>` : ''}
         </table>
-        <p>Hãy đăng nhập VietWorks để xem chi tiết và xác nhận lịch phỏng vấn.</p>
+        <p>Hãy đăng nhập VietWorks để xem chi tiết và chuẩn bị cho buổi phỏng vấn.</p>
+        ${renderEmailActionButton(actionUrl, actionLabel || 'Xem lời mời phỏng vấn')}
         <p style="margin-top: 24px;">Trân trọng,<br /><strong>Đội ngũ VietWorks</strong></p>
       </div>
     </div>
@@ -156,7 +181,7 @@ export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseeke
 /**
  * Gửi email thông báo hồ sơ bị từ chối.
  */
-export const sendRejectionEmail = ({ receiverUserId, toEmail, jobseekerName, companyName, jobTitle, reason, notificationId }) => {
+export const sendRejectionEmail = ({ receiverUserId, toEmail, jobseekerName, companyName, jobTitle, reason, actionUrl, actionLabel, notificationId }) => {
   const subject = `VietWorks - Cập nhật kết quả ứng tuyển tại ${companyName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto;">
@@ -170,6 +195,7 @@ export const sendRejectionEmail = ({ receiverUserId, toEmail, jobseekerName, com
         <p>Sau khi xem xét, nhà tuyển dụng xin phép thông báo rằng hồ sơ của bạn chưa phù hợp với yêu cầu lần này.</p>
         ${reason ? `<p><strong>Lý do:</strong> ${reason}</p>` : ''}
         <p>Đừng nản lòng! Hãy tiếp tục tìm kiếm cơ hội phù hợp trên VietWorks nhé.</p>
+        ${renderEmailActionButton(actionUrl, actionLabel || 'Xem trạng thái hồ sơ')}
         <p style="margin-top: 24px;">Trân trọng,<br /><strong>Đội ngũ VietWorks</strong></p>
       </div>
     </div>
@@ -180,7 +206,7 @@ export const sendRejectionEmail = ({ receiverUserId, toEmail, jobseekerName, com
 /**
  * Gửi email thông báo có tin nhắn mới.
  */
-export const sendNewMessageEmail = ({ receiverUserId, toEmail, receiverName, senderName, preview, notificationId }) => {
+export const sendNewMessageEmail = ({ receiverUserId, toEmail, receiverName, senderName, preview, actionUrl, actionLabel, notificationId }) => {
   const subject = `VietWorks - Bạn có tin nhắn mới từ ${senderName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto;">
@@ -195,6 +221,7 @@ export const sendNewMessageEmail = ({ receiverUserId, toEmail, receiverName, sen
           "${preview || '(Xem tin nhắn trong ứng dụng)'}"
         </blockquote>
         <p>Đăng nhập VietWorks để xem và trả lời tin nhắn.</p>
+        ${renderEmailActionButton(actionUrl, actionLabel || 'Mở tin nhắn')}
         <p style="margin-top: 24px;">Trân trọng,<br /><strong>Đội ngũ VietWorks</strong></p>
       </div>
     </div>
@@ -205,7 +232,7 @@ export const sendNewMessageEmail = ({ receiverUserId, toEmail, receiverName, sen
 /**
  * Gửi email thông báo việc làm phù hợp (Matching Jobs).
  */
-export const sendMatchingJobsEmail = ({ receiverUserId, toEmail, jobseekerName, jobs = [], notificationId }) => {
+export const sendMatchingJobsEmail = ({ receiverUserId, toEmail, jobseekerName, jobs = [], actionUrl, actionLabel, notificationId }) => {
   const subject = `VietWorks - Có ${jobs.length} việc làm mới phù hợp với bạn!`;
   
   const jobCardsHtml = jobs.map(job => `
@@ -241,6 +268,7 @@ export const sendMatchingJobsEmail = ({ receiverUserId, toEmail, jobseekerName, 
           ${jobCardsHtml}
         </div>
 
+        ${renderEmailActionButton(actionUrl, actionLabel || 'Xem việc làm phù hợp')}
         <p style="margin-top: 24px;">Chúc bạn tìm được công việc ưng ý!</p>
         <p>Trân trọng,<br /><strong>Đội ngũ VietWorks</strong></p>
       </div>
@@ -252,7 +280,7 @@ export const sendMatchingJobsEmail = ({ receiverUserId, toEmail, jobseekerName, 
 /**
  * Gửi email thông báo ra mắt mẫu CV mới.
  */
-export const sendNewCvTemplateEmail = ({ receiverUserId, toEmail, jobseekerName, cvTemplate = {}, notificationId }) => {
+export const sendNewCvTemplateEmail = ({ receiverUserId, toEmail, jobseekerName, cvTemplate = {}, actionUrl, actionLabel, notificationId }) => {
   const subject = `VietWorks - Trải nghiệm mẫu CV mới: ${cvTemplate.name || 'Mẫu CV Chuyên Nghiệp'}`;
   
   const html = `
@@ -269,7 +297,7 @@ export const sendNewCvTemplateEmail = ({ receiverUserId, toEmail, jobseekerName,
           <img src="${cvTemplate.thumbnail || 'https://via.placeholder.com/400x250?text=CV+Template'}" alt="CV Template" style="width: 100%; max-width: 400px; border-radius: 8px; border: 1px solid #f3f4f6; margin-bottom: 16px;">
           <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 18px;">${cvTemplate.name || 'Mẫu CV Mới'}</h3>
           <p style="margin: 0 0 16px 0; color: #4b5563; font-size: 14px;">${cvTemplate.description || 'Thiết kế hiện đại, tinh tế, phù hợp cho nhiều ngành nghề.'}</p>
-          <a href="${cvTemplate.templateUrl || '#'}" style="display: inline-block; background: #003f87; color: #ffffff; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-weight: bold;">Tạo CV với mẫu này ngay</a>
+          <a href="${actionUrl || cvTemplate.templateUrl || '#'}" style="display: inline-block; background: #0056B3; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-size: 14px; font-weight: 800; box-shadow: 0 10px 18px rgba(0,86,179,.2);">${actionLabel || 'Tạo CV với mẫu này ngay'}</a>
         </div>
 
         <p>Truy cập VietWorks để khám phá thêm nhiều mẫu CV chuyên nghiệp khác.</p>
@@ -314,3 +342,5 @@ export const sendPasswordResetEmail = async ({ toEmail, fullName, resetUrl }) =>
 
   return sendHtmlEmail({ toEmail, subject, html });
 };
+
+

@@ -7,8 +7,14 @@ export const getMyNotifications = async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
     const skip = (page - 1) * limit;
 
-    const query = { receiverUserId: req.user._id, deletedAt: null };
-
+    const query = { 
+      receiverUserId: req.user._id, 
+      deletedAt: null,
+      'metadata.isBroadcastLog': { $ne: true } // Không hiện Lịch sử Broadcast trong chuông thông báo
+    };
+    if (req.query.status && req.query.status !== 'ALL') {
+      query.status = req.query.status;
+    }
     const [items, total, unreadCount] = await Promise.all([
       Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Notification.countDocuments(query),
@@ -82,6 +88,24 @@ export const deleteNotification = async (req, res) => {
     res.json({ success: true, message: 'Đã xóa thông báo khỏi danh sách của bạn' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Không thể xóa thông báo' });
+  }
+};
+
+export const bulkDeleteNotifications = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: 'Danh sách thông báo không hợp lệ' });
+    }
+
+    const result = await Notification.updateMany(
+      { _id: { $in: ids }, receiverUserId: req.user._id, deletedAt: null },
+      { $set: { deletedAt: new Date(), deletedByUserId: req.user._id } }
+    );
+
+    res.json({ success: true, modifiedCount: result.modifiedCount || 0, message: `Đã xóa ${result.modifiedCount || 0} thông báo` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Không thể xóa hàng loạt thông báo' });
   }
 };
 

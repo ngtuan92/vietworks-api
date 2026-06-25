@@ -6,6 +6,15 @@ export const createCv = async (req, res) => {
   try {
     const { templateId, title } = req.body;
 
+    const existingCvsCount = await Cv.countDocuments({
+      userId: req.user._id,
+      status: { $in: [CvStatus.ACTIVE, CvStatus.DRAFT] }
+    });
+
+    if (existingCvsCount >= 5) {
+      return res.status(400).json({ success: false, message: 'Bạn đã đạt giới hạn tạo 5 CV trực tuyến. Vui lòng xóa bớt CV cũ để tạo mới.' });
+    }
+
     if (!templateId || !mongoose.Types.ObjectId.isValid(templateId)) {
       return res.status(400).json({ success: false, message: 'Mẫu thiết kế CV không hợp lệ' });
     }
@@ -43,18 +52,20 @@ export const createCv = async (req, res) => {
           column: column,
           position: { x: 0, y: 0 },
           isVisible: true,
-          items: [] 
+          items: []
         };
       });
     }
 
-    const activeCvsCount = await Cv.countDocuments({ userId: req.user._id, status: CvStatus.ACTIVE });
-    const isMain = activeCvsCount === 0;
+    // Drafts do not automatically become main CVs
+    const isMain = false;
 
     const newCv = await Cv.create({
       userId: req.user._id,
       title: title || `CV - ${template.name}`,
       templateId,
+      templateCode: template.templateCode,
+      previewImageUrl: template.previewImageUrl || template.thumbnailUrl,
       style: {
         fontId: template.layoutConfig?.defaultFontId || null,
         themeColorId: template.layoutConfig?.defaultColorId || null,
@@ -66,7 +77,7 @@ export const createCv = async (req, res) => {
       },
       sections: sectionsState,
       isMain,
-      status: CvStatus.ACTIVE
+      status: CvStatus.DRAFT
     });
 
     res.status(201).json({ success: true, data: newCv });
@@ -83,7 +94,7 @@ export const createCv = async (req, res) => {
 
 export const updateCv = async (req, res) => {
   try {
-    const { title, sections, style, isMain, previewImageUrl } = req.body;
+    const { title, sections, style, isMain, previewImageUrl, status, templateId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
@@ -98,6 +109,18 @@ export const updateCv = async (req, res) => {
     if (sections) cv.sections = sections;
     if (style) cv.style = { ...cv.style, ...style };
     if (previewImageUrl !== undefined) cv.previewImageUrl = previewImageUrl;
+    if (status) cv.status = status;
+
+    if (templateId && templateId !== cv.templateId?.toString()) {
+      const newTemplate = await CvTemplate.findById(templateId);
+      if (newTemplate) {
+        cv.templateId = newTemplate._id;
+        cv.templateCode = newTemplate.templateCode;
+        if (!previewImageUrl) {
+          cv.previewImageUrl = newTemplate.previewImageUrl || newTemplate.thumbnailUrl;
+        }
+      }
+    }
 
     if (isMain === true) {
       await Cv.updateMany({ userId: req.user._id, _id: { $ne: cv._id } }, { isMain: false });
@@ -145,8 +168,8 @@ export const getCvById = async (req, res) => {
 
 export const getUserCvs = async (req, res) => {
   try {
-    const cvs = await Cv.find({ userId: req.user._id, status: CvStatus.ACTIVE })
-      .populate('templateId', 'name thumbnailUrl')
+    const cvs = await Cv.find({ userId: req.user._id, status: { $in: [CvStatus.ACTIVE, CvStatus.DRAFT] } })
+      .populate('templateId', 'name thumbnailUrl previewImageUrl')
       .sort('-updatedAt');
 
     res.status(200).json({ success: true, data: cvs });
@@ -163,7 +186,7 @@ export const deleteCv = async (req, res) => {
     }
 
     const cv = await Cv.findOne({ _id: req.params.id, userId: req.user._id });
-    
+
     if (!cv) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy CV' });
     }

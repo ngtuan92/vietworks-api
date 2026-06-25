@@ -48,7 +48,7 @@ export const createCvTemplate = async (req, res) => {
           typeCode: NotificationTypeCode.SYSTEM_UPDATE,
           title: `[Lịch sử Broadcast] Ra mắt mẫu CV: ${name}`,
           content: 'Broadcast khi tạo mẫu CV mới',
-          metadata: { isBroadcastLog: true, targetRole: 'JOBSEEKER', sentCount: users.length }
+          metadata: { isBroadcastLog: true, targetRole: 'JOBSEEKER', sentCount: users.length, actionUrl: '/admin/cv-templates' }
         });
 
         // Chạy ngầm, không block
@@ -62,7 +62,7 @@ export const createCvTemplate = async (req, res) => {
                 typeCode: NotificationTypeCode.NEW_CV_TEMPLATE,
                 title: 'Mẫu CV mới đã ra mắt!',
                 content: `Hệ thống vừa ra mắt mẫu CV mới: "${name}". Hãy thử ngay!`,
-                metadata: { templateId: newTemplate._id, broadcastId: broadcastLog._id.toString() }
+                metadata: { templateId: newTemplate._id, broadcastId: broadcastLog._id.toString(), actionUrl: `/cv-templates/gallery?templateId=${newTemplate._id}` }
               })
             ));
           }
@@ -101,9 +101,6 @@ export const updateCvTemplate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
     }
 
-    const cvCount = await Cv.countDocuments({ templateId: template._id });
-    
-    // Nếu có người dùng rồi, KHÔNG cho sửa layoutConfig, templateCode
     let updateData = {
       name,
       description,
@@ -112,13 +109,11 @@ export const updateCvTemplate = async (req, res) => {
       careerGroupId
     };
 
+    if (layoutConfig) updateData.layoutConfig = layoutConfig;
+    if (templateCode) updateData.templateCode = templateCode;
+
     if (name && name !== template.name) {
       updateData.slug = slugify(name);
-    }
-
-    if (cvCount === 0) {
-      if (layoutConfig) updateData.layoutConfig = layoutConfig;
-      if (templateCode) updateData.templateCode = templateCode;
     }
 
     const updatedTemplate = await CvTemplate.findByIdAndUpdate(
@@ -214,8 +209,8 @@ export const getAdminCvTemplates = async (req, res) => {
     const total = await CvTemplate.countDocuments(query);
 
     const templatesWithStats = await Promise.all(templates.map(async (tpl) => {
-      const usersCount = await Cv.countDocuments({ templateId: tpl._id });
-      return { ...tpl.toObject(), usersCount };
+      const uniqueUsers = await Cv.distinct('userId', { templateId: tpl._id });
+      return { ...tpl.toObject(), usersCount: uniqueUsers.length };
     }));
 
     res.status(200).json({
@@ -282,6 +277,25 @@ export const getCareerGroups = async (req, res) => {
     res.status(200).json({ success: true, data: groups });
   } catch (error) {
     console.error('Error in getCareerGroups:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
+  }
+};
+
+export const deleteCvTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // The imported index.js already exported mongoose, but wait, mongoose is imported at the top.
+    
+    const template = await CvTemplate.findById(id);
+    if (!template) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy mẫu CV' });
+    }
+
+    await CvTemplate.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: 'Xóa mẫu CV thành công' });
+  } catch (error) {
+    console.error('Error in deleteCvTemplate:', error);
     res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };

@@ -177,10 +177,11 @@ async function processPaidTransaction(orderCode, sepay) {
 
   // Mua gói boost → kích hoạt ngay
   if (updated.type === TransactionType.PACKAGE_PURCHASE) {
-    const pkg = await ServicePackage.findById(updated.packageId);
+    const pkg = updated.packageSnapshot || await ServicePackage.findById(updated.packageId).lean();
     if (pkg) {
       const startAt = new Date();
-      const endAt = new Date(startAt.getTime() + (pkg.durationDays || 7) * 24 * 60 * 60 * 1000);
+      const durationDays = pkg.durationDays || 7;
+      const endAt = new Date(startAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
       // ─── Tạo UserServicePackage (source of truth cho subscription cấp user) ───
       try {
@@ -190,9 +191,17 @@ async function processPaidTransaction(orderCode, sepay) {
         if (!existed) {
           await UserServicePackage.create({
             userId: updated.userId,
-            packageId: pkg._id,
+            packageId: updated.packageId || pkg.id || pkg._id,
+            packageSnapshot: {
+              id: pkg.id || pkg._id,
+              code: pkg.code,
+              name: pkg.name,
+              type: pkg.type || pkg.packageType,
+              price: pkg.price,
+              durationDays: durationDays
+            },
             packageCode: pkg.code,
-            packageType: pkg.packageType,
+            packageType: pkg.type || pkg.packageType,
             targetType: updated.targetType || PackageTargetType.USER,
             targetId: updated.targetId || updated.userId,
             startedAt: startAt,
@@ -409,8 +418,8 @@ export const getTransactionByOrderCode = async (req, res) => {
     }
 
     // Lấy package info
-    let packageInfo = null;
-    if (transaction.packageId) {
+    let packageInfo = transaction.packageSnapshot || null;
+    if (!packageInfo && transaction.packageId) {
       packageInfo = await ServicePackage.findById(transaction.packageId)
         .select('name code packageType durationDays benefits price')
         .lean();
@@ -474,7 +483,7 @@ export const getMySubscriptions = async (req, res) => {
     if (targetType) filter.targetType = targetType;
 
     const subscriptions = await UserServicePackage.find(filter)
-      .populate('packageId', 'name code packageType durationDays benefits price')
+      .populate('packageId', 'name code packageType durationDays benefits price') // Fallback cho dữ liệu cũ
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
@@ -504,7 +513,10 @@ export const getMySubscriptions = async (req, res) => {
       const expired = s.expiredAt ? new Date(s.expiredAt).getTime() : null;
       const daysRemaining = expired ? Math.max(0, Math.ceil((expired - now) / (1000 * 60 * 60 * 24))) : null;
 
-      return { ...s, targetTitle, daysRemaining };
+      // Ưu tiên dùng packageSnapshot nếu có
+      const pkgInfo = s.packageSnapshot || s.packageId;
+
+      return { ...s, packageId: pkgInfo, targetTitle, daysRemaining };
     });
 
     const total = await UserServicePackage.countDocuments(filter);

@@ -195,6 +195,15 @@ export const unlockCandidate = async (req, res) => {
       paymentMethod: PaymentMethod.WALLET,
       targetType: 'CV',
       targetId: cvId,
+      packageId: pkg._id,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
       description: `Mở khóa CV (lẻ) - ${candidateId}`
     });
 

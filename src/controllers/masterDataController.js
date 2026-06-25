@@ -128,7 +128,25 @@ export const getSkillsByCareerGroup = async (req, res) => {
   }
 };
 
+export const getAllSkills = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
 
+    const skills = await Skill.find(filter)
+      .select('name slug aliases status careerGroupIds')
+      .sort({ name: 1 });
+
+    return res.status(200).json({
+      success: true,
+      count: skills.length,
+      data: skills
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
 
 export const createCareerGroup = async (req, res) => {
   try {

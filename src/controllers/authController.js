@@ -12,6 +12,8 @@ import EmployerProfile from '../models/employerProfileModels.js';
 import { verifyGoogleToken } from '../services/googleAuthService.js';
 import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
 
 const normalizeEmail = (email) => {
   if (typeof email !== 'string') return null;
@@ -311,6 +313,20 @@ export const registerEmployer = async (req, res) => {
 
     await sendOtpEmail({ toEmail: user.email, fullName: user.fullName, otpCode });
 
+    // Notify admins about new company registration
+    User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+      admins.forEach(admin => {
+        NotificationService.create({
+          receiverUserId: admin._id,
+          typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+          title: 'Có công ty đăng ký mới',
+          content: `Nhà tuyển dụng "${fullName}" vừa đăng ký công ty mới "${companyName}" và đang chờ duyệt.`,
+          channels: [NotificationChannel.IN_APP],
+          metadata: { actionUrl: '/admin/companies' }
+        }).catch(err => console.error('Notify admin error:', err));
+      });
+    }).catch(err => console.error('Find admins error:', err));
+
     return res.status(201).json({
       success: true,
       message: 'Đăng ký nhà tuyển dụng thành công. Mã OTP đã được gửi đến email để xác thực.',
@@ -484,6 +500,9 @@ const loginByRole = async (req, res, expectedRole = null) => {
       if (user.role === UserRole.JOBSEEKER) {
         const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
         avatarUrl = profile?.avatarUrl || null;
+      } else if (user.role === UserRole.EMPLOYER) {
+        const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+        avatarUrl = company?.avatarUrl || null;
       }
 
       sendTokenResponse(user, 200, res, { avatarUrl });
@@ -559,7 +578,16 @@ export const getCurrentUser = async (req, res) => {
       return blockedAccountResponse(res, user);
     }
 
-    const currentUser = formatCurrentUser(user);
+    let avatarUrl = null;
+    if (user.role === UserRole.JOBSEEKER) {
+      const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+      avatarUrl = profile?.avatarUrl || null;
+    } else if (user.role === UserRole.EMPLOYER) {
+      const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+      avatarUrl = company?.avatarUrl || null;
+    }
+
+    const currentUser = { ...formatCurrentUser(user), avatarUrl };
 
     return res.status(200).json({
       success: true,
@@ -754,7 +782,16 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
       await user.save();
     }
 
-    return sendTokenResponse(user, 200, res);
+    let avatarUrl = null;
+    if (user.role === UserRole.JOBSEEKER) {
+      const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+      avatarUrl = profile?.avatarUrl || null;
+    } else if (user.role === UserRole.EMPLOYER) {
+      const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+      avatarUrl = company?.avatarUrl || null;
+    }
+
+    return sendTokenResponse(user, 200, res, { avatarUrl });
   } catch (error) {
     console.error('Google Login Error:', error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' || 'Xác thực Google thất bại' });
@@ -799,7 +836,16 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
       await user.save();
     }
 
-    return sendTokenResponse(user, 200, res);
+    let avatarUrl = null;
+    if (user.role === UserRole.JOBSEEKER) {
+      const profile = await JobseekerProfile.findOne({ userId: user._id }).select('avatarUrl').lean();
+      avatarUrl = profile?.avatarUrl || null;
+    } else if (user.role === UserRole.EMPLOYER) {
+      const company = await Company.findOne({ ownerUserId: user._id }).select('avatarUrl').lean();
+      avatarUrl = company?.avatarUrl || null;
+    }
+
+    return sendTokenResponse(user, 200, res, { avatarUrl });
   } catch (error) {
     console.error('LinkedIn Login Error:', error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' || 'Xác thực LinkedIn thất bại' });
