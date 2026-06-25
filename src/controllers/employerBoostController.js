@@ -6,13 +6,66 @@ import Job from '../models/jobModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
-import { notifyPaymentCancelled } from '../services/paymentNotificationService.js';
+import { notifyPaymentCancelled, notifyPackagePurchaseSuccess } from '../services/paymentNotificationService.js';
+
+/**
+ * Kích hoạt gói PREMIUM_JOB cho 1 Job ngay lập tức (dùng cho cả WALLET lẫn SEPAY-success).
+ * Tạo UserServicePackage + JobBoost + cập nhật Job.premium.
+ */
+const activatePremiumJobPackage = async ({ userId, jobId, pkg, transactionId }) => {
+  const startAt = new Date();
+  const endAt = new Date(startAt.getTime() + (pkg.durationDays || 7) * 24 * 60 * 60 * 1000);
+
+  // UserServicePackage (source of truth)
+  try {
+    const existed = await UserServicePackage.findOne({ transactionId });
+    if (!existed) {
+      await UserServicePackage.create({
+        userId,
+        packageId: pkg._id,
+        packageCode: pkg.code,
+        packageType: pkg.packageType,
+        targetType: 'JOB',
+        targetId: jobId,
+        startedAt: startAt,
+        expiredAt: endAt,
+        status: UserServicePackageStatus.ACTIVE,
+        pricePaid: pkg.price,
+        currency: 'VND',
+        transactionId
+      });
+    }
+  } catch (err) {
+    console.error('Tạo UserServicePackage lỗi (không rollback):', err.message);
+  }
+
+  // JobBoost (backward compat)
+  const ex = await JobBoost.findOne({ jobId, status: 'ACTIVE' });
+  if (!ex) {
+    await JobBoost.create({ jobId, employerId: userId, packageId: pkg._id, startAt, endAt });
+    await Job.updateOne(
+      { _id: jobId, createdBy: userId },
+      {
+        $set: {
+          'premium.isActive': true,
+          'premium.startedAt': startAt,
+          'premium.expiredAt': endAt,
+          'premium.deactivatedAt': null,
+          'premium.deactivatedReason': null,
+          isUrgent: true
+        }
+      }
+    );
+  }
+
+  return { startAt, endAt };
+};
 
 export const createBoostPayment = async (req, res) => {
   try {
     const employerId = req.user._id;
     const { jobId } = req.params;
-    const { packageId, action = 'new' } = req.body;
+    const { packageId, action = 'new', paymentMethod: requestedMethod } = req.body;
 
     const job = await Job.findOne({ _id: jobId, employerId, status: 'PUBLISHED' });
     if (!job) {
@@ -87,6 +140,77 @@ export const createBoostPayment = async (req, res) => {
       }
     }
 
+    // ─── Xác định phương thức thanh toán ───
+    // Nếu FE không gửi hoặc không hợp lệ → mặc định SEPAY.
+    // Nếu FE gửi WALLET nhưng ví không đủ → fallback trả lỗi 400 để FE xử lý.
+    const paymentMethod = requestedMethod === PaymentMethod.WALLET
+      ? PaymentMethod.WALLET
+      : PaymentMethod.SEPAY;
+
+    // ─── WALLET FLOW: trừ tiền ví + kích hoạt ngay (không qua SePay) ───
+    if (paymentMethod === PaymentMethod.WALLET) {
+      // Atomic deduct: chỉ trừ khi balance vẫn còn đủ (chống race)
+      const updated = await Wallet.findOneAndUpdate(
+        { userId: employerId, balance: { $gte: pkg.price } },
+        { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
+        { new: true }
+      );
+      if (!updated) {
+        return res.status(400).json({
+          success: false,
+          code: 'INSUFFICIENT_BALANCE',
+          message: 'Số dư ví không đủ. Vui lòng nạp thêm hoặc chọn thanh toán qua SePay.'
+        });
+      }
+
+      const balanceAfter = updated.balance;
+      const balanceBefore = balanceAfter + pkg.price;
+
+      const transaction = await Transaction.create({
+        userId: employerId,
+        walletId: updated._id,
+        type: TransactionType.PACKAGE_PURCHASE,
+        amount: pkg.price,
+        status: TransactionStatus.SUCCESS,
+        paymentMethod: PaymentMethod.WALLET,
+        targetType: 'JOB',
+        targetId: jobId,
+        packageId,
+        balanceBefore,
+        balanceAfter,
+        description: `Boost Job ${job.title} - ${pkg.name}`,
+        metadata: { paidAt: new Date() }
+      });
+
+      // Kích hoạt gói ngay
+      const { endAt } = await activatePremiumJobPackage({
+        userId: employerId,
+        jobId,
+        pkg,
+        transactionId: transaction._id
+      });
+
+      // Thông báo
+      notifyPackagePurchaseSuccess({
+        userId: employerId,
+        transaction,
+        pkg,
+        endAt
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          method: PaymentMethod.WALLET,
+          transactionId: transaction._id,
+          amount: pkg.price,
+          newBalance: balanceAfter,
+          target: { type: 'JOB', id: jobId, title: job.title }
+        }
+      });
+    }
+
+    // ─── SEPAY FLOW (giữ nguyên logic cũ) ───
     const transaction = await Transaction.create({
       userId: employerId,
       type: TransactionType.PACKAGE_PURCHASE,
@@ -116,6 +240,7 @@ export const createBoostPayment = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
+        method: PaymentMethod.SEPAY,
         transactionId: transaction._id,
         orderCode,
         amount: pkg.price,
