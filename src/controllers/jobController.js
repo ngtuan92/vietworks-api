@@ -1,4 +1,4 @@
-import Job from '../models/jobModels.js';
+﻿import Job from '../models/jobModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
 import Company from '../models/companyModels.js';
@@ -604,8 +604,8 @@ export const getMyJobs = async (req, res) => {
 
     // Enrich: thêm activeBoost cho mỗi job (nếu có UserServicePackage ACTIVE cho job đó)
     const UserServicePackage = (await import('../models/userServicePackageModels.js')).default;
-    const jobIds = jobs.map(j => j._id);
-    const activeBoosts = await UserServicePackage.find({
+const jobIds = jobs.map(j => new mongoose.Types.ObjectId(j._id));    
+const activeBoosts = await UserServicePackage.find({
       userId,
       status: 'ACTIVE',
       targetType: 'JOB',
@@ -668,8 +668,9 @@ export const getJobById = async (req, res) => {
       .populate('jobLevelId')
       .populate('experienceLevelId')
       .populate('skills')
-      .populate('createdBy', 'fullName email');
-
+      .populate('createdBy', 'fullName email').
+      lean();
+      
     if (!job) {
       return res.status(404).json({
         success: false,
@@ -687,8 +688,8 @@ export const getJobById = async (req, res) => {
       });
     }
 
-    const jobObject = job.toObject();
-    await attachHiringStats([jobObject]);
+  await attachHiringStats([job]);     // ← dùng job trực tiếp, bỏ jobObject
+
 
     // Check if user can apply
     let canApply = true;
@@ -697,29 +698,31 @@ export const getJobById = async (req, res) => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    if (jobObject.status === JobStatus.EXPIRED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm đã hết hạn';
-    } else if (jobObject.status === JobStatus.CLOSED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm đã đóng';
-    } else if (jobObject.status === JobStatus.REJECTED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm bị từ chối';
-    } else if (jobObject.status === JobStatus.BANNED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm bị khóa';
-    } else if (new Date(jobObject.deadline) < startOfToday) {
-      canApply = false;
-      cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
-    } else if (jobObject.isHiringFull) {
-      canApply = false;
-      cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
-    }
+    // SỬA: đổi tất cả jobObject → job trong phần canApply
+
+if (job.status === JobStatus.EXPIRED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm đã hết hạn';
+} else if (job.status === JobStatus.CLOSED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm đã đóng';
+} else if (job.status === JobStatus.REJECTED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm bị từ chối';
+} else if (job.status === JobStatus.BANNED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm bị khóa';
+} else if (new Date(job.deadline) < startOfToday) {
+  canApply = false;
+  cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
+} else if (job.isHiringFull) {
+  canApply = false;
+  cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
+}
 
     res.status(200).json({
       success: true,
-      data: jobObject,
+      data: job,
       canApply,
       cannotApplyReason
     });
