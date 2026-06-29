@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { CommonStatus, CompanySizeCode } from '../enums/masterDataEnums.js';
 
 const companySizeSchema = new mongoose.Schema({
-  code: { type: String, enum: Object.values(CompanySizeCode), required: true, unique: true },
+  code: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   minEmployees: { type: Number, required: true },
   maxEmployees: { type: Number, default: null },

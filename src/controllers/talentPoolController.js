@@ -5,8 +5,10 @@ import Wallet from '../models/walletModels.js';
 import Transaction from '../models/transactionModels.js';
 import ServicePackage from '../models/servicePackageModels.js';
 import CvBoost from '../models/cvBoostModels.js';
+import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
+import EmployerProfile from '../models/employerProfileModels.js';
 import { UserRole, AccountStatus } from '../enums/userEnums.js';
-import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType } from '../enums/paymentEnums.js';
+import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
 
 export const getTalentPool = async (req, res) => {
   try {
@@ -125,46 +127,172 @@ export const unlockCandidate = async (req, res) => {
       });
     }
 
-    // Lấy giá từ server, không tin client
+    // ─── ƯU TIÊN 1: dùng CREDIT từ gói đã mua (CvUnlockCredit) ───
+    // Atomic trừ 1 credit của gói còn hạn & còn lượt; chọn gói sắp hết hạn trước.
+    const credit = await CvUnlockCredit.findOneAndUpdate(
+      {
+        employerUserId: employerId,
+        status: CvUnlockCreditStatus.ACTIVE,
+        remainingCredits: { $gte: 1 },
+        expiredAt: { $gt: new Date() }
+      },
+      { $inc: { remainingCredits: -1, usedCredits: 1 } },
+      { new: true, sort: { expiredAt: 1 } }
+    );
+
+    if (credit) {
+      // Hết lượt → đánh dấu USED_UP
+      if (credit.remainingCredits <= 0) {
+        await CvUnlockCredit.updateOne({ _id: credit._id }, { $set: { status: CvUnlockCreditStatus.USED_UP } });
+      }
+      await Transaction.create({
+        userId: employerId,
+        type: TransactionType.CV_UNLOCK_BY_PACKAGE,
+        amount: 0,
+        status: TransactionStatus.SUCCESS,
+        paymentMethod: PaymentMethod.WALLET,
+        targetType: 'CV',
+        targetId: cvId,
+        description: `Mở khóa CV bằng gói (còn ${credit.remainingCredits} lượt)`
+      });
+      const unlocked = await UnlockedCandidate.create({ employerId, candidateId, cvId: cvId || null, amountCharged: 0 });
+      return res.status(201).json({
+        success: true,
+        data: unlocked,
+        message: `Đã mở khóa bằng gói — còn ${credit.remainingCredits} lượt`
+      });
+    }
+
+    // ─── ƯU TIÊN 2: không có credit → trừ ví trực tiếp (gói lẻ rẻ nhất) ───
     const pkg = await ServicePackage.findOne({
       packageType: ServicePackageType.CV_UNLOCK,
       status: 'ACTIVE'
     }).sort({ price: 1 });
-
     if (!pkg) {
       return res.status(400).json({ success: false, message: 'No active unlock package found' });
     }
-
     const amount = pkg.price;
 
-    const wallet = await Wallet.findOne({ userId: employerId });
-    if (!wallet || wallet.balance < amount) {
-      return res.status(400).json({ success: false, message: 'Insufficient balance' });
+    // Atomic trừ ví (chỉ trừ khi đủ) — chống race
+    const wallet = await Wallet.findOneAndUpdate(
+      { userId: employerId, balance: { $gte: amount } },
+      { $inc: { balance: -amount, totalSpent: amount } },
+      { new: true }
+    );
+    if (!wallet) {
+      return res.status(400).json({
+        success: false,
+        code: 'INSUFFICIENT_BALANCE',
+        message: 'Số dư ví không đủ. Hãy mua gói mở khóa hoặc nạp thêm tiền.'
+      });
     }
 
     await Transaction.create({
       userId: employerId,
       type: TransactionType.CV_UNLOCK_SINGLE,
-      amount: -amount,
+      amount,
       status: TransactionStatus.SUCCESS,
       paymentMethod: PaymentMethod.WALLET,
       targetType: 'CV',
       targetId: cvId,
-      description: `Unlock candidate ${candidateId}`
+      packageId: pkg._id,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
+      description: `Mở khóa CV (lẻ) - ${candidateId}`
     });
 
-    wallet.balance -= amount;
-    wallet.totalSpent += amount;
-    await wallet.save();
-
-    const unlocked = await UnlockedCandidate.create({
-      employerId,
-      candidateId,
-      cvId: cvId || null,
-      amountCharged: amount
-    });
-
+    const unlocked = await UnlockedCandidate.create({ employerId, candidateId, cvId: cvId || null, amountCharged: amount });
     res.status(201).json({ success: true, data: unlocked });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Employer MUA gói Mở khóa CV (CV_UNLOCK / CV_UNLOCK_BUNDLE) bằng VÍ.
+ * Trừ ví → tạo Transaction SUCCESS → cấp túi credit (CvUnlockCredit) = cvAccessLimit lượt.
+ * Các lượt này sẽ được unlockCandidate tiêu trước khi trừ ví.
+ */
+export const purchaseCvUnlockPackage = async (req, res) => {
+  try {
+    const employerId = req.user._id;
+    const { packageId } = req.body;
+
+    const pkg = await ServicePackage.findById(packageId);
+    if (!pkg ||
+        ![ServicePackageType.CV_UNLOCK, ServicePackageType.CV_UNLOCK_BUNDLE].includes(pkg.packageType) ||
+        pkg.status !== 'ACTIVE') {
+      return res.status(400).json({ success: false, message: 'Gói không hợp lệ hoặc không phải gói mở khóa CV' });
+    }
+
+    const credits = pkg.benefits?.cvAccessLimit || 1;
+
+    // Trừ ví NGUYÊN TỬ (chỉ trừ khi đủ tiền)
+    const wallet = await Wallet.findOneAndUpdate(
+      { userId: employerId, balance: { $gte: pkg.price } },
+      { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
+      { new: true }
+    );
+    if (!wallet) {
+      return res.status(400).json({
+        success: false,
+        code: 'INSUFFICIENT_BALANCE',
+        message: 'Số dư ví không đủ. Vui lòng nạp thêm tiền.'
+      });
+    }
+
+    const balanceAfter = wallet.balance;
+    const transaction = await Transaction.create({
+      userId: employerId,
+      walletId: wallet._id,
+      type: TransactionType.PACKAGE_PURCHASE,
+      amount: pkg.price,
+      status: TransactionStatus.SUCCESS,
+      paymentMethod: PaymentMethod.WALLET,
+      packageId,
+      balanceBefore: balanceAfter + pkg.price,
+      balanceAfter,
+      description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
+      metadata: { paidAt: new Date() }
+    });
+
+    const profile = await EmployerProfile.findOne({ userId: employerId }).select('companyId').lean();
+    const startedAt = new Date();
+    const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
+
+    const credit = await CvUnlockCredit.create({
+      employerUserId: employerId,
+      companyId: profile?.companyId || null,
+      packageId: pkg._id,
+      packageCode: pkg.code,
+      totalCredits: credits,
+      usedCredits: 0,
+      remainingCredits: credits,
+      startedAt,
+      expiredAt,
+      status: CvUnlockCreditStatus.ACTIVE,
+      transactionId: transaction._id
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        method: PaymentMethod.WALLET,
+        transactionId: transaction._id,
+        packageName: pkg.name,
+        amount: pkg.price,
+        newBalance: balanceAfter,
+        creditsGranted: credits,
+        remainingCredits: credit.remainingCredits,
+        expiredAt
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

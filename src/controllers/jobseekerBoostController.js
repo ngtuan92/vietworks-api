@@ -6,7 +6,51 @@ import UploadedCV from '../models/uploadedCvModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
-import { notifyPaymentCancelled } from '../services/paymentNotificationService.js';
+import { notifyPackagePurchaseSuccess } from '../services/paymentNotificationService.js';
+
+/**
+ * Kích hoạt gói CV_BOOST cho 1 CV ngay lập tức (dùng cho cả WALLET lẫn SEPAY-success).
+ * Tạo UserServicePackage + CvBoost + cập nhật UploadedCV.isBoosted.
+ */
+const activatePremiumCvPackage = async ({ userId, cvId, pkg, transactionId }) => {
+  const startAt = new Date();
+  const endAt = new Date(startAt.getTime() + (pkg.durationDays || 7) * 24 * 60 * 60 * 1000);
+
+  // UserServicePackage (source of truth)
+  try {
+    const existed = await UserServicePackage.findOne({ transactionId });
+    if (!existed) {
+      await UserServicePackage.create({
+        userId,
+        packageId: pkg._id,
+        packageCode: pkg.code,
+        packageType: pkg.packageType,
+        targetType: 'CV',
+        targetId: cvId,
+        startedAt: startAt,
+        expiredAt: endAt,
+        status: UserServicePackageStatus.ACTIVE,
+        pricePaid: pkg.price,
+        currency: 'VND',
+        transactionId
+      });
+    }
+  } catch (err) {
+    console.error('Tạo UserServicePackage lỗi (không rollback):', err.message);
+  }
+
+  // CvBoost (backward compat) + cập nhật flag trên CV
+  const ex = await CvBoost.findOne({ cvId, status: 'ACTIVE' });
+  if (!ex) {
+    await CvBoost.create({ cvId, userId, packageId: pkg._id, startAt, endAt });
+    await UploadedCV.updateOne(
+      { _id: cvId, userId },
+      { $set: { isBoosted: true, boostedUntil: endAt } }
+    );
+  }
+
+  return { startAt, endAt };
+};
 
 export const getBoostPackages = async (req, res) => {
   try {
@@ -58,7 +102,7 @@ export const createBoostPayment = async (req, res) => {
   try {
     const userId = req.user._id;
     const { cvId } = req.params;
-    const { packageId, action = 'new' } = req.body;
+    const { packageId, action = 'new', paymentMethod: requestedMethod } = req.body;
 
     const cv = await UploadedCV.findOne({ _id: cvId, userId });
     if (!cv) {
@@ -100,31 +144,96 @@ export const createBoostPayment = async (req, res) => {
         });
       }
 
-      // action === 'upgrade': huỷ gói cũ
-      activeSubscription.status = UserServicePackageStatus.CANCELLED;
-      activeSubscription.cancelledAt = new Date();
-      activeSubscription.cancelledReason = 'UPGRADED';
-      await activeSubscription.save();
-
-      // Notify user rằng subscription cũ đã bị huỷ (kèm giao dịch gốc nếu có)
-      if (activeSubscription.transactionId) {
-        const oldTxn = await Transaction.findById(activeSubscription.transactionId).lean();
-        if (oldTxn) {
-          notifyPaymentCancelled({
-            userId,
-            transaction: oldTxn,
-            reason: 'Nâng cấp lên gói mới'
-          });
-        }
+      // action === 'upgrade' + paymentMethod = WALLET: huỷ gói cũ ngay tại đây
+      // (vì thanh toán là instant — không có bước PENDING nên gói cũ phải huỷ trước khi active gói mới).
+      // action === 'upgrade' + paymentMethod = SEPAY: KHÔNG huỷ gói cũ ở đây — đợi webhook SUCCESS mới huỷ.
+      if (requestedMethod === PaymentMethod.WALLET) {
+        activeSubscription.status = UserServicePackageStatus.CANCELLED;
+        activeSubscription.cancelledAt = new Date();
+        activeSubscription.cancelledReason = 'UPGRADED';
+        await activeSubscription.save();
+        // Đồng bộ CvBoost cũ sang EXPIRED (nếu có)
+        await CvBoost.updateMany(
+          { cvId, status: 'ACTIVE' },
+          { $set: { status: 'EXPIRED' } }
+        );
+        // Tạm tắt cờ boosted; sẽ được set lại true ngay bên dưới bằng gói mới
+        await UploadedCV.updateOne(
+          { _id: cvId, userId },
+          { $set: { isBoosted: false, boostedUntil: null } }
+        );
       }
-
-      // Đồng bộ CvBoost sang EXPIRED
-      await CvBoost.updateMany(
-        { cvId, status: UserServicePackageStatus.ACTIVE },
-        { $set: { status: UserServicePackageStatus.EXPIRED } }
-      );
     }
 
+    // ─── Xác định phương thức thanh toán ───
+    const paymentMethod = requestedMethod === PaymentMethod.WALLET
+      ? PaymentMethod.WALLET
+      : PaymentMethod.SEPAY;
+
+    // ─── WALLET FLOW: trừ tiền ví + kích hoạt ngay (không qua SePay) ───
+    if (paymentMethod === PaymentMethod.WALLET) {
+      // Atomic deduct: chỉ trừ khi balance vẫn còn đủ (chống race)
+      const updated = await Wallet.findOneAndUpdate(
+        { userId, balance: { $gte: pkg.price } },
+        { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
+        { new: true }
+      );
+      if (!updated) {
+        return res.status(400).json({
+          success: false,
+          code: 'INSUFFICIENT_BALANCE',
+          message: 'Số dư ví không đủ. Vui lòng nạp thêm hoặc chọn thanh toán qua SePay.'
+        });
+      }
+
+      const balanceAfter = updated.balance;
+      const balanceBefore = balanceAfter + pkg.price;
+
+      const transaction = await Transaction.create({
+        userId,
+        walletId: updated._id,
+        type: TransactionType.PACKAGE_PURCHASE,
+        amount: pkg.price,
+        status: TransactionStatus.SUCCESS,
+        paymentMethod: PaymentMethod.WALLET,
+        targetType: 'CV',
+        targetId: cvId,
+        packageId,
+        balanceBefore,
+        balanceAfter,
+        description: `Boost CV ${cv.title} - ${pkg.name}`,
+        metadata: { paidAt: new Date() }
+      });
+
+      // Kích hoạt gói ngay
+      const { endAt } = await activatePremiumCvPackage({
+        userId,
+        cvId,
+        pkg,
+        transactionId: transaction._id
+      });
+
+      // Thông báo
+      notifyPackagePurchaseSuccess({
+        userId,
+        transaction,
+        pkg,
+        endAt
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          method: PaymentMethod.WALLET,
+          transactionId: transaction._id,
+          amount: pkg.price,
+          newBalance: balanceAfter,
+          target: { type: 'CV', id: cvId, title: cv.title }
+        }
+      });
+    }
+
+    // ─── SEPAY FLOW (giữ nguyên logic cũ) ───
     const transaction = await Transaction.create({
       userId,
       type: TransactionType.PACKAGE_PURCHASE,
@@ -134,6 +243,14 @@ export const createBoostPayment = async (req, res) => {
       targetType: 'CV',
       targetId: cvId,
       packageId,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
       description: `Boost CV ${cv.title} - ${pkg.name}`
     });
 
@@ -154,13 +271,22 @@ export const createBoostPayment = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
+        method: PaymentMethod.SEPAY,
         transactionId: transaction._id,
         orderCode,
         amount: pkg.price,
         qrUrl,
         transferContent,
         bankAccount,
-        bankName
+        bankName,
+        // Báo FE biết đây là luồng upgrade; gói cũ sẽ bị thay thế SAU KHI thanh toán thành công
+        upgradingFrom: activeSubscription
+          ? {
+              name: activeSubscription.packageId?.name,
+              code: activeSubscription.packageCode,
+              expiredAt: activeSubscription.expiredAt
+            }
+          : null
       }
     });
   } catch (error) {

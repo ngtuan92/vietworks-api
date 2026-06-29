@@ -19,7 +19,15 @@ const transactionSchema = new mongoose.Schema({
   status: { type: String, enum: Object.values(TransactionStatus), default: TransactionStatus.PENDING },
   paymentMethod: { type: String, enum: Object.values(PaymentMethod), required: true },
   paymentOrderId: { type: objectId, ref: 'PaymentOrder', default: null },
-  packageId: { type: objectId, ref: 'ServicePackage', default: null },
+  packageId: { type: objectId, default: null }, // Mất ref, giờ dùng snapshot
+  packageSnapshot: {
+    id: { type: objectId, default: null },
+    code: { type: String, default: null },
+    name: { type: String, default: null },
+    type: { type: String, default: null },
+    price: { type: Number, default: null },
+    durationDays: { type: Number, default: null }
+  },
   targetType: { type: String, enum: Object.values(PackageTargetType), default: null },
   targetId: { type: objectId, default: null },
   description: { type: String, required: true },

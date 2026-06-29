@@ -1,8 +1,12 @@
-﻿import EmployerProfile from '../models/employerProfileModels.js';
+import EmployerProfile from '../models/employerProfileModels.js';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import { CommonStatus,  CompanyVerificationStatus
  } from '../enums/masterDataEnums.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
+import User from '../models/userModels.js';
+import { UserRole } from '../enums/userEnums.js';
 
 export const getMyCompanyProfile = async (req, res) => {
   try {
@@ -126,7 +130,7 @@ export const updateMyCompanyProfile = async (req, res) => {
    const currentCompany = await Company.findOne({
   _id: employerProfile.companyId,
   ownerUserId: req.user._id
-}).select('businessLicenseFile verificationStatus');
+}).select('name taxCode businessLicenseFile verificationStatus');
 
 if (!currentCompany) {
   return res.status(404).json({
@@ -135,29 +139,32 @@ if (!currentCompany) {
   });
 }
 
+let isCrucialInfoChanged = false;
+
+if (currentCompany.name !== name || currentCompany.taxCode !== taxCode) {
+  isCrucialInfoChanged = true;
+}
+
 if (businessLicenseFile !== undefined) {
   const oldFileUrl = currentCompany.businessLicenseFile?.fileUrl || null;
   const newFileUrl = businessLicenseFile?.fileUrl || null;
-  const isBusinessLicenseChanged = oldFileUrl !== newFileUrl;
-
+  if (oldFileUrl !== newFileUrl) {
+    isCrucialInfoChanged = true;
+  }
   updateData.businessLicenseFile = businessLicenseFile || null;
+}
 
-  if (isBusinessLicenseChanged) {
-    updateData.rejectionReason = null;
-    updateData.verifiedBy = null;
-    updateData.verifiedAt = null;
+if (isCrucialInfoChanged) {
+  updateData.rejectionReason = null;
+  updateData.verifiedBy = null;
+  updateData.verifiedAt = null;
 
-    if (currentCompany.verificationStatus === CompanyVerificationStatus.VERIFIED) {
-      updateData.verificationStatus = CompanyVerificationStatus.PENDING;
-    }
+  if (currentCompany.verificationStatus === CompanyVerificationStatus.VERIFIED) {
+    updateData.verificationStatus = CompanyVerificationStatus.PENDING;
+  }
 
-    if (currentCompany.verificationStatus === CompanyVerificationStatus.REJECTED) {
-      updateData.verificationStatus = CompanyVerificationStatus.UNVERIFIED;
-    }
-
-    if (currentCompany.verificationStatus === CompanyVerificationStatus.PENDING) {
-      updateData.verificationStatus = CompanyVerificationStatus.PENDING;
-    }
+  if (currentCompany.verificationStatus === CompanyVerificationStatus.REJECTED) {
+    updateData.verificationStatus = CompanyVerificationStatus.UNVERIFIED;
   }
 }
 
@@ -182,9 +189,41 @@ if (businessLicenseFile !== undefined) {
       });
     }
 
+    if (isCrucialInfoChanged && company.verificationStatus === CompanyVerificationStatus.PENDING) {
+      // Notify employer
+      NotificationService.create({
+        receiverUserId: req.user._id,
+        typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+        title: 'Hồ sơ công ty cần duyệt lại',
+        content: `Hồ sơ công ty "${company.name}" vừa được cập nhật thông tin quan trọng (Tên công ty, Mã số thuế, hoặc Giấy phép kinh doanh) và đã chuyển sang trạng thái "Chờ duyệt". Vui lòng chờ Admin kiểm tra và xác nhận.`,
+        channels: [NotificationChannel.IN_APP]
+      }).catch(err => console.error('Notify employer error:', err));
+
+      // Notify admins
+      User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+        admins.forEach(admin => {
+          NotificationService.create({
+            receiverUserId: admin._id,
+            typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+            title: 'Công ty yêu cầu duyệt lại',
+            content: `Công ty "${company.name}" vừa cập nhật thông tin quan trọng và đang chờ duyệt lại.`,
+            channels: [NotificationChannel.IN_APP],
+            metadata: {
+              actionUrl: '/admin/companies'
+            }
+          }).catch(err => console.error('Notify admin error:', err));
+        });
+      }).catch(err => console.error('Find admins error:', err));
+    }
+
+    let responseMessage = 'Cập nhật hồ sơ công ty thành công';
+    if (isCrucialInfoChanged && company.verificationStatus === CompanyVerificationStatus.PENDING) {
+      responseMessage = 'Cập nhật thành công. Do bạn thay đổi thông tin quan trọng (Tên, Mã số thuế, Giấy phép) nên hồ sơ đang chờ Admin duyệt lại.';
+    }
+
     return res.status(200).json({
       success: true,
-      message: 'Cập nhật hồ sơ công ty thành công',
+      message: responseMessage,
       data: {
         id: company._id,
         name: company.name,

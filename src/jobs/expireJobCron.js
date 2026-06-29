@@ -1,4 +1,4 @@
-﻿import cron from 'node-cron';
+import cron from 'node-cron';
 import { Job } from '../models/index.js';
 import { JobStatus } from '../enums/jobEnums.js';
 
@@ -8,6 +8,7 @@ cron.schedule('0 0 * * *', async () => {
 
   try {
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
     const result = await Job.updateMany(
       {

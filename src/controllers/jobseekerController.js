@@ -13,11 +13,15 @@ const MAX_SEARCH_HISTORY = 20;
 const toObjectId = (v) =>
   v && mongoose.Types.ObjectId.isValid(v) ? new mongoose.Types.ObjectId(v) : null;
 
-const publicJobFilter = () => ({
-  status: JobStatus.PUBLISHED,
-  deadline: { $gte: new Date() },
-  $or: [{ bannedReason: null }, { bannedReason: { $exists: false } }]
-});
+const publicJobFilter = () => {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return {
+    status: JobStatus.PUBLISHED,
+    deadline: { $gte: startOfToday },
+    $or: [{ bannedReason: null }, { bannedReason: { $exists: false } }]
+  };
+};
 
 // ─────────────────────────────────────────────
 // SEARCH HISTORY
@@ -340,7 +344,7 @@ export const getSavedJobs = async (req, res) => {
       SavedJob.find({ userId: req.user._id })
         .populate({
           path: 'jobId',
-          select: 'title salary workLocations deadline status companyId careerGroupId careerId isUrgent premium',
+          select: 'title salary workLocations deadline status companyId careerGroupId careerId isUrgent premium headcount',
           populate: { path: 'companyId', select: 'name avatarUrl verificationStatus' }
         })
         .sort({ createdAt: -1 })
@@ -406,7 +410,7 @@ export const getSimilarSavedJobs = async (req, res) => {
       ]
     })
       .populate('companyId', 'name avatarUrl')
-      .select('title salary workLocations deadline isUrgent premium companyId careerId careerGroupId')
+      .select('title salary workLocations deadline isUrgent premium companyId careerId careerGroupId headcount')
       .sort({ 'premium.isActive': -1, publishedAt: -1 })
       .limit(limitNum)
       .lean();
@@ -508,6 +512,9 @@ export const getPublicCompanies = async (req, res) => {
       filter.name = { $regex: keyword.trim(), $options: 'i' };
     }
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const [companies, total] = await Promise.all([
       Company.aggregate([
         { $match: filter },
@@ -523,7 +530,7 @@ export const getPublicCompanies = async (req, res) => {
                 $match: {
                   $expr: { $eq: ['$companyId', '$$cid'] },
                   status: 'PUBLISHED',
-                  deadline: { $gte: new Date() }
+                  deadline: { $gte: startOfToday }
                 }
               },
               { $count: 'count' }
@@ -638,7 +645,7 @@ export const getCompanyOpenJobs = async (req, res) => {
 
     const [jobs, total] = await Promise.all([
       Job.find(filter)
-        .select('title salary workLocations deadline isUrgent premium careerGroupId careerId jobLevelId experienceLevelId')
+        .select('title salary workLocations deadline isUrgent premium careerGroupId careerId jobLevelId experienceLevelId headcount')
         .populate('careerGroupId', 'name')
         .populate('careerId', 'name')
         .populate('jobLevelId', 'name')

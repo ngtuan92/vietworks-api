@@ -1,4 +1,4 @@
-﻿const getClientUrl = () => (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+const getClientUrl = () => (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
 
 export const getEmailNotificationTarget = (typeCode, metadata = {}, receiverRole) => {
   const clientUrl = getClientUrl();
@@ -59,13 +59,15 @@ export const getEmailNotificationTarget = (typeCode, metadata = {}, receiverRole
         : { url: `${clientUrl}/premium`, label: 'Xem gói dịch vụ' };
 
     case 'SYSTEM_UPDATE':
+      if (metadata.actionUrl) return { url: clientUrl + metadata.actionUrl, label: 'Xem chi tiết' };
       return receiverRole === 'EMPLOYER'
         ? { url: `${clientUrl}/employer/notifications`, label: 'Xem thông báo' }
-        : { url: `${clientUrl}/notifications`, label: 'Xem thông báo' };
+        : { url: `${clientUrl}/`, label: 'Trang chủ' };
 
     default:
+      if (metadata.actionUrl) return { url: clientUrl + metadata.actionUrl, label: 'Xem chi tiết' };
       return receiverRole === 'EMPLOYER'
         ? { url: `${clientUrl}/employer/notifications`, label: 'Xem chi tiết trên VietWorks' }
-        : { url: `${clientUrl}/notifications`, label: 'Xem chi tiết trên VietWorks' };
+        : { url: `${clientUrl}/`, label: 'Truy cập VietWorks' };
   }
 };

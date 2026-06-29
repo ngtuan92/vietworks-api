@@ -10,7 +10,8 @@ import {
   getAdminCvTemplates,
   getActiveCvTemplates,
   getCvTemplatePreview,
-  getCareerGroups
+  getCareerGroups,
+  deleteCvTemplate
 } from '../controllers/cvTemplateController.js';
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get('/:id/preview', getCvTemplatePreview);
 router.get('/admin', protect, authorize(UserRole.ADMIN), getAdminCvTemplates);
 router.post('/admin', protect, authorize(UserRole.ADMIN), createCvTemplate);
 router.put('/admin/:id', protect, authorize(UserRole.ADMIN), updateCvTemplate);
+router.delete('/admin/:id', protect, authorize(UserRole.ADMIN), deleteCvTemplate);
 router.patch('/admin/:id/status', protect, authorize(UserRole.ADMIN), toggleCvTemplateStatus);
 router.post('/admin/:id/preview-image', protect, authorize(UserRole.ADMIN), upload.single('previewImage'), uploadPreviewImage);
 

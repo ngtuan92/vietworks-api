@@ -1,4 +1,4 @@
-﻿import Conversation from '../models/conversationModels.js';
+import Conversation from '../models/conversationModels.js';
 import Message from '../models/messageModels.js';
 import Application from '../models/applicationModels.js';
 import { getIO } from '../sockets/chatSocket.js';
@@ -126,7 +126,7 @@ export const getOrCreateConversation = async (req, res) => {
     }
 
     // Populate participant info
-    conversation = await Conversation.findById(conversation._id)
+    const conversationDoc = await Conversation.findById(conversation._id)
       .populate('participants.userId', 'fullName avatar email')
       .populate({
         path: 'jobId',
@@ -134,9 +134,10 @@ export const getOrCreateConversation = async (req, res) => {
         populate: { path: 'companyId', select: 'name avatarUrl' }
       });
 
-    await attachJobseekerAvatarsToConversations(conversation);
+    const conversationData = conversationDoc.toObject();
+    await attachJobseekerAvatarsToConversations(conversationData);
 
-    res.status(200).json({ success: true, data: conversation });
+    res.status(200).json({ success: true, data: conversationData });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi server', error: error.message });
   }
@@ -153,7 +154,8 @@ export const getConversations = async (req, res) => {
         select: 'title companyId',
         populate: { path: 'companyId', select: 'name avatarUrl' }
       })
-      .sort({ lastMessageAt: -1 });
+      .sort({ lastMessageAt: -1 })
+      .lean();
 
     await attachJobseekerAvatarsToConversations(conversations);
 
@@ -202,7 +204,8 @@ export const getMessages = async (req, res) => {
 
     const messages = await Message.find({ conversationId: id })
       .populate('senderId', 'fullName avatar')
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: 1 })
+      .lean();
 
     await attachJobseekerAvatarsToMessages(messages);
 
@@ -252,7 +255,8 @@ export const sendMessage = async (req, res) => {
     });
 
     await newMessage.populate('senderId', 'fullName avatar');
-    await attachJobseekerAvatarsToMessages([newMessage]);
+    const messageData = newMessage.toObject();
+    await attachJobseekerAvatarsToMessages([messageData]);
 
     // Update conversation last message
     conversation.lastMessage = safeContent || (safeAttachments.length ? 'Đã gửi một tệp đính kèm' : 'Tin nhắn mới');
@@ -262,7 +266,6 @@ export const sendMessage = async (req, res) => {
     // Emit socket event
     const io = getIO();
     const receiver = conversation.participants.find(p => p.userId.toString() !== userId.toString());
-    const messageData = newMessage.toObject(); // Chuyển đổi sang object thuần để an toàn khi gửi qua socket
     
     if (receiver) {
       io.to(id).to(receiver.userId.toString()).emit('new_message', messageData);
@@ -283,7 +286,7 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    res.status(201).json({ success: true, data: newMessage });
+    res.status(201).json({ success: true, data: messageData });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi server', error: error.message });
   }
