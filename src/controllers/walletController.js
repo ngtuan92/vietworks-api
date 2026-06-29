@@ -7,6 +7,7 @@ import Job from '../models/jobModels.js';
 import ServicePackage from '../models/servicePackageModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import UploadedCV from '../models/uploadedCvModels.js';
+import SepayWebhookLog from '../models/sepayWebhookLogModels.js';
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent, findSepayTransactionByCode } from '../services/sepayService.js';
 import { notifyWalletDepositSuccess, notifyPackagePurchaseSuccess, notifyPaymentFailed, notifyPaymentCancelled } from '../services/paymentNotificationService.js';
 import { PaymentMethod, TransactionType, TransactionStatus, UserServicePackageStatus, PackageTargetType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
@@ -315,32 +316,102 @@ export const sepayWebhook = async (req, res) => {
   res.status(200).json({ success: true });
 
   setImmediate(async () => {
-    try {
-      const signature = req.headers['x-sepay-signature'];
-      const timestamp = req.headers['x-sepay-timestamp'] || '';
-      const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
+    const signature = req.headers['x-sepay-signature'] || '';
+    const timestamp = req.headers['x-sepay-timestamp'] || '';
+    const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
 
+    // Tạo log entry NGAY từ đầu để audit (kể cả khi fail cũng phải có dấu vết)
+    const parsed = parseSepayWebhook(req.body);
+    const isVerifiedSignature = verifySepayWebhook(rawBody, signature, timestamp) === true
+      && !!process.env.SEPAY_WEBHOOK_SECRET; // dev-mode luôn true → ghi rõ false
+
+    let log = null;
+    try {
+      log = await SepayWebhookLog.create({
+        orderCode: parsed.orderCode || '',
+        transactionId: String(parsed.transactionId ?? ''),
+        transferAmount: parsed.amount ?? 0,
+        transferType: parsed.transferType ?? '',
+        transactionDate: parsed.transactionDate ? new Date(parsed.transactionDate) : null,
+        gateway: parsed.gateway ?? null,
+        accountNumber: parsed.accountNumber ?? null,
+        subAccount: parsed.subAccount || null,
+        content: parsed.content ?? null,
+        referenceCode: parsed.referenceCode ?? null,
+        accumulated: parsed.accumulated ?? null,
+        signature: signature ? signature.slice(0, 256) : '',
+        isVerifiedSignature,
+        processed: false
+      });
+    } catch (logErr) {
+      console.error('SePay Webhook: Không thể ghi SepayWebhookLog:', logErr.message);
+      // Không throw — vẫn tiếp tục xử lý transaction
+    }
+
+    try {
       // 2. Xác thực chữ ký HMAC-SHA256
-      if (!verifySepayWebhook(rawBody, signature, timestamp)) {
+      if (!isVerifiedSignature) {
         console.error('SePay Webhook: Chữ ký HMAC không hợp lệ');
+        await _markLogFailed(log, 'Invalid HMAC signature');
         return;
       }
 
-      const data = parseSepayWebhook(req.body);
-      if (data.transferType !== 'in') return; // chỉ xử lý tiền vào
+      if (parsed.transferType !== 'in') {
+        // Không phải tiền vào → ghi nhận nhưng không xử lý
+        await _markLogProcessed(log, { skipped: true, reason: `transferType=${parsed.transferType}` });
+        return;
+      }
 
       // 3. Xử lý (dùng chung với polling)
-      await processPaidTransaction(data.orderCode, {
-        transactionId: data.transactionId,
-        amount: data.amount,
-        referenceCode: data.referenceCode,
-        transactionDate: data.transactionDate
+      const ok = await processPaidTransaction(parsed.orderCode, {
+        transactionId: parsed.transactionId,
+        amount: parsed.amount,
+        referenceCode: parsed.referenceCode,
+        transactionDate: parsed.transactionDate
+      });
+
+      await _markLogProcessed(log, {
+        skipped: !ok,
+        reason: ok ? null : 'processPaidTransaction trả về false (không tìm thấy / trùng / lệch tiền)'
       });
     } catch (error) {
       console.error('SePay Webhook Error:', error);
+      await _markLogFailed(log, error.message);
     }
   });
 };
+
+// Helper: đánh dấu log đã xử lý thành công (hoặc skip có lý do)
+async function _markLogProcessed(log, { skipped = false, reason = null } = {}) {
+  if (!log) return;
+  try {
+    await SepayWebhookLog.updateOne(
+      { _id: log._id },
+      {
+        $set: {
+          processed: !skipped,
+          processedAt: new Date(),
+          errorMessage: skipped && reason ? `SKIP: ${reason}` : null
+        }
+      }
+    );
+  } catch (e) {
+    console.error('Không thể update SepayWebhookLog processed:', e.message);
+  }
+}
+
+// Helper: đánh dấu log xử lý lỗi
+async function _markLogFailed(log, errorMessage) {
+  if (!log) return;
+  try {
+    await SepayWebhookLog.updateOne(
+      { _id: log._id },
+      { $set: { processed: false, processedAt: new Date(), errorMessage: (errorMessage || '').slice(0, 1000) } }
+    );
+  } catch (e) {
+    console.error('Không thể update SepayWebhookLog failed:', e.message);
+  }
+}
 
 // ─── FALLBACK: FE hỏi "đã thanh toán chưa?" → hỏi thẳng API SePay (VietinBank hay miss webhook) ───
 // GET /api/transactions/sepay-check/:orderCode
