@@ -46,16 +46,7 @@ export const ExperienceLevelCode = {
   OVER_5_YEARS: 'OVER_5_YEARS'
 };
 
-export const SalaryRangeCode = {
-  UNDER_10: 'UNDER_10',
-  FROM_10_TO_15: 'FROM_10_TO_15',
-  FROM_15_TO_20: 'FROM_15_TO_20',
-  FROM_20_TO_25: 'FROM_20_TO_25',
-  FROM_25_TO_30: 'FROM_25_TO_30',
-  FROM_30_TO_50: 'FROM_30_TO_50',
-  OVER_50: 'OVER_50',
-  NEGOTIABLE: 'NEGOTIABLE'
-};
+
 
 export const Currency = {
   VND: 'VND'
