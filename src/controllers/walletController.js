@@ -1,14 +1,15 @@
 import Wallet from '../models/walletModels.js';
 import Transaction from '../models/transactionModels.js';
 import CvBoost from '../models/cvBoostModels.js';
+import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
 import JobBoost from '../models/jobBoostModels.js';
 import Job from '../models/jobModels.js';
 import ServicePackage from '../models/servicePackageModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import UploadedCV from '../models/uploadedCvModels.js';
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent, findSepayTransactionByCode } from '../services/sepayService.js';
-import { notifyWalletDepositSuccess, notifyPackagePurchaseSuccess, notifyPaymentFailed } from '../services/paymentNotificationService.js';
-import { PaymentMethod, TransactionType, TransactionStatus, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
+import { notifyWalletDepositSuccess, notifyPackagePurchaseSuccess, notifyPaymentFailed, notifyPaymentCancelled } from '../services/paymentNotificationService.js';
+import { PaymentMethod, TransactionType, TransactionStatus, UserServicePackageStatus, PackageTargetType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
 import { UserRole } from '../enums/userEnums.js';
 
 export const createWallet = async (req, res) => {
@@ -218,6 +219,47 @@ async function processPaidTransaction(orderCode, sepay) {
       // ─── Tạo CvBoost / JobBoost (giữ backward compat - dùng cho query nhanh) ───
       // ─── ĐỒNG THỜI: cập nhật field "premium" / "boosted" trên Job/CV để query sort ───
       if (updated.targetType === 'CV') {
+        // ─── UPGRADE: huỷ gói cũ (nếu có) trước khi tạo gói mới ───
+        // Logic: UserServicePackage ACTIVE có cùng (userId, targetType=CV, targetId=cvId)
+        // nhưng transactionId KHÁC transaction hiện tại ⇒ đây là luồng upgrade.
+        // Chỉ thực hiện khi transaction SUCCESS (đã thanh toán thành công).
+        const oldSub = await UserServicePackage.findOne({
+          userId: updated.userId,
+          targetType: 'CV',
+          targetId: updated.targetId,
+          status: UserServicePackageStatus.ACTIVE,
+          _id: { $ne: null },
+          transactionId: { $ne: updated._id }
+        });
+        if (oldSub) {
+          oldSub.status = UserServicePackageStatus.CANCELLED;
+          oldSub.cancelledAt = new Date();
+          oldSub.cancelledReason = 'UPGRADED';
+          await oldSub.save();
+
+          // Đồng bộ CvBoost cũ sang EXPIRED (nếu có)
+          await CvBoost.updateMany(
+            { cvId: updated.targetId, status: 'ACTIVE' },
+            { $set: { status: 'EXPIRED' } }
+          );
+
+          // Tạm thời tắt cờ boosted trên CV; sẽ được set lại true ngay bên dưới bằng gói mới
+          await UploadedCV.updateOne(
+            { _id: updated.targetId, userId: updated.userId },
+            { $set: { isBoosted: false, boostedUntil: null } }
+          );
+
+          // Notify user rằng gói cũ đã bị thay thế (sau khi CK thành công)
+          const oldTxn = await Transaction.findById(oldSub.transactionId).lean();
+          if (oldTxn) {
+            notifyPaymentCancelled({
+              userId: updated.userId,
+              transaction: oldTxn,
+              reason: 'Đã nâng cấp lên gói mới'
+            });
+          }
+        }
+
         const ex = await CvBoost.findOne({ cvId: updated.targetId, status: 'ACTIVE' });
         if (!ex) {
           await CvBoost.create({ cvId: updated.targetId, userId: updated.userId, packageId: pkg._id, startAt, endAt });
@@ -479,9 +521,25 @@ export const getMySubscriptions = async (req, res) => {
 
     const total = await UserServicePackage.countDocuments(filter);
 
+    // Lượt mở khóa CV còn hiệu lực (mua gói CV_UNLOCK / BUNDLE) — chỉ employer mới có
+    const credits = await CvUnlockCredit.find({
+      employerUserId: userId,
+      status: CvUnlockCreditStatus.ACTIVE,
+      remainingCredits: { $gt: 0 },
+      expiredAt: { $gt: new Date() }
+    }).populate('packageId', 'name').sort({ expiredAt: 1 }).lean();
+    const unlockCredits = credits.map(c => ({
+      _id: c._id,
+      packageName: c.packageId?.name || c.packageCode,
+      totalCredits: c.totalCredits,
+      remainingCredits: c.remainingCredits,
+      expiredAt: c.expiredAt
+    }));
+
     res.status(200).json({
       success: true,
       data,
+      unlockCredits,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

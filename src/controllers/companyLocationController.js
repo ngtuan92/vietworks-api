@@ -129,3 +129,68 @@ export const getMyCompanyLocations = async (req, res) => {
     });
   }
 };
+
+export const updateMyCompanyLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const employerProfile = await EmployerProfile.findOne({
+      userId: req.user._id
+    }).select('companyId');
+
+    if (!employerProfile?.companyId) {
+      return res.status(400).json({ success: false, message: 'Nhà tuyển dụng chưa có công ty' });
+    }
+
+    const { name, addressLine, province, district, ward, latitude, longitude, isPrimary } = req.body;
+
+    if (!name || !addressLine || !province) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc' });
+    }
+
+    const location = await CompanyLocation.findOne({ _id: id, companyId: employerProfile.companyId });
+    if (!location) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy địa điểm' });
+    }
+
+    if (isPrimary && !location.isPrimary) {
+      await CompanyLocation.updateMany({ companyId: employerProfile.companyId }, { isPrimary: false });
+    }
+
+    location.name = name;
+    location.addressLine = addressLine;
+    location.province = province;
+    location.district = district || null;
+    location.ward = ward || null;
+    location.latitude = latitude ?? null;
+    location.longitude = longitude ?? null;
+    if (isPrimary !== undefined) location.isPrimary = Boolean(isPrimary);
+
+    await location.save();
+
+    return res.status(200).json({ success: true, message: 'Cập nhật địa điểm thành công', data: location });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+export const deleteMyCompanyLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const employerProfile = await EmployerProfile.findOne({
+      userId: req.user._id
+    }).select('companyId');
+
+    if (!employerProfile?.companyId) {
+      return res.status(400).json({ success: false, message: 'Nhà tuyển dụng chưa có công ty' });
+    }
+
+    const location = await CompanyLocation.findOneAndDelete({ _id: id, companyId: employerProfile.companyId });
+    if (!location) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy địa điểm' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Xóa địa điểm thành công' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};

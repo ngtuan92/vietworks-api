@@ -344,7 +344,7 @@ export const getSavedJobs = async (req, res) => {
       SavedJob.find({ userId: req.user._id })
         .populate({
           path: 'jobId',
-          select: 'title salary workLocations deadline status companyId careerGroupId careerId isUrgent premium',
+          select: 'title salary workLocations deadline status companyId careerGroupId careerId isUrgent premium headcount',
           populate: { path: 'companyId', select: 'name avatarUrl verificationStatus' }
         })
         .sort({ createdAt: -1 })
@@ -410,7 +410,7 @@ export const getSimilarSavedJobs = async (req, res) => {
       ]
     })
       .populate('companyId', 'name avatarUrl')
-      .select('title salary workLocations deadline isUrgent premium companyId careerId careerGroupId')
+      .select('title salary workLocations deadline isUrgent premium companyId careerId careerGroupId headcount')
       .sort({ 'premium.isActive': -1, publishedAt: -1 })
       .limit(limitNum)
       .lean();
@@ -645,7 +645,7 @@ export const getCompanyOpenJobs = async (req, res) => {
 
     const [jobs, total] = await Promise.all([
       Job.find(filter)
-        .select('title salary workLocations deadline isUrgent premium careerGroupId careerId jobLevelId experienceLevelId')
+        .select('title salary workLocations deadline isUrgent premium careerGroupId careerId jobLevelId experienceLevelId headcount')
         .populate('careerGroupId', 'name')
         .populate('careerId', 'name')
         .populate('jobLevelId', 'name')

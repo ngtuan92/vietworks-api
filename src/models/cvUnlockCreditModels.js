@@ -4,7 +4,7 @@ import { objectId } from './sharedModels.js';
 
 const cvUnlockCreditSchema = new mongoose.Schema({
   employerUserId: { type: objectId, ref: 'User', required: true },
-  companyId: { type: objectId, ref: 'Company', required: true },
+  companyId: { type: objectId, ref: 'Company', default: null },
   packageId: { type: objectId, ref: 'ServicePackage', required: true },
   packageCode: { type: String, required: true },
   totalCredits: { type: Number, required: true },

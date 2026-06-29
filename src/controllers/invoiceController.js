@@ -1,7 +1,10 @@
-﻿import Transaction from '../models/transactionModels.js';
+import Transaction from '../models/transactionModels.js';
 import Invoice from '../models/Invoice.js';
 import User from '../models/userModels.js';
 import { TransactionType } from '../enums/paymentEnums.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
+import { UserRole } from '../enums/userEnums.js';
 
 export const requestInvoice = async (req, res) => {
   try {
@@ -51,6 +54,20 @@ export const requestInvoice = async (req, res) => {
 
     transaction.invoiceRequested = true;
     await transaction.save();
+
+    // Notify admins about new invoice request
+    User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+      admins.forEach(admin => {
+        NotificationService.create({
+          receiverUserId: admin._id,
+          typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+          title: 'Yêu cầu xuất hóa đơn mới',
+          content: `Nhà tuyển dụng "${user.fullName}" vừa gửi yêu cầu xuất hóa đơn cho giao dịch ${transaction.metadata?.orderCode || transaction._id}.`,
+          channels: [NotificationChannel.IN_APP],
+          metadata: { actionUrl: '/admin/invoices' }
+        }).catch(err => console.error('Notify admin error:', err));
+      });
+    }).catch(err => console.error('Find admins error:', err));
 
     res.status(201).json({ success: true, data: invoice });
   } catch (error) {

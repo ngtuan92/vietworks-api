@@ -1,4 +1,4 @@
-import Job from '../models/jobModels.js';
+﻿import Job from '../models/jobModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
 import Company from '../models/companyModels.js';
@@ -12,6 +12,10 @@ import ExperienceLevel from '../models/experienceLevelModels.js';
 import { CompanyVerificationStatus, CommonStatus } from '../enums/masterDataEnums.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import Application from '../models/applicationModels.js';
+import NotificationService from '../services/notificationService.js';
+import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
+import User from '../models/userModels.js';
+import { UserRole } from '../enums/userEnums.js';
 
 const ensureCompanyVerifiedForEmployer = async (userId) => {
   const employerProfile = await EmployerProfile.findOne({ userId }).select('companyId');
@@ -68,7 +72,7 @@ const attachHiringStats = async (jobs = []) => {
   const statsMap = new Map(stats.map((item) => [String(item._id), item.appliedCount || 0]));
 
   jobs.forEach((job) => {
-    const neededCount = Number(job.applicationCount || 0);
+    const neededCount = Number(job.headcount || 0);
     const appliedCount = statsMap.get(String(job._id)) || 0;
     job.neededCount = neededCount;
     job.appliedCount = appliedCount;
@@ -181,7 +185,7 @@ export const createJob = async (req, res) => {
       workingTime,
       applyInstruction,
       deadline: new Date(deadline),
-      isUrgent: isUrgent || false,
+      isUrgent: false, // Must buy a package to make it urgent
       headcount: headcount ? Number(headcount) : 1,
       status: JobStatus.DRAFT
     });
@@ -268,6 +272,20 @@ export const submitJobForReview = async (req, res) => {
 
     await job.save();
 
+    // Notify admins
+    User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+      admins.forEach(admin => {
+        NotificationService.create({
+          receiverUserId: admin._id,
+          typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+          title: 'Tin tuyển dụng chờ duyệt',
+          content: `Tin tuyển dụng "${job.title}" vừa được nhà tuyển dụng gửi và đang chờ duyệt.`,
+          channels: [NotificationChannel.IN_APP],
+          metadata: { actionUrl: '/admin/jobs' }
+        }).catch(err => console.error('Notify admin error:', err));
+      });
+    }).catch(err => console.error('Find admins error:', err));
+
     res.status(200).json({
       success: true,
       message: 'Đã gửi việc làm để duyệt thành công',
@@ -333,7 +351,7 @@ export const updateJob = async (req, res) => {
     const allowedUpdates = [
       ...coreFields,
       'skills', 'workLocations', 'saturdayPolicy', 'workingTime', 'applyInstruction',
-      'deadline', 'isUrgent'
+      'deadline'
     ];
 
     // Biến cờ đánh dấu xem có sự thay đổi ở trường cốt lõi nào không
@@ -410,6 +428,20 @@ export const updateJob = async (req, res) => {
       job.submittedAt = new Date(); // Đánh dấu ngày gửi duyệt lại tự động
       // Reset các thông tin duyệt cũ để admin xem lại từ đầu
       job.reviewNote = 'Hệ thống tự động chuyển về chờ duyệt do nhà tuyển dụng thay đổi thông tin cốt lõi.';
+
+      // Notify admins
+      User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+        admins.forEach(admin => {
+          NotificationService.create({
+            receiverUserId: admin._id,
+            typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+            title: 'Tin tuyển dụng cần duyệt lại',
+            content: `Tin tuyển dụng "${job.title}" vừa được cập nhật thông tin cốt lõi và đang chờ duyệt lại.`,
+            channels: [NotificationChannel.IN_APP],
+            metadata: { actionUrl: '/admin/jobs' }
+          }).catch(err => console.error('Notify admin error:', err));
+        });
+      }).catch(err => console.error('Find admins error:', err));
     }
 
     // 7. Lưu lại vào Database
@@ -572,8 +604,8 @@ export const getMyJobs = async (req, res) => {
 
     // Enrich: thêm activeBoost cho mỗi job (nếu có UserServicePackage ACTIVE cho job đó)
     const UserServicePackage = (await import('../models/userServicePackageModels.js')).default;
-    const jobIds = jobs.map(j => j._id);
-    const activeBoosts = await UserServicePackage.find({
+const jobIds = jobs.map(j => new mongoose.Types.ObjectId(j._id));    
+const activeBoosts = await UserServicePackage.find({
       userId,
       status: 'ACTIVE',
       targetType: 'JOB',
@@ -636,8 +668,9 @@ export const getJobById = async (req, res) => {
       .populate('jobLevelId')
       .populate('experienceLevelId')
       .populate('skills')
-      .populate('createdBy', 'fullName email');
-
+      .populate('createdBy', 'fullName email').
+      lean();
+      
     if (!job) {
       return res.status(404).json({
         success: false,
@@ -655,8 +688,8 @@ export const getJobById = async (req, res) => {
       });
     }
 
-    const jobObject = job.toObject();
-    await attachHiringStats([jobObject]);
+  await attachHiringStats([job]);     // ← dùng job trực tiếp, bỏ jobObject
+
 
     // Check if user can apply
     let canApply = true;
@@ -665,29 +698,31 @@ export const getJobById = async (req, res) => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    if (jobObject.status === JobStatus.EXPIRED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm đã hết hạn';
-    } else if (jobObject.status === JobStatus.CLOSED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm đã đóng';
-    } else if (jobObject.status === JobStatus.REJECTED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm bị từ chối';
-    } else if (jobObject.status === JobStatus.BANNED) {
-      canApply = false;
-      cannotApplyReason = 'Việc làm bị khóa';
-    } else if (new Date(jobObject.deadline) < startOfToday) {
-      canApply = false;
-      cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
-    } else if (jobObject.isHiringFull) {
-      canApply = false;
-      cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
-    }
+    // SỬA: đổi tất cả jobObject → job trong phần canApply
+
+if (job.status === JobStatus.EXPIRED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm đã hết hạn';
+} else if (job.status === JobStatus.CLOSED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm đã đóng';
+} else if (job.status === JobStatus.REJECTED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm bị từ chối';
+} else if (job.status === JobStatus.BANNED) {
+  canApply = false;
+  cannotApplyReason = 'Việc làm bị khóa';
+} else if (new Date(job.deadline) < startOfToday) {
+  canApply = false;
+  cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
+} else if (job.isHiringFull) {
+  canApply = false;
+  cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
+}
 
     res.status(200).json({
       success: true,
-      data: jobObject,
+      data: job,
       canApply,
       cannotApplyReason
     });
