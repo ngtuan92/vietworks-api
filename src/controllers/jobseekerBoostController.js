@@ -110,24 +110,43 @@ export const getBoostPackages = async (req, res) => {
 /**
  * Tính báo giá nâng cấp gói: giá trị còn lại của gói cũ theo thời gian → số tiền phải bù.
  *
- * Công thức (Cách 1 — nâng cấp theo thời gian còn lại):
- *   remainingValue = round(pricePaid × remainingMs / totalMs)
- *   upgradePrice   = max(0, newPkg.price − remainingValue)
+ * Công thức (Cách 1 — nâng cấp theo tư duy "giá mỗi ngày × số ngày còn"):
+ *   dailyPrice          = pricePaid / totalDaysFloat     (giá 1 ngày — tính trước)
+ *   remainingValue      = round(dailyPrice × daysRemainingFloat)
+ *   upgradePrice        = max(0, newPkg.price − remainingValue)
+ *
+ * Lý do chia trước rồi nhân: với cách cũ `round(pricePaid × ms / totalMs)` thì số trung gian
+ * rất lớn (price × 86_400_000 = hàng chục tỷ), dễ mất precision float. Cách này: chia trước
+ * để có dailyPrice (≈ 1.666), rồi nhân với số ngày còn (≤ 30) → số trung gian nhỏ → sai số
+ * float nhỏ hơn đáng kể, đặc biệt với gói dài hạn (365 ngày).
+ *
+ * `daysRemainingFloat` & `totalDaysFloat` là float chính xác (không qua ceil) dùng cho value.
+ * `daysRemaining` & `totalDays` trả về cho FE làm display (Math.ceil — số ngày dương).
  *
  * Trả về { daysRemaining, totalDays, remainingValue, upgradePrice, downgrade }.
  *   - downgrade = true khi newPkg.price < remainingValue (gói mới rẻ hơn giá trị còn lại
  *     của gói cũ) — FE/BE sẽ chặn không cho nâng cấp.
  */
 export const computeUpgradeQuote = (activeSub, newPkg) => {
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
   const now = Date.now();
   const startedAt = new Date(activeSub.startedAt).getTime();
   const expiredAt = new Date(activeSub.expiredAt).getTime();
   const totalMs = Math.max(1, expiredAt - startedAt);
   const remainingMs = Math.max(0, expiredAt - now);
-  const daysRemaining = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
-  const totalDays = Math.max(1, Math.ceil(totalMs / (1000 * 60 * 60 * 24)));
 
-  const remainingValue = Math.round((activeSub.pricePaid * remainingMs) / totalMs);
+  // Float chính xác cho value computation
+  const totalDaysFloat = totalMs / MS_PER_DAY;
+  const daysRemainingFloat = remainingMs / MS_PER_DAY;
+
+  // Ceil cho display (FE hiển thị "còn N ngày" số nguyên dương)
+  const daysRemaining = Math.max(0, Math.ceil(daysRemainingFloat));
+  const totalDays = Math.max(1, Math.ceil(totalDaysFloat));
+
+  // Công thức mới: giá 1 ngày × số ngày còn (chia trước rồi nhân → sai số float nhỏ)
+  const dailyPrice = activeSub.pricePaid / totalDaysFloat;
+  const remainingValue = Math.round(dailyPrice * daysRemainingFloat);
+
   const upgradePrice = Math.max(0, newPkg.price - remainingValue);
   const downgrade = newPkg.price < remainingValue;
 
