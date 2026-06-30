@@ -178,7 +178,12 @@ async function processPaidTransaction(orderCode, sepay) {
 
   // Mua gói boost → kích hoạt ngay
   if (updated.type === TransactionType.PACKAGE_PURCHASE) {
-    const pkg = updated.packageSnapshot || await ServicePackage.findById(updated.packageId).lean();
+    // Luôn lấy data ServicePackage mới nhất từ DB (snapshot cũ có thể thiếu field do Mongoose strip null/undefined)
+    // Chỉ fallback về snapshot nếu DB lookup thất bại (rất hiếm — package đã bị xoá).
+    const freshPkg = updated.packageId
+      ? await ServicePackage.findById(updated.packageId).lean()
+      : null;
+    const pkg = freshPkg || (updated.packageSnapshot && updated.packageSnapshot.code ? updated.packageSnapshot : null);
     if (pkg) {
       const startAt = new Date();
       const durationDays = pkg.durationDays || 7;
@@ -190,19 +195,22 @@ async function processPaidTransaction(orderCode, sepay) {
           transactionId: updated._id
         });
         if (!existed) {
+          const pkgId = (pkg._id || pkg.id || updated.packageId)?.toString();
           await UserServicePackage.create({
             userId: updated.userId,
-            packageId: updated.packageId || pkg.id || pkg._id,
+            packageId: pkgId,
+            // Defensive defaults: pkg có thể là fresh ServicePackage (.lean()) HOẶC snapshot cũ.
+            // Tránh validation error khi cả 6 field đều undefined.
             packageSnapshot: {
-              id: pkg.id || pkg._id,
-              code: pkg.code,
-              name: pkg.name,
-              type: pkg.type || pkg.packageType,
-              price: pkg.price,
-              durationDays: durationDays
+              id: pkgId,
+              code: pkg.code ?? null,
+              name: pkg.name ?? null,
+              type: pkg.packageType ?? pkg.type ?? null,
+              price: pkg.price ?? null,
+              durationDays: durationDays ?? null
             },
-            packageCode: pkg.code,
-            packageType: pkg.type || pkg.packageType,
+            packageCode: pkg.code ?? null,
+            packageType: pkg.packageType ?? pkg.type ?? null,
             targetType: updated.targetType || PackageTargetType.USER,
             targetId: updated.targetId || updated.userId,
             startedAt: startAt,

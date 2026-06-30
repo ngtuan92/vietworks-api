@@ -23,8 +23,18 @@ const activatePremiumJobPackage = async ({ userId, jobId, pkg, transactionId }) 
       await UserServicePackage.create({
         userId,
         packageId: pkg._id,
-        packageCode: pkg.code,
-        packageType: pkg.packageType,
+        // Defensive defaults: mọi field đều có fallback tránh validation error khi
+        // ServicePackage thiếu field (vd: gói cũ seed với durationDays=null).
+        packageSnapshot: {
+          id: pkg._id,
+          code: pkg.code ?? null,
+          name: pkg.name ?? null,
+          type: pkg.packageType ?? null,
+          price: pkg.price ?? null,
+          durationDays: pkg.durationDays ?? 7
+        },
+        packageCode: pkg.code ?? null,
+        packageType: pkg.packageType ?? null,
         targetType: 'JOB',
         targetId: jobId,
         startedAt: startAt,
@@ -61,13 +71,40 @@ const activatePremiumJobPackage = async ({ userId, jobId, pkg, transactionId }) 
   return { startAt, endAt };
 };
 
+/**
+ * Tính báo giá nâng cấp gói: giá trị còn lại của gói cũ theo thời gian → số tiền phải bù.
+ *
+ * Công thức (Cách 1 — nâng cấp theo thời gian còn lại):
+ *   remainingValue = round(pricePaid × remainingMs / totalMs)
+ *   upgradePrice   = max(0, newPkg.price − remainingValue)
+ *
+ * Trả về { daysRemaining, totalDays, remainingValue, upgradePrice, downgrade }.
+ *   - downgrade = true khi newPkg.price < remainingValue (gói mới rẻ hơn giá trị còn lại
+ *     của gói cũ) — FE/BE sẽ chặn không cho nâng cấp.
+ */
+export const computeUpgradeQuote = (activeSub, newPkg) => {
+  const now = Date.now();
+  const startedAt = new Date(activeSub.startedAt).getTime();
+  const expiredAt = new Date(activeSub.expiredAt).getTime();
+  const totalMs = Math.max(1, expiredAt - startedAt);
+  const remainingMs = Math.max(0, expiredAt - now);
+  const daysRemaining = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+  const totalDays = Math.max(1, Math.ceil(totalMs / (1000 * 60 * 60 * 24)));
+
+  const remainingValue = Math.round((activeSub.pricePaid * remainingMs) / totalMs);
+  const upgradePrice = Math.max(0, newPkg.price - remainingValue);
+  const downgrade = newPkg.price < remainingValue;
+
+  return { daysRemaining, totalDays, remainingValue, upgradePrice, downgrade };
+};
+
 export const createBoostPayment = async (req, res) => {
   try {
     const employerId = req.user._id;
     const { jobId } = req.params;
     const { packageId, action = 'new', paymentMethod: requestedMethod } = req.body;
 
-    const job = await Job.findOne({ _id: jobId, employerId, status: 'PUBLISHED' });
+    const job = await Job.findOne({ _id: jobId, createdBy: employerId, status: 'PUBLISHED' });
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found or not owned' });
     }
@@ -91,49 +128,79 @@ export const createBoostPayment = async (req, res) => {
       status: UserServicePackageStatus.ACTIVE
     }).populate('packageId', 'name code price durationDays');
 
+    // ─── Tính báo giá nâng cấp NGAY TẠI ĐÂY (dùng cho cả hai nhánh action). ───
+    let upgradeQuote = null;
+    if (activeSubscription) {
+      upgradeQuote = computeUpgradeQuote(activeSubscription, pkg);
+    }
+
     if (activeSubscription) {
       if (action !== 'upgrade') {
-        const daysRemaining = Math.max(
-          0,
-          Math.ceil((new Date(activeSubscription.expiredAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        );
         return res.status(400).json({
           success: false,
           code: 'ALREADY_HAS_ACTIVE_PACKAGE',
-          message: `Tin tuyển dụng đang dùng gói "${activeSubscription.packageId?.name || activeSubscription.packageCode}" (còn ${daysRemaining} ngày). Hãy nâng cấp hoặc đợi gói hết hạn.`,
+          message: `Tin tuyển dụng đang dùng gói "${activeSubscription.packageId?.name || activeSubscription.packageCode}" (còn ${upgradeQuote.daysRemaining} ngày). Hãy nâng cấp hoặc đợi gói hết hạn.`,
           data: {
             currentPackage: {
               name: activeSubscription.packageId?.name,
               code: activeSubscription.packageCode,
+              pricePaid: activeSubscription.pricePaid,
+              startedAt: activeSubscription.startedAt,
               expiredAt: activeSubscription.expiredAt,
-              daysRemaining
-            }
+              totalDays: upgradeQuote.totalDays,
+              daysRemaining: upgradeQuote.daysRemaining,
+              remainingValue: upgradeQuote.remainingValue
+            },
+            upgradePrice: upgradeQuote.upgradePrice,
+            downgrade: upgradeQuote.downgrade
           }
         });
       }
 
-      // action === 'upgrade': huỷ gói cũ
-      activeSubscription.status = UserServicePackageStatus.CANCELLED;
-      activeSubscription.cancelledAt = new Date();
-      activeSubscription.cancelledReason = 'UPGRADED';
-      await activeSubscription.save();
-
-      // Notify user rằng subscription cũ đã bị huỷ (kèm giao dịch gốc nếu có)
-      if (activeSubscription.transactionId) {
-        const oldTxn = await Transaction.findById(activeSubscription.transactionId).lean();
-        if (oldTxn) {
-          notifyPaymentCancelled({
-            userId: employerId,
-            transaction: oldTxn,
-            reason: 'Nâng cấp lên gói mới'
-          });
-        }
+      // action === 'upgrade': chặn nếu gói mới rẻ hơn giá trị còn lại của gói cũ
+      if (upgradeQuote.downgrade) {
+        return res.status(400).json({
+          success: false,
+          code: 'DOWNGRADE_NOT_ALLOWED',
+          message: `Không thể nâng cấp lên gói rẻ hơn khi gói hiện tại còn giá trị ${upgradeQuote.remainingValue.toLocaleString('vi-VN')}đ. Vui lòng đợi gói hết hạn hoặc chọn gói có giá cao hơn.`,
+          data: {
+            currentPackage: {
+              name: activeSubscription.packageId?.name,
+              pricePaid: activeSubscription.pricePaid,
+              daysRemaining: upgradeQuote.daysRemaining,
+              remainingValue: upgradeQuote.remainingValue
+            },
+            newPackage: { name: pkg.name, price: pkg.price },
+            upgradePrice: upgradeQuote.upgradePrice
+          }
+        });
       }
 
-      await JobBoost.updateMany(
-        { jobId, status: UserServicePackageStatus.ACTIVE },
-        { $set: { status: UserServicePackageStatus.EXPIRED } }
-      );
+      // action === 'upgrade' + paymentMethod = WALLET: huỷ gói cũ NGAY (instant).
+      // action === 'upgrade' + paymentMethod = SEPAY: KHÔNG huỷ gói cũ ở đây — đợi webhook SUCCESS mới huỷ.
+      if (requestedMethod === PaymentMethod.WALLET) {
+        activeSubscription.status = UserServicePackageStatus.CANCELLED;
+        activeSubscription.cancelledAt = new Date();
+        activeSubscription.cancelledReason = 'UPGRADED';
+        await activeSubscription.save();
+
+        // Notify user rằng subscription cũ đã bị huỷ (kèm giao dịch gốc nếu có)
+        if (activeSubscription.transactionId) {
+          const oldTxn = await Transaction.findById(activeSubscription.transactionId).lean();
+          if (oldTxn) {
+            notifyPaymentCancelled({
+              userId: employerId,
+              transaction: oldTxn,
+              reason: 'Đã nâng cấp lên gói mới'
+            });
+          }
+        }
+
+        await JobBoost.updateMany(
+          { jobId, status: UserServicePackageStatus.ACTIVE },
+          { $set: { status: UserServicePackageStatus.EXPIRED } }
+        );
+      }
     } else {
       // Backward compat: vẫn check JobBoost (legacy data trước khi có UserServicePackage)
       const existingBoost = await JobBoost.findOne({ jobId, status: 'ACTIVE' });
@@ -149,12 +216,17 @@ export const createBoostPayment = async (req, res) => {
       ? PaymentMethod.WALLET
       : PaymentMethod.SEPAY;
 
+    // ─── Tính effective price: nếu upgrade thì trừ theo upgradePrice, ngược lại dùng full price ───
+    const effectivePrice = (action === 'upgrade' && upgradeQuote)
+      ? upgradeQuote.upgradePrice
+      : pkg.price;
+
     // ─── WALLET FLOW: trừ tiền ví + kích hoạt ngay (không qua SePay) ───
     if (paymentMethod === PaymentMethod.WALLET) {
       // Atomic deduct: chỉ trừ khi balance vẫn còn đủ (chống race)
       const updated = await Wallet.findOneAndUpdate(
-        { userId: employerId, balance: { $gte: pkg.price } },
-        { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
+        { userId: employerId, balance: { $gte: effectivePrice } },
+        { $inc: { balance: -effectivePrice, totalSpent: effectivePrice } },
         { new: true }
       );
       if (!updated) {
@@ -166,13 +238,13 @@ export const createBoostPayment = async (req, res) => {
       }
 
       const balanceAfter = updated.balance;
-      const balanceBefore = balanceAfter + pkg.price;
+      const balanceBefore = balanceAfter + effectivePrice;
 
       const transaction = await Transaction.create({
         userId: employerId,
         walletId: updated._id,
         type: TransactionType.PACKAGE_PURCHASE,
-        amount: pkg.price,
+        amount: effectivePrice,
         status: TransactionStatus.SUCCESS,
         paymentMethod: PaymentMethod.WALLET,
         targetType: 'JOB',
@@ -180,8 +252,18 @@ export const createBoostPayment = async (req, res) => {
         packageId,
         balanceBefore,
         balanceAfter,
-        description: `Boost Job ${job.title} - ${pkg.name}`,
-        metadata: { paidAt: new Date() }
+        description: `Boost Job ${job.title} - ${pkg.name}${effectivePrice < pkg.price ? ` (nâng cấp từ ${activeSubscription?.packageCode || 'gói cũ'})` : ''}`,
+        metadata: {
+          paidAt: new Date(),
+          ...(effectivePrice < pkg.price ? {
+            upgradeFrom: {
+              subscriptionId: activeSubscription?._id,
+              packageCode: activeSubscription?.packageCode,
+              pricePaid: activeSubscription?.pricePaid,
+              remainingValue: upgradeQuote?.remainingValue ?? 0
+            }
+          } : {})
+        }
       });
 
       // Kích hoạt gói ngay
@@ -205,18 +287,22 @@ export const createBoostPayment = async (req, res) => {
         data: {
           method: PaymentMethod.WALLET,
           transactionId: transaction._id,
-          amount: pkg.price,
+          amount: effectivePrice,
+          fullPrice: pkg.price,
+          discount: pkg.price - effectivePrice,
           newBalance: balanceAfter,
           target: { type: 'JOB', id: jobId, title: job.title }
         }
       });
     }
 
-    // ─── SEPAY FLOW (giữ nguyên logic cũ) ───
+    // ─── SEPAY FLOW ───
+    // Nếu là upgrade: amount của transaction + QR = effectivePrice.
+    // Metadata.upgradeFrom giúp webhook biết cần huỷ gói cũ.
     const transaction = await Transaction.create({
       userId: employerId,
       type: TransactionType.PACKAGE_PURCHASE,
-      amount: pkg.price,
+      amount: effectivePrice,
       status: TransactionStatus.PENDING,
       paymentMethod: PaymentMethod.SEPAY,
       targetType: 'JOB',
@@ -230,11 +316,21 @@ export const createBoostPayment = async (req, res) => {
         price: pkg.price,
         durationDays: pkg.durationDays
       },
-      description: `Boost Job ${job.title} - ${pkg.name}`
+      description: `Boost Job ${job.title} - ${pkg.name}${effectivePrice < pkg.price ? ` (nâng cấp từ ${activeSubscription?.packageCode || 'gói cũ'})` : ''}`,
+      metadata: action === 'upgrade' && activeSubscription ? {
+        upgradeFrom: {
+          subscriptionId: activeSubscription._id,
+          packageCode: activeSubscription.packageCode,
+          pricePaid: activeSubscription.pricePaid,
+          remainingValue: upgradeQuote?.remainingValue ?? 0,
+          fullPrice: pkg.price,
+          discount: pkg.price - effectivePrice
+        }
+      } : {}
     });
 
     const orderCode = generateOrderCode(transaction._id.toString());
-    transaction.metadata = { orderCode };
+    transaction.metadata = { ...transaction.metadata, orderCode };
     await transaction.save();
 
     const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '1017588888';
@@ -242,7 +338,7 @@ export const createBoostPayment = async (req, res) => {
     const qrUrl = createQRPaymentUrl({
       account: bankAccount,
       bank: bankName,
-      amount: pkg.price,
+      amount: effectivePrice,
       orderCode
     });
     const transferContent = buildTransferContent(orderCode);
@@ -253,11 +349,24 @@ export const createBoostPayment = async (req, res) => {
         method: PaymentMethod.SEPAY,
         transactionId: transaction._id,
         orderCode,
-        amount: pkg.price,
+        amount: effectivePrice,
+        fullPrice: pkg.price,
+        discount: pkg.price - effectivePrice,
         qrUrl,
         transferContent,
         bankAccount,
-        bankName
+        bankName,
+        // Báo FE biết đây là luồng upgrade; gói cũ sẽ bị thay thế SAU KHI thanh toán thành công
+        upgradingFrom: activeSubscription
+          ? {
+              name: activeSubscription.packageId?.name,
+              code: activeSubscription.packageCode,
+              expiredAt: activeSubscription.expiredAt,
+              pricePaid: activeSubscription.pricePaid,
+              remainingValue: upgradeQuote?.remainingValue ?? 0,
+              daysRemaining: upgradeQuote?.daysRemaining ?? 0
+            }
+          : null
       }
     });
   } catch (error) {
