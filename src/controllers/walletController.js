@@ -166,17 +166,20 @@ async function processPaidTransaction(orderCode, sepay) {
   );
   if (!updated) return false;
 
-  // Cộng tiền vào ví (nếu user có ví — vd employer nạp tiền)
-  await Wallet.findOneAndUpdate(
-    { userId: updated.userId },
-    {
-      $inc: {
-        balance: sepay.amount,
-        totalDeposited: sepay.amount > 0 ? sepay.amount : 0,
-        totalSpent: sepay.amount < 0 ? Math.abs(sepay.amount) : 0
+  // Chỉ cộng tiền vào ví nếu đây là giao dịch nạp tiền ví (WALLET_DEPOSIT)
+  // Nếu là mua gói trực tiếp (PACKAGE_PURCHASE), tiền này thuộc về hệ thống, không cộng vào ví user.
+  if (updated.type === 'WALLET_DEPOSIT') {
+    await Wallet.findOneAndUpdate(
+      { userId: updated.userId },
+      {
+        $inc: {
+          balance: sepay.amount,
+          totalDeposited: sepay.amount > 0 ? sepay.amount : 0,
+          totalSpent: sepay.amount < 0 ? Math.abs(sepay.amount) : 0
+        }
       }
-    }
-  );
+    );
+  }
 
   // Mua gói boost → kích hoạt ngay
   if (updated.type === TransactionType.PACKAGE_PURCHASE) {
