@@ -11,13 +11,17 @@ const userServicePackageSchema = new mongoose.Schema({
   userId: { type: objectId, ref: 'User', required: true },
   companyId: { type: objectId, ref: 'Company', default: null },
   packageId: { type: objectId, required: true }, // Removed ref
+  // ── Snapshot là dữ liệu phái sinh từ ServicePackage; khi ServicePackage bị sửa/xoá
+  // sau này, subscription vẫn đọc được từ snapshot. Trước đây required: true → dễ vỡ
+  // khi controller truyền field undefined (vd: gói unlock có durationDays=null).
+  // Relax về optional + có default null để create không bao giờ chặn user.
   packageSnapshot: {
-    id: { type: objectId, required: true },
-    code: { type: String, required: true },
-    name: { type: String, required: true },
-    type: { type: String, required: true },
-    price: { type: Number, required: true },
-    durationDays: { type: Number, required: true }
+    id: { type: objectId, default: null },
+    code: { type: String, default: null },
+    name: { type: String, default: null },
+    type: { type: String, default: null },
+    price: { type: Number, default: null },
+    durationDays: { type: Number, default: null }
   },
   packageCode: { type: String, required: true },
   packageType: { type: String, enum: Object.values(ServicePackageType), required: true },
