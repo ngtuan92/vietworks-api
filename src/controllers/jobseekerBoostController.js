@@ -372,6 +372,7 @@ export const createBoostPayment = async (req, res) => {
 
     const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '1017588888';
     const bankName = process.env.SEPAY_BANK_NAME || 'Vietcombank';
+    const bankOwner = process.env.SEPAY_BANK_OWNER || 'NGUYEN TIEN DUNG';
     const qrUrl = createQRPaymentUrl({
       account: bankAccount,
       bank: bankName,
@@ -393,6 +394,7 @@ export const createBoostPayment = async (req, res) => {
         transferContent,
         bankAccount,
         bankName,
+        bankOwner,
         // Báo FE biết đây là luồng upgrade; gói cũ sẽ bị thay thế SAU KHI thanh toán thành công
         upgradingFrom: activeSubscription
           ? {

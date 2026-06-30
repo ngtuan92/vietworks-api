@@ -9,6 +9,7 @@ import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import { UserRole, AccountStatus } from '../enums/userEnums.js';
 import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
+import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 
 export const getTalentPool = async (req, res) => {
   try {
@@ -222,7 +223,7 @@ export const unlockCandidate = async (req, res) => {
 export const purchaseCvUnlockPackage = async (req, res) => {
   try {
     const employerId = req.user._id;
-    const { packageId } = req.body;
+    const { packageId, paymentMethod: requestedMethod = PaymentMethod.WALLET } = req.body;
 
     const pkg = await ServicePackage.findById(packageId);
     if (!pkg ||
@@ -232,65 +233,118 @@ export const purchaseCvUnlockPackage = async (req, res) => {
     }
 
     const credits = pkg.benefits?.cvAccessLimit || 1;
+    const paymentMethod = requestedMethod === PaymentMethod.SEPAY ? PaymentMethod.SEPAY : PaymentMethod.WALLET;
 
-    // Trừ ví NGUYÊN TỬ (chỉ trừ khi đủ tiền)
-    const wallet = await Wallet.findOneAndUpdate(
-      { userId: employerId, balance: { $gte: pkg.price } },
-      { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
-      { new: true }
-    );
-    if (!wallet) {
-      return res.status(400).json({
-        success: false,
-        code: 'INSUFFICIENT_BALANCE',
-        message: 'Số dư ví không đủ. Vui lòng nạp thêm tiền.'
+    if (paymentMethod === PaymentMethod.WALLET) {
+      // Trừ ví NGUYÊN TỬ (chỉ trừ khi đủ tiền)
+      const wallet = await Wallet.findOneAndUpdate(
+        { userId: employerId, balance: { $gte: pkg.price } },
+        { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
+        { new: true }
+      );
+      if (!wallet) {
+        return res.status(400).json({
+          success: false,
+          code: 'INSUFFICIENT_BALANCE',
+          message: 'Số dư ví không đủ. Vui lòng nạp thêm tiền hoặc chọn thanh toán qua mã QR.'
+        });
+      }
+
+      const balanceAfter = wallet.balance;
+      const transaction = await Transaction.create({
+        userId: employerId,
+        walletId: wallet._id,
+        type: TransactionType.PACKAGE_PURCHASE,
+        amount: pkg.price,
+        status: TransactionStatus.SUCCESS,
+        paymentMethod: PaymentMethod.WALLET,
+        packageId,
+        balanceBefore: balanceAfter + pkg.price,
+        balanceAfter,
+        description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
+        metadata: { paidAt: new Date() }
+      });
+
+      const profile = await EmployerProfile.findOne({ userId: employerId }).select('companyId').lean();
+      const startedAt = new Date();
+      const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
+
+      const credit = await CvUnlockCredit.create({
+        employerUserId: employerId,
+        companyId: profile?.companyId || null,
+        packageId: pkg._id,
+        packageCode: pkg.code,
+        totalCredits: credits,
+        usedCredits: 0,
+        remainingCredits: credits,
+        startedAt,
+        expiredAt,
+        status: CvUnlockCreditStatus.ACTIVE,
+        transactionId: transaction._id
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          method: PaymentMethod.WALLET,
+          transactionId: transaction._id,
+          packageName: pkg.name,
+          amount: pkg.price,
+          newBalance: balanceAfter,
+          creditsGranted: credits,
+          remainingCredits: credit.remainingCredits,
+          expiredAt
+        }
       });
     }
 
-    const balanceAfter = wallet.balance;
+    // Luồng SEPAY
     const transaction = await Transaction.create({
       userId: employerId,
-      walletId: wallet._id,
       type: TransactionType.PACKAGE_PURCHASE,
       amount: pkg.price,
-      status: TransactionStatus.SUCCESS,
-      paymentMethod: PaymentMethod.WALLET,
+      status: TransactionStatus.PENDING,
+      paymentMethod: PaymentMethod.SEPAY,
       packageId,
-      balanceBefore: balanceAfter + pkg.price,
-      balanceAfter,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
       description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
-      metadata: { paidAt: new Date() }
+      metadata: {}
     });
 
-    const profile = await EmployerProfile.findOne({ userId: employerId }).select('companyId').lean();
-    const startedAt = new Date();
-    const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
+    const orderCode = generateOrderCode(transaction._id.toString());
+    transaction.metadata = { ...transaction.metadata, orderCode };
+    await transaction.save();
 
-    const credit = await CvUnlockCredit.create({
-      employerUserId: employerId,
-      companyId: profile?.companyId || null,
-      packageId: pkg._id,
-      packageCode: pkg.code,
-      totalCredits: credits,
-      usedCredits: 0,
-      remainingCredits: credits,
-      startedAt,
-      expiredAt,
-      status: CvUnlockCreditStatus.ACTIVE,
-      transactionId: transaction._id
+    const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '1017588888';
+    const bankName = process.env.SEPAY_BANK_NAME || 'Vietcombank';
+    const bankOwner = process.env.SEPAY_BANK_OWNER || 'NGUYEN TIEN DUNG';
+    const qrUrl = createQRPaymentUrl({
+      account: bankAccount,
+      bank: bankName,
+      amount: pkg.price,
+      orderCode
     });
+    const transferContent = buildTransferContent(orderCode);
 
     return res.status(200).json({
       success: true,
       data: {
-        method: PaymentMethod.WALLET,
+        method: PaymentMethod.SEPAY,
         transactionId: transaction._id,
-        packageName: pkg.name,
+        orderCode,
         amount: pkg.price,
-        newBalance: balanceAfter,
-        creditsGranted: credits,
-        remainingCredits: credit.remainingCredits,
-        expiredAt
+        qrUrl,
+        transferContent,
+        bankAccount,
+        bankName,
+        bankOwner
       }
     });
   } catch (error) {
