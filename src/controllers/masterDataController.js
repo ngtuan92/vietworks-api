@@ -3,7 +3,7 @@ import Career from '../models/careerModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
 import JobLevel from '../models/jobLevelModels.js';
 import ExperienceLevel from '../models/experienceLevelModels.js';
-import SalaryRange from '../models/salaryRangeModels.js';
+
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import Skill from '../models/skillModels.js';
 import mongoose from 'mongoose';
@@ -567,21 +567,6 @@ export const updateExperienceLevel = async (req, res) => {
   }
 };
 
-// ==========================================
-// 7. KHOẢNG LƯƠNG (SALARY RANGE)
-// ==========================================
-
-export const getSalaryRanges = async (req, res) => {
-  try {
-    const ranges = await SalaryRange.find({ status: CommonStatus.ACTIVE })
-      .select('code name minMillion maxMillion currency')
-      .lean();
-
-    return res.status(200).json({ success: true, data: ranges });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
-  }
-};
 
 // [DELETE] Ẩn mức kinh nghiệm (Soft Delete)
 export const deleteExperienceLevel = async (req, res) => {
