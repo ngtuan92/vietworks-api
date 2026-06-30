@@ -73,6 +73,7 @@ export const deposit = async (req, res) => {
 
     const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '1017588888';
     const bankName = process.env.SEPAY_BANK_NAME || 'Vietcombank';
+    const bankOwner = process.env.SEPAY_BANK_OWNER || 'NGUYEN TIEN DUNG';
     const qrUrl = createQRPaymentUrl({
       account: bankAccount,
       bank: bankName,
@@ -90,7 +91,8 @@ export const deposit = async (req, res) => {
         qrUrl,
         transferContent,
         bankAccount,
-        bankName
+        bankName,
+        bankOwner
       }
     });
   } catch (error) {
