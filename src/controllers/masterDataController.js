@@ -61,20 +61,17 @@ export const getCareerPositions = async (req, res) => {
 // 4. Lấy danh sách Cấp bậc
 export const getJobLevels = async (req, res) => {
   try {
-    const { careerGroupId, status } = req.query;
+    const { status } = req.query;
     const filter = {};
-
     if (status) filter.status = status;
-    if (careerGroupId) filter.careerGroupId = careerGroupId;
+    // Bỏ careerGroupId filter
 
-
-    // Sắp xếp theo thứ tự cấp bậc tăng dần (levelOrder: 1)
     const levels = await JobLevel.find(filter).sort({ levelOrder: 1 });
     res.status(200).json({ success: true, data: levels });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
-};
+}; 
 
 // 5. Lấy danh sách Kinh nghiệm
 export const getExperienceLevels = async (req, res) => {
