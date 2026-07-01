@@ -7,6 +7,7 @@ const cvSchema = new mongoose.Schema({
   title: { type: String, required: true },
   templateId: { type: objectId, ref: 'CvTemplate', required: true },
   templateCode: { type: String, required: true, default: 'left-col' },
+  templateSnapshot: { type: mongoose.Schema.Types.Mixed, default: null },
   previewImageUrl: { type: String, default: null },
   style: {
     fontId: { type: mongoose.Schema.Types.Mixed, default: null }, // Support either direct ID string or object

@@ -1,6 +1,6 @@
 import express from 'express';
 import { getAllUsers, getUserById } from '../controllers/adminUserController.js';
-import { getAllTransactions, getTransactionById, getRevenueReport } from '../controllers/adminTransactionController.js';
+import { getAllTransactions, getTransactionById, getRevenueReport, getSepayWebhookLogs, replaySepayWebhookLog } from '../controllers/adminTransactionController.js';
 import { requestInvoice } from '../controllers/invoiceController.js';
 import { getEmailLogs } from '../controllers/emailLogController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
@@ -16,6 +16,10 @@ const adminOnly = [protect, authorize(UserRole.ADMIN)];
 router.get('/admin/transactions', adminOnly, getAllTransactions);
 router.get('/admin/transactions/:id', adminOnly, getTransactionById);
 router.get('/admin/revenue-report', adminOnly, getRevenueReport);
+
+// Admin SePay Webhook Logs (debug/audit/replay)
+router.get('/admin/sepay-webhook-logs', adminOnly, getSepayWebhookLogs);
+router.post('/admin/sepay-webhook-logs/:id/replay', adminOnly, replaySepayWebhookLog);
 
 // Admin User Management Routes
 router.get('/admin/users', adminOnly, getAllUsers);

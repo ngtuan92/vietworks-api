@@ -24,6 +24,13 @@ export const createCv = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Template không tồn tại' });
     }
 
+    const templateSnapshot = {
+      templateId: template._id,
+      templateCode: template.templateCode,
+      layoutConfig: template.layoutConfig || {},
+      versionedAt: new Date()
+    };
+
     let sectionsState = [];
     if (template.layoutConfig?.sections && template.layoutConfig.sections.length > 0) {
       sectionsState = template.layoutConfig.sections.map((sec) => ({
@@ -66,6 +73,7 @@ export const createCv = async (req, res) => {
       templateId,
       templateCode: template.templateCode,
       previewImageUrl: template.previewImageUrl || template.thumbnailUrl,
+      templateSnapshot,
       style: {
         fontId: template.layoutConfig?.defaultFontId || null,
         themeColorId: template.layoutConfig?.defaultColorId || null,
@@ -94,7 +102,7 @@ export const createCv = async (req, res) => {
 
 export const updateCv = async (req, res) => {
   try {
-    const { title, sections, style, isMain, previewImageUrl, status, templateId } = req.body;
+    const { title, sections, style, isMain, previewImageUrl, status, templateId, templateSnapshot } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
@@ -106,21 +114,25 @@ export const updateCv = async (req, res) => {
     }
 
     if (title) cv.title = title;
+    if (templateId && templateId !== cv.templateId?.toString()) {
+      if (!mongoose.Types.ObjectId.isValid(templateId)) {
+        return res.status(400).json({ success: false, message: 'Template CV khong hop le' });
+      }
+      const newTemplate = await CvTemplate.findById(templateId);
+      if (!newTemplate) {
+        return res.status(404).json({ success: false, message: 'Template khong ton tai' });
+      }
+      cv.templateId = newTemplate._id;
+      cv.templateCode = newTemplate.templateCode;
+      if (!previewImageUrl) {
+        cv.previewImageUrl = newTemplate.previewImageUrl || newTemplate.thumbnailUrl;
+      }
+    }
+    if (templateSnapshot !== undefined) cv.templateSnapshot = templateSnapshot;
     if (sections) cv.sections = sections;
     if (style) cv.style = { ...cv.style, ...style };
     if (previewImageUrl !== undefined) cv.previewImageUrl = previewImageUrl;
     if (status) cv.status = status;
-
-    if (templateId && templateId !== cv.templateId?.toString()) {
-      const newTemplate = await CvTemplate.findById(templateId);
-      if (newTemplate) {
-        cv.templateId = newTemplate._id;
-        cv.templateCode = newTemplate.templateCode;
-        if (!previewImageUrl) {
-          cv.previewImageUrl = newTemplate.previewImageUrl || newTemplate.thumbnailUrl;
-        }
-      }
-    }
 
     if (isMain === true) {
       await Cv.updateMany({ userId: req.user._id, _id: { $ne: cv._id } }, { isMain: false });

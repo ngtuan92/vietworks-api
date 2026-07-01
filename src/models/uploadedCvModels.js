@@ -9,6 +9,19 @@ const uploadedCvSchema = new mongoose.Schema({
   fileName: { type: String, required: true },
   fileType: { type: String, required: true },
   fileSize: { type: Number, required: true },
+  // ── Thêm bởi fix "Boost CV từ ví lỗi": Boost CV cập nhật các field này qua $set.
+  // Nếu thiếu trong schema → Mongoose strict mode vẫn lưu vào DB nhưng query sort theo
+  // isBoosted (Talent Pool) không hoạt động đáng tin cậy giữa các request.
+  isPublic: { type: Boolean, default: true }, // Có hiện trong Talent Pool hay không
+  isBoosted: { type: Boolean, default: false }, // Đang trong gói Boost CV (cache ưu tiên)
+  boostedUntil: { type: Date, default: null }, // Hạn boost — null = không boost
+  skills: [{ type: String }],
+  summary: { type: String, default: null },
+  experienceYears: { type: Number, default: null },
+  location: {
+    provinceCode: { type: String, default: null },
+    provinceName: { type: String, default: null }
+  },
   textExtractStatus: { type: String, enum: Object.values(TextExtractStatus), default: TextExtractStatus.NOT_EXTRACTED },
   extractedText: { type: String, default: null },
   aiReviewSummary: { type: mongoose.Schema.Types.Mixed, default: null },

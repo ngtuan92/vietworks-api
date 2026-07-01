@@ -5,6 +5,7 @@ import app from './app.js';
 import connectDB from './configs/db.js';
 import './jobs/expireJobCron.js';
 import './jobs/matchingJobCron.js';
+import './jobs/expirePremiumServicesCron.js';
 import { initializeSocket } from './sockets/chatSocket.js';
 const PORT = process.env.PORT || 8080;
 

@@ -160,45 +160,6 @@ router.get('/master-data/job-levels', adminCtrl.getJobLevels);
  */
 router.get('/master-data/experience-levels', adminCtrl.getExperienceLevels);
 
-/**
- * @swagger
- * /api/master-data/salary-ranges:
- *   get:
- *     summary: Lấy danh sách khoảng lương dùng cho bộ lọc tìm kiếm
- *     tags: [Master Data]
- *     responses:
- *       200:
- *         description: Danh sách khoảng lương
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       code:
- *                         type: string
- *                         example: FROM_10_TO_15
- *                       name:
- *                         type: string
- *                         example: "10 - 15 triệu"
- *                       minMillion:
- *                         type: number
- *                         example: 10
- *                       maxMillion:
- *                         type: number
- *                         example: 15
- *                       currency:
- *                         type: string
- *                         example: VND
- */
-router.get('/master-data/salary-ranges', adminCtrl.getSalaryRanges);
-
 
 /**
  * @swagger
