@@ -19,10 +19,10 @@ import { UserRole, AccountStatus } from './enums/userEnums.js';
 
 dotenv.config();
 
-// ── Nguồn dữ liệu gói duy nhất: mọi gói đều dùng hạn 1 tháng (30 ngày) ──
+// ─── Nguồn dữ liệu gói duy nhất: mọi gói đều dùng hạn 1 tháng (30 ngày) ───
 // Thứ tự sortOrder dùng để hiển thị trong Admin và trang mua của user/NTD.
 const PACKAGES = [
-  // ── Ứng viên (Boost CV) — 1 tháng ──
+  // ─── Ứng viên (Boost CV) — 1 tháng ───
   {
     code: 'BOOST_CV_BASIC', name: 'Boost CV 1 tháng - Cơ bản', targetRole: Role.JOBSEEKER, packageType: PType.CV_BOOST,
     price: 50000, durationDays: 30, unit: Unit.CV,
@@ -42,7 +42,7 @@ const PACKAGES = [
     description: 'Trọn gói boost CV + AI Premium suốt 1 năm — tiết kiệm nhất cho người tìm việc nghiêm túc.', sortOrder: 3
   },
 
-  // ── Nhà tuyển dụng (Mở khóa CV) ──
+  // ─── Nhà tuyển dụng (Mở khóa CV) ───
   {
     code: 'UNLOCK_CV_SINGLE', name: 'Mở khóa 1 CV', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 20000, durationDays: null, unit: Unit.CV,
@@ -62,7 +62,7 @@ const PACKAGES = [
     description: 'Gói mở khóa 100 CV, hạn dùng 1 tháng.', sortOrder: 3
   },
 
-  // ── Nhà tuyển dụng (Tin nổi bật + Gấp) — 1 tháng ──
+  // ─── Nhà tuyển dụng (Tin nổi bật + Gấp) — 1 tháng ───
   {
     code: 'PREMIUM_JOB_30_DAYS', name: 'Tin nổi bật + Gấp - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.PREMIUM_JOB,
     price: 400000, durationDays: 30, unit: Unit.JOB,
@@ -87,26 +87,12 @@ async function run() {
   }
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('✓ Đã kết nối DB');
-
-  // 1) Gói dịch vụ — upsert theo code (tạo mới hoặc cập nhật field nếu đã tồn tại)
-  let added = 0, updated = 0;
-  for (const p of PACKAGES) {
-    const res = await ServicePackage.findOneAndUpdate(
-      { code: p.code },
-      { $set: { ...p, status: 'ACTIVE' } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-    if (res.createdAt && res.createdAt.getTime() === res.updatedAt?.getTime()) added++;
-    else updated++;
-  }
-  console.log(`✓ Gói dịch vụ: thêm ${added}, cập nhật ${updated}, tổng ${await ServicePackage.countDocuments()}`);
-
-  // 2) Vô hiệu các mã gói cũ (7/14 ngày) nếu còn tồn tại
-  const deact = await ServicePackage.updateMany(
-    { code: { $in: LEGACY_CODES_TO_DEACTIVATE }, status: { $ne: 'INACTIVE' } },
-    { $set: { status: 'INACTIVE' } }
+  // 1) Gói dịch vụ — thay thế hoàn toàn dữ liệu ServicePackage bằng PACKAGES
+  const deletedPackages = await ServicePackage.deleteMany({});
+  const insertedPackages = await ServicePackage.insertMany(
+    PACKAGES.map((pkg) => ({ ...pkg, status: 'ACTIVE' }))
   );
-  if (deact.modifiedCount) console.log(`✓ Đã tắt ${deact.modifiedCount} gói cũ 7/14 ngày`);
+  console.log(`✓ Đã xóa ${deletedPackages.deletedCount} gói cũ và tạo lại ${insertedPackages.length} gói dịch vụ`);
 
   // 3) Một nhà tuyển dụng để gắn ví/giao dịch (ưu tiên dùng user có sẵn)
   let employer = await User.findOne({ role: UserRole.EMPLOYER });
