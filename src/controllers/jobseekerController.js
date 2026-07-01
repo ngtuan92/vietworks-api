@@ -221,27 +221,33 @@ export const getMatchedJobs = async (req, res) => {
     const { desiredJob } = profile;
     const filter = { ...publicJobFilter() };
 
-    // ── Tiêu chí CHÍNH (bắt buộc): NGÀNH NGHỀ — khớp theo NGHỀ ─
-    // Lọc cứng theo Nghề (careerId); nếu ứng viên chỉ chọn tới Nhóm thì theo Nhóm.
+    // ── Lọc theo BẤT KỲ tiêu chí nào ứng viên đã chọn ─────────
+    // Không bắt buộc ngành nghề: có tiêu chí nào thì lọc cứng theo tiêu chí đó.
+
+    // NGÀNH NGHỀ: khớp theo Nghề (careerId); nếu chỉ chọn tới Nhóm thì theo Nhóm.
     if (desiredJob.careerId) {
       filter.careerId = desiredJob.careerId;
     } else if (desiredJob.careerGroupId) {
       filter.careerGroupId = desiredJob.careerGroupId;
-    } else {
+    }
+
+    // ĐỊA ĐIỂM: job lưu theo provinceName nên so khớp theo tên tỉnh/thành.
+    const desiredProvinceNames = (desiredJob.workLocations || [])
+      .map((loc) => loc?.provinceName)
+      .filter(Boolean);
+    if (desiredProvinceNames.length) {
+      filter['workLocations.provinceName'] = { $in: desiredProvinceNames };
+    }
+
+    // Nếu chưa chọn tiêu chí nào (cả ngành nghề lẫn địa điểm) → không có gì để gợi ý.
+    const hasCareerFilter = Boolean(desiredJob.careerId || desiredJob.careerGroupId);
+    if (!hasCareerFilter && !desiredProvinceNames.length) {
       return res.status(200).json({
         success: true,
         data: [],
         pagination: { page: pageNum, limit: limitNum, total: 0, pages: 0 },
-        message: 'Bạn chưa cài đặt ngành nghề mong muốn để gợi ý'
+        message: 'Bạn chưa cài đặt nhu cầu việc làm để gợi ý'
       });
-    }
-
-    // ── Lọc cứng thêm: ĐỊA ĐIỂM (theo tỉnh/thành) ─────────────
-    const desiredProvinceCodes = (desiredJob.workLocations || [])
-      .map((loc) => loc?.provinceCode)
-      .filter(Boolean);
-    if (desiredProvinceCodes.length) {
-      filter['workLocations.provinceCode'] = { $in: desiredProvinceCodes };
     }
 
     // ── Tiêu chí phụ (chỉ XẾP HẠNG, không loại job) ───────────
