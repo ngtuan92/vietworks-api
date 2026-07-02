@@ -113,23 +113,8 @@ export const updateCvTemplate = async (req, res) => {
       updateData.slug = slugify(name);
     }
 
-    const cvCount = await Cv.countDocuments({ templateId: template._id });
-    if (cvCount === 0) {
-      if (layoutConfig) updateData.layoutConfig = layoutConfig;
-      if (templateCode) updateData.templateCode = templateCode;
-    } else {
-      const requestedLayoutChange = (
-        (layoutConfig && JSON.stringify(layoutConfig) !== JSON.stringify(template.layoutConfig || {})) ||
-        (templateCode && templateCode !== template.templateCode)
-      );
-
-      if (requestedLayoutChange) {
-        return res.status(409).json({
-          success: false,
-          message: 'Mẫu CV này đã có người dùng sử dụng. Không thể sửa bố cục/nội dung mẫu trực tiếp vì có thể ảnh hưởng CV của ứng viên. Hãy tạo mẫu mới hoặc nhân bản mẫu để chỉnh.'
-        });
-      }
-    }
+    if (layoutConfig) updateData.layoutConfig = layoutConfig;
+    if (templateCode) updateData.templateCode = templateCode;
 
     const updatedTemplate = await CvTemplate.findByIdAndUpdate(
       req.params.id,

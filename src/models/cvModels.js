@@ -10,8 +10,8 @@ const cvSchema = new mongoose.Schema({
   templateSnapshot: { type: mongoose.Schema.Types.Mixed, default: null },
   previewImageUrl: { type: String, default: null },
   style: {
-    fontId: { type: mongoose.Schema.Types.Mixed, default: null }, // Support either direct ID string or object
-    themeColorId: { type: String, default: null }, // Support hex color strings or object ID
+    fontId: { type: mongoose.Schema.Types.Mixed, default: null }, 
+    themeColorId: { type: String, default: null }, 
     backgroundType: { type: String, enum: Object.values(CvBackgroundType), default: CvBackgroundType.NONE },
     backgroundId: { type: objectId, ref: 'CvBackground', default: null },
     customBackgroundUrl: { type: String, default: null },
