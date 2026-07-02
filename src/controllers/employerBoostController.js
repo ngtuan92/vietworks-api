@@ -150,6 +150,13 @@ export const createBoostPayment = async (req, res) => {
     // ─── Tính báo giá nâng cấp NGAY TẠI ĐÂY (dùng cho cả hai nhánh action). ───
     let upgradeQuote = null;
     if (activeSubscription) {
+      if (activeSubscription.packageId?._id?.toString() === pkg._id.toString()) {
+        return res.status(400).json({
+          success: false,
+          code: 'SAME_PACKAGE_NOT_ALLOWED',
+          message: 'Tin tuyển dụng đang sử dụng gói này rồi. Vui lòng chọn gói khác để nâng cấp hoặc đợi gói hiện tại hết hạn.'
+        });
+      }
       upgradeQuote = computeUpgradeQuote(activeSubscription, pkg);
     }
 
