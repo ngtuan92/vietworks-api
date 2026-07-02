@@ -317,7 +317,17 @@ export const createBoostPayment = async (req, res) => {
           fullPrice: pkg.price,
           discount: pkg.price - effectivePrice,
           newBalance: balanceAfter,
-          target: { type: 'JOB', id: jobId, title: job.title }
+          target: {
+            type: 'JOB',
+            id: job._id,
+            title: job.title
+          },
+          upgradingFrom: activeSubscription ? {
+            id: activeSubscription.packageId?._id,
+            name: activeSubscription.packageId?.name,
+            pricePaid: activeSubscription.pricePaid
+          } : null,
+          endAt
         }
       });
     }
