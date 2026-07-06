@@ -166,22 +166,7 @@ async function processPaidTransaction(orderCode, sepay) {
   );
   if (!updated) return false;
 
-  // Chá»‰ cá»™ng tiá»n vÃ o vÃ­ náº¿u Ä‘Ã¢y lÃ  giao dá»‹ch náº¡p tiá»n vÃ­ (WALLET_DEPOSIT)
-  // Náº¿u lÃ  mua gÃ³i trá»±c tiáº¿p (PACKAGE_PURCHASE), tiá»n nÃ y thuá»™c vá» há»‡ thá»‘ng, khÃ´ng cá»™ng vÃ o vÃ­ user.
-  if (updated.type === 'WALLET_DEPOSIT') {
-    await Wallet.findOneAndUpdate(
-      { userId: updated.userId },
-      {
-        $inc: {
-          balance: sepay.amount,
-          totalDeposited: sepay.amount > 0 ? sepay.amount : 0,
-          totalSpent: sepay.amount < 0 ? Math.abs(sepay.amount) : 0
-        }
-      }
-    );
-  }
-
-  // Mua gÃ³i boost â†’ kÃ­ch hoáº¡t ngay
+  // Mua gói boost → kích hoạt ngay
   if (updated.type === TransactionType.PACKAGE_PURCHASE) {
     // LuÃ´n láº¥y data ServicePackage má»›i nháº¥t tá»« DB (snapshot cÅ© cÃ³ thá»ƒ thiáº¿u field do Mongoose strip null/undefined)
     // Chá»‰ fallback vá» snapshot náº¿u DB lookup tháº¥t báº¡i (ráº¥t hiáº¿m â€” package Ä‘Ã£ bá»‹ xoÃ¡).
@@ -284,10 +269,38 @@ async function processPaidTransaction(orderCode, sepay) {
           );
         }
       } else if (updated.targetType === 'JOB') {
+        // ─── UPGRADE: huỷ gói cũ (nếu có) trước khi tạo gói mới ───
+        const oldJobSub = await UserServicePackage.findOne({
+          userId: updated.userId,
+          targetType: 'JOB',
+          targetId: updated.targetId,
+          status: UserServicePackageStatus.ACTIVE,
+          transactionId: { $ne: updated._id }
+        });
+        if (oldJobSub) {
+          oldJobSub.status = UserServicePackageStatus.CANCELLED;
+          oldJobSub.cancelledAt = new Date();
+          oldJobSub.cancelledReason = 'UPGRADED';
+          await oldJobSub.save();
+
+          await JobBoost.updateMany(
+            { jobId: updated.targetId, status: 'ACTIVE' },
+            { $set: { status: UserServicePackageStatus.EXPIRED } }
+          );
+
+          const oldTxn = await Transaction.findById(oldJobSub.transactionId).lean();
+          if (oldTxn) {
+            notifyPaymentCancelled({
+              userId: updated.userId,
+              transaction: oldTxn,
+              reason: 'Đã nâng cấp lên gói mới'
+            });
+          }
+        }
+
         const ex = await JobBoost.findOne({ jobId: updated.targetId, status: 'ACTIVE' });
         if (!ex) {
           await JobBoost.create({ jobId: updated.targetId, employerId: updated.userId, packageId: pkg._id, startAt, endAt });
-          // Set Job.premium.isActive = true + isUrgent = true (nhÃ£n Gáº¤P) Ä‘á»ƒ search/list Æ°u tiÃªn
           await Job.updateOne(
             { _id: updated.targetId, createdBy: updated.userId },
             {
@@ -315,6 +328,7 @@ async function processPaidTransaction(orderCode, sepay) {
           totalCredits: credits,
           usedCredits: 0,
           remainingCredits: credits,
+          pricePaid: pkg.price,
           startedAt: startAt,
           expiredAt: endAt,
           status: CvUnlockCreditStatus.ACTIVE,
@@ -331,7 +345,16 @@ async function processPaidTransaction(orderCode, sepay) {
       });
     }
   } else if (updated.type === TransactionType.WALLET_DEPOSIT) {
-    // â”€â”€â”€ Notification cho náº¡p vÃ­ â”€â”€â”€
+    // Cộng tiền vào ví (chỉ khi nạp tiền — không áp dụng cho PACKAGE_PURCHASE qua SePay)
+    await Wallet.findOneAndUpdate(
+      { userId: updated.userId },
+      {
+        $inc: {
+          balance: sepay.amount,
+          totalDeposited: sepay.amount > 0 ? sepay.amount : 0
+        }
+      }
+    );
     notifyWalletDepositSuccess({
       userId: updated.userId,
       transaction: updated

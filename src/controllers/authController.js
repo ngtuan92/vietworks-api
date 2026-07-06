@@ -138,7 +138,11 @@ export const registerJobseeker = async (req, res) => {
       role: UserRole.JOBSEEKER,
       phone: phone ? phone.trim() : undefined,
       accountStatus: AccountStatus.ACTIVE,
-      authProvider: AuthProvider.LOCAL
+      authProvider: AuthProvider.LOCAL,
+      // ── Spec v2.0 §7: Auto-grant Trial cho user mới ──
+      hasUsedTrial: false,
+      trialAvailable: true,
+      trialPackageCode: 'BOOST_CV_TRIAL'
     });
     createdUserId = user._id;
 
@@ -264,7 +268,11 @@ export const registerEmployer = async (req, res) => {
       role: UserRole.EMPLOYER,
       phone,
       accountStatus: AccountStatus.UNVERIFIED,
-      authProvider: AuthProvider.LOCAL
+      authProvider: AuthProvider.LOCAL,
+      // ── Spec v2.0 §7: Auto-grant Trial cho user mới ──
+      hasUsedTrial: false,
+      trialAvailable: true,
+      trialPackageCode: 'JOB_TRIAL'
     });
     createdUserId = user._id;
 
@@ -764,7 +772,11 @@ const googleLoginByRole = async (req, res, expectedRole = null) => {
         email,
         role: targetRole,
         accountStatus: AccountStatus.ACTIVE,
-        authProvider: AuthProvider.GOOGLE
+        authProvider: AuthProvider.GOOGLE,
+        // ── Spec v2.0 §7: Auto-grant Trial cho user mới ──
+        hasUsedTrial: false,
+        trialAvailable: true,
+        trialPackageCode: targetRole === UserRole.JOBSEEKER ? 'BOOST_CV_TRIAL' : 'JOB_TRIAL'
       });
     } else {
       if (isBlockedAccount(user)) {
@@ -818,7 +830,11 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
         email,
         role: targetRole,
         accountStatus: AccountStatus.ACTIVE,
-        authProvider: AuthProvider.LINKEDIN
+        authProvider: AuthProvider.LINKEDIN,
+        // ── Spec v2.0 §7: Auto-grant Trial cho user mới ──
+        hasUsedTrial: false,
+        trialAvailable: true,
+        trialPackageCode: targetRole === UserRole.JOBSEEKER ? 'BOOST_CV_TRIAL' : 'JOB_TRIAL'
       });
     } else {
       if (isBlockedAccount(user)) {
