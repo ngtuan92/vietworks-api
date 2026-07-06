@@ -10,6 +10,7 @@ import EmployerProfile from '../models/employerProfileModels.js';
 import { UserRole, AccountStatus } from '../enums/userEnums.js';
 import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
 import { computeCreditUpgradeQuote, getPackageCredits } from '../utils/proration.js';
+import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 
 export const getTalentPool = async (req, res) => {
   try {
@@ -275,7 +276,7 @@ export const getCvUnlockCredits = async (req, res) => {
 export const purchaseCvUnlockPackage = async (req, res) => {
   try {
     const employerId = req.user._id;
-    const { packageId, action = 'new', fromCreditId } = req.body;
+    const { packageId, action = 'new', fromCreditId, paymentMethod: requestedMethod = PaymentMethod.WALLET } = req.body;
 
     const pkg = await ServicePackage.findById(packageId);
     if (!pkg ||
@@ -287,9 +288,8 @@ export const purchaseCvUnlockPackage = async (req, res) => {
     const credits = getPackageCredits(pkg);
     const profile = await EmployerProfile.findOne({ userId: employerId }).select('companyId').lean();
 
-    // ══════════ NHÁNH NÂNG CẤP (usage-based) ══════════
+    // ══════════ NHÁNH NÂNG CẤP theo LƯỢT (usage-based, chỉ hỗ trợ VÍ) ══════════
     if (action === 'upgrade') {
-      // Tìm túi cũ để nâng cấp: ACTIVE, chưa hết hạn, còn lượt.
       const activeBags = await CvUnlockCredit.find({
         employerUserId: employerId,
         status: CvUnlockCreditStatus.ACTIVE,
@@ -402,64 +402,113 @@ export const purchaseCvUnlockPackage = async (req, res) => {
       });
     }
 
-    // ══════════ NHÁNH MUA MỚI (tạo túi riêng — cộng dồn) ══════════
-    const wallet = await Wallet.findOneAndUpdate(
-      { userId: employerId, balance: { $gte: pkg.price } },
-      { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
-      { new: true }
-    );
-    if (!wallet) {
-      return res.status(400).json({
-        success: false,
-        code: 'INSUFFICIENT_BALANCE',
-        message: 'Số dư ví không đủ. Vui lòng nạp thêm tiền.'
+    // ══════════ MUA MỚI ══════════
+    const paymentMethod = requestedMethod === PaymentMethod.SEPAY ? PaymentMethod.SEPAY : PaymentMethod.WALLET;
+
+    // ─── Mua mới qua VÍ (tạo túi ngay) ───
+    if (paymentMethod === PaymentMethod.WALLET) {
+      const wallet = await Wallet.findOneAndUpdate(
+        { userId: employerId, balance: { $gte: pkg.price } },
+        { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
+        { new: true }
+      );
+      if (!wallet) {
+        return res.status(400).json({
+          success: false,
+          code: 'INSUFFICIENT_BALANCE',
+          message: 'Số dư ví không đủ. Vui lòng nạp thêm tiền hoặc chọn thanh toán qua mã QR.'
+        });
+      }
+
+      const balanceAfter = wallet.balance;
+      const transaction = await Transaction.create({
+        userId: employerId,
+        walletId: wallet._id,
+        type: TransactionType.PACKAGE_PURCHASE,
+        amount: pkg.price,
+        status: TransactionStatus.SUCCESS,
+        paymentMethod: PaymentMethod.WALLET,
+        packageId,
+        balanceBefore: balanceAfter + pkg.price,
+        balanceAfter,
+        description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
+        metadata: { paidAt: new Date() }
+      });
+
+      const startedAt = new Date();
+      const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
+      const credit = await CvUnlockCredit.create({
+        employerUserId: employerId,
+        companyId: profile?.companyId || null,
+        packageId: pkg._id,
+        packageCode: pkg.code,
+        totalCredits: credits,
+        usedCredits: 0,
+        remainingCredits: credits,
+        pricePaid: pkg.price,
+        startedAt,
+        expiredAt,
+        status: CvUnlockCreditStatus.ACTIVE,
+        transactionId: transaction._id
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          method: PaymentMethod.WALLET,
+          transactionId: transaction._id,
+          packageName: pkg.name,
+          amount: pkg.price,
+          newBalance: balanceAfter,
+          creditsGranted: credits,
+          remainingCredits: credit.remainingCredits,
+          expiredAt
+        }
       });
     }
 
-    const balanceAfter = wallet.balance;
+    // ─── Mua mới qua SEPAY (giao dịch PENDING + QR; túi được cấp khi webhook xác nhận) ───
     const transaction = await Transaction.create({
       userId: employerId,
-      walletId: wallet._id,
       type: TransactionType.PACKAGE_PURCHASE,
       amount: pkg.price,
-      status: TransactionStatus.SUCCESS,
-      paymentMethod: PaymentMethod.WALLET,
+      status: TransactionStatus.PENDING,
+      paymentMethod: PaymentMethod.SEPAY,
       packageId,
-      balanceBefore: balanceAfter + pkg.price,
-      balanceAfter,
+      packageSnapshot: {
+        id: pkg._id,
+        code: pkg.code,
+        name: pkg.name,
+        type: pkg.packageType,
+        price: pkg.price,
+        durationDays: pkg.durationDays
+      },
       description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
-      metadata: { paidAt: new Date() }
+      metadata: {}
     });
 
-    const startedAt = new Date();
-    const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
+    const orderCode = generateOrderCode(transaction._id.toString());
+    transaction.metadata = { ...transaction.metadata, orderCode };
+    await transaction.save();
 
-    const credit = await CvUnlockCredit.create({
-      employerUserId: employerId,
-      companyId: profile?.companyId || null,
-      packageId: pkg._id,
-      packageCode: pkg.code,
-      totalCredits: credits,
-      usedCredits: 0,
-      remainingCredits: credits,
-      pricePaid: pkg.price,
-      startedAt,
-      expiredAt,
-      status: CvUnlockCreditStatus.ACTIVE,
-      transactionId: transaction._id
-    });
+    const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '1017588888';
+    const bankName = process.env.SEPAY_BANK_NAME || 'Vietcombank';
+    const bankOwner = process.env.SEPAY_BANK_OWNER || 'NGUYEN TIEN DUNG';
+    const qrUrl = createQRPaymentUrl({ account: bankAccount, bank: bankName, amount: pkg.price, orderCode });
+    const transferContent = buildTransferContent(orderCode);
 
     return res.status(200).json({
       success: true,
       data: {
-        method: PaymentMethod.WALLET,
+        method: PaymentMethod.SEPAY,
         transactionId: transaction._id,
-        packageName: pkg.name,
+        orderCode,
         amount: pkg.price,
-        newBalance: balanceAfter,
-        creditsGranted: credits,
-        remainingCredits: credit.remainingCredits,
-        expiredAt
+        qrUrl,
+        transferContent,
+        bankAccount,
+        bankName,
+        bankOwner
       }
     });
   } catch (error) {

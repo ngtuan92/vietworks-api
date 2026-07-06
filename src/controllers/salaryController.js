@@ -7,6 +7,8 @@ import ExperienceLevel from '../models/experienceLevelModels.js';
 import { JobStatus } from '../enums/jobEnums.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 
+import * as addressService from '../services/addressService.js';
+
 const toObjectId = (v) =>
   v && mongoose.Types.ObjectId.isValid(v) ? new mongoose.Types.ObjectId(v) : null;
 
@@ -17,16 +19,19 @@ const toObjectId = (v) =>
  */
 export const getSalaryLookupOptions = async (req, res) => {
   try {
-    const [careerGroups, careers, careerPositions, experienceLevels] = await Promise.all([
+    const [careerGroups, careers, careerPositions, experienceLevels, provincesData] = await Promise.all([
       CareerGroup.find({ status: CommonStatus.ACTIVE }).select('name slug').sort({ order: 1, name: 1 }).lean(),
       Career.find({ status: CommonStatus.ACTIVE }).select('name slug careerGroupId').sort({ name: 1 }).lean(),
       CareerPosition.find({ status: CommonStatus.ACTIVE }).select('name careerId careerGroupId').sort({ name: 1 }).lean(),
-      ExperienceLevel.find({ status: CommonStatus.ACTIVE }).select('code name minYear maxYear').sort({ minYear: 1 }).lean()
+      ExperienceLevel.find({ status: CommonStatus.ACTIVE }).select('code name minYear maxYear').sort({ minYear: 1 }).lean(),
+      addressService.getProvinces().catch(() => null)
     ]);
+
+    const provinces = provincesData?.provinces || provincesData?.data?.provinces || [];
 
     return res.status(200).json({
       success: true,
-      data: { careerGroups, careers, careerPositions, experienceLevels }
+      data: { careerGroups, careers, careerPositions, experienceLevels, provinces }
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
@@ -70,7 +75,7 @@ export const getSalaryLookup = async (req, res) => {
     if (expId) match.experienceLevelId = expId;
 
     if (location && location.trim()) {
-      match['workLocations.provinceName'] = { $regex: location.trim(), $options: 'i' };
+      match['workLocations.provinceName'] = location.trim();
     }
 
     if (keyword && keyword.trim()) {

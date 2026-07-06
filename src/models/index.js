@@ -9,7 +9,6 @@ export { default as CareerPosition } from './careerPositionModels.js';
 export { default as Skill } from './skillModels.js';
 export { default as JobLevel } from './jobLevelModels.js';
 export { default as ExperienceLevel } from './experienceLevelModels.js';
-export { default as SalaryRange } from './salaryRangeModels.js';
 export { default as CompanyIndustry } from './companyIndustryModels.js';
 export { default as CompanySize } from './companySizeModels.js';
 export { default as Job } from './jobModels.js';

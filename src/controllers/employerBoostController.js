@@ -112,6 +112,13 @@ export const createBoostPayment = async (req, res) => {
     // Dùng computeEmployerUpgradeQuote để áp dụng cap 30% (spec v2.0 §5.3).
     let upgradeQuote = null;
     if (activeSubscription) {
+      if (activeSubscription.packageId?._id?.toString() === pkg._id.toString()) {
+        return res.status(400).json({
+          success: false,
+          code: 'SAME_PACKAGE_NOT_ALLOWED',
+          message: 'Tin tuyển dụng đang sử dụng gói này rồi. Vui lòng chọn gói khác để nâng cấp hoặc đợi gói hiện tại hết hạn.'
+        });
+      }
       upgradeQuote = computeEmployerUpgradeQuote(activeSubscription, pkg);
     }
 
@@ -271,7 +278,17 @@ export const createBoostPayment = async (req, res) => {
           fullPrice: pkg.price,
           discount: pkg.price - effectivePrice,
           newBalance: balanceAfter,
-          target: { type: 'JOB', id: jobId, title: job.title }
+          target: {
+            type: 'JOB',
+            id: job._id,
+            title: job.title
+          },
+          upgradingFrom: activeSubscription ? {
+            id: activeSubscription.packageId?._id,
+            name: activeSubscription.packageId?.name,
+            pricePaid: activeSubscription.pricePaid
+          } : null,
+          endAt
         }
       });
     }
@@ -315,6 +332,7 @@ export const createBoostPayment = async (req, res) => {
 
     const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '1017588888';
     const bankName = process.env.SEPAY_BANK_NAME || 'Vietcombank';
+    const bankOwner = process.env.SEPAY_BANK_OWNER || 'NGUYEN TIEN DUNG';
     const qrUrl = createQRPaymentUrl({
       account: bankAccount,
       bank: bankName,
@@ -336,6 +354,7 @@ export const createBoostPayment = async (req, res) => {
         transferContent,
         bankAccount,
         bankName,
+        bankOwner,
         // Báo FE biết đây là luồng upgrade; gói cũ sẽ bị thay thế SAU KHI thanh toán thành công
         upgradingFrom: activeSubscription
           ? {
