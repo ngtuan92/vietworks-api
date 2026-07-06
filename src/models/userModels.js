@@ -92,7 +92,16 @@ const userSchema = new mongoose.Schema({
     type: Map,
     of: Boolean,
     default: {}
-  }
+  },
+  // ── Trial (spec v2.0 §7) ──
+  // Đánh dấu user đã từng dùng Trial miễn phí (cả Jobseeker & Employer đều chỉ được 1 lần duy nhất)
+  hasUsedTrial: { type: Boolean, default: false },
+  // Trial đã được cấp "quyền" nhưng chưa kích hoạt trên target cụ thể nào
+  // → Khi user upload CV/Job đầu tiên, FE sẽ gọi API activate trial
+  trialAvailable: { type: Boolean, default: true },
+  // Snapshot gói Trial tương ứng với role để biết cần áp dụng cho target loại nào
+  // VD: Jobseeker → BOOST_CV_TRIAL, Employer → JOB_TRIAL
+  trialPackageCode: { type: String, default: null }
 }, {
   timestamps: true
 });

@@ -59,6 +59,8 @@ import salaryRoutes from './routes/salaryRoutes.js';
 import adminNotificationRoutes from './routes/adminNotificationRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import aiChatbotRoutes from './routes/aiChatbotRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import cronRoutes from './routes/cronRoutes.js';
 
 // ─── Public & Static Routes ───
 app.use('/api/ai-chatbot', aiChatbotRoutes);
@@ -98,6 +100,8 @@ app.use('/api', jobseekerProfileRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', employerAtsRoutes);
 app.use('/api', chatRoutes);
+app.use('/api', subscriptionRoutes);
+app.use('/api', cronRoutes);
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({

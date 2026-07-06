@@ -9,6 +9,7 @@ import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import { UserRole, AccountStatus } from '../enums/userEnums.js';
 import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
+import { computeCreditUpgradeQuote, getPackageCredits } from '../utils/proration.js';
 
 export const getTalentPool = async (req, res) => {
   try {
@@ -219,10 +220,62 @@ export const unlockCandidate = async (req, res) => {
  * Trừ ví → tạo Transaction SUCCESS → cấp túi credit (CvUnlockCredit) = cvAccessLimit lượt.
  * Các lượt này sẽ được unlockCandidate tiêu trước khi trừ ví.
  */
+/**
+ * Resolve "giá gốc" (cost basis) của 1 túi credit để tính bù khi nâng cấp.
+ * Ưu tiên field pricePaid (mới); fallback giá gói hiện tại → số tiền giao dịch gốc → 0.
+ * Bảo toàn kinh tế: hoàn tiền không bao giờ vượt quá tiền đã thực nạp vào túi.
+ */
+const resolveBagPricePaid = async (bag) => {
+  if (bag.pricePaid && bag.pricePaid > 0) return bag.pricePaid;
+  const pkg = bag.packageId ? await ServicePackage.findById(bag.packageId).select('price').lean() : null;
+  if (pkg?.price > 0) return pkg.price;
+  const txn = bag.transactionId ? await Transaction.findById(bag.transactionId).select('amount').lean() : null;
+  return txn?.amount || 0;
+};
+
+/**
+ * Liệt kê các túi credit ĐANG hiệu lực (ACTIVE, chưa hết hạn, còn lượt) của employer.
+ * FE dùng để hiện lựa chọn "nâng cấp túi hiện tại" kèm cost basis.
+ */
+export const getCvUnlockCredits = async (req, res) => {
+  try {
+    const employerId = req.user._id;
+    const bags = await CvUnlockCredit.find({
+      employerUserId: employerId,
+      status: CvUnlockCreditStatus.ACTIVE,
+      remainingCredits: { $gt: 0 },
+      expiredAt: { $gt: new Date() }
+    }).populate('packageId', 'name price').sort({ expiredAt: 1 }).lean();
+
+    const data = await Promise.all(bags.map(async (b) => ({
+      _id: b._id,
+      packageCode: b.packageCode,
+      packageName: b.packageId?.name || b.packageCode,
+      totalCredits: b.totalCredits,
+      remainingCredits: b.remainingCredits,
+      pricePaid: await resolveBagPricePaid(b),
+      expiredAt: b.expiredAt
+    })));
+
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Employer MUA / NÂNG CẤP gói Mở khóa CV (CV_UNLOCK / CV_UNLOCK_BUNDLE) bằng VÍ.
+ *
+ * action='new' (mặc định): tạo túi credit MỚI riêng (cộng dồn lượt) — spec §6.4.
+ * action='upgrade': nâng cấp theo LƯỢT DÙNG (usage-based), chống lỗ tuyệt đối:
+ *   giá trị còn lại = giá gốc túi cũ × (lượt còn / tổng lượt)   ← chỉ hoàn lượt CHƯA dùng
+ *   phải bù        = giá gói mới − giá trị còn lại
+ * Túi cũ → CANCELLED; túi mới mang notional = giá gói mới (chain-safe).
+ */
 export const purchaseCvUnlockPackage = async (req, res) => {
   try {
     const employerId = req.user._id;
-    const { packageId } = req.body;
+    const { packageId, action = 'new', fromCreditId } = req.body;
 
     const pkg = await ServicePackage.findById(packageId);
     if (!pkg ||
@@ -231,9 +284,125 @@ export const purchaseCvUnlockPackage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Gói không hợp lệ hoặc không phải gói mở khóa CV' });
     }
 
-    const credits = pkg.benefits?.cvAccessLimit || 1;
+    const credits = getPackageCredits(pkg);
+    const profile = await EmployerProfile.findOne({ userId: employerId }).select('companyId').lean();
 
-    // Trừ ví NGUYÊN TỬ (chỉ trừ khi đủ tiền)
+    // ══════════ NHÁNH NÂNG CẤP (usage-based) ══════════
+    if (action === 'upgrade') {
+      // Tìm túi cũ để nâng cấp: ACTIVE, chưa hết hạn, còn lượt.
+      const activeBags = await CvUnlockCredit.find({
+        employerUserId: employerId,
+        status: CvUnlockCreditStatus.ACTIVE,
+        remainingCredits: { $gt: 0 },
+        expiredAt: { $gt: new Date() }
+      }).sort({ expiredAt: 1 });
+
+      let oldBag = null;
+      if (fromCreditId) {
+        oldBag = activeBags.find(b => String(b._id) === String(fromCreditId)) || null;
+        if (!oldBag) {
+          return res.status(400).json({ success: false, code: 'CREDIT_NOT_FOUND', message: 'Không tìm thấy túi lượt hợp lệ để nâng cấp.' });
+        }
+      } else if (activeBags.length === 1) {
+        oldBag = activeBags[0];
+      } else if (activeBags.length === 0) {
+        return res.status(400).json({ success: false, code: 'NO_ACTIVE_CREDIT', message: 'Bạn chưa có túi lượt nào đang hoạt động để nâng cấp. Vui lòng mua mới.' });
+      } else {
+        return res.status(400).json({
+          success: false, code: 'MULTIPLE_CREDITS',
+          message: 'Bạn có nhiều túi lượt đang hoạt động. Vui lòng chọn túi muốn nâng cấp.',
+          data: { bags: activeBags.map(b => ({ _id: b._id, packageCode: b.packageCode, remainingCredits: b.remainingCredits, totalCredits: b.totalCredits, expiredAt: b.expiredAt })) }
+        });
+      }
+
+      const pricePaid = await resolveBagPricePaid(oldBag);
+      const quote = computeCreditUpgradeQuote(oldBag, pricePaid, pkg);
+
+      // Chặn downgrade: gói mới không được rẻ hơn giá trị còn lại của túi cũ
+      if (quote.downgrade) {
+        return res.status(400).json({
+          success: false, code: 'DOWNGRADE_NOT_ALLOWED',
+          message: `Không thể nâng cấp lên gói rẻ hơn giá trị còn lại (${quote.remainingValue.toLocaleString('vi-VN')}đ). Hãy chọn gói lớn hơn hoặc dùng hết lượt hiện tại.`,
+          data: { remainingValue: quote.remainingValue, newPackage: { name: pkg.name, price: pkg.price } }
+        });
+      }
+
+      // Trừ ví NGUYÊN TỬ theo tiền bù — nếu thiếu thì trả lỗi TRƯỚC khi huỷ túi cũ
+      const wallet = await Wallet.findOneAndUpdate(
+        { userId: employerId, balance: { $gte: quote.upgradePrice } },
+        { $inc: { balance: -quote.upgradePrice, totalSpent: quote.upgradePrice } },
+        { new: true }
+      );
+      if (!wallet) {
+        return res.status(400).json({ success: false, code: 'INSUFFICIENT_BALANCE', message: 'Số dư ví không đủ để nâng cấp. Vui lòng nạp thêm tiền.' });
+      }
+
+      // Ví đã trừ xong → giờ mới huỷ túi cũ (an toàn khi ví thiếu)
+      oldBag.status = CvUnlockCreditStatus.CANCELLED;
+      oldBag.remainingCredits = 0;
+      await oldBag.save();
+
+      const balanceAfter = wallet.balance;
+      const transaction = await Transaction.create({
+        userId: employerId,
+        walletId: wallet._id,
+        type: TransactionType.PACKAGE_PURCHASE,
+        amount: quote.upgradePrice,
+        status: TransactionStatus.SUCCESS,
+        paymentMethod: PaymentMethod.WALLET,
+        packageId,
+        balanceBefore: balanceAfter + quote.upgradePrice,
+        balanceAfter,
+        description: `Nâng cấp lên ${pkg.name} (${credits} lượt) — bù ${quote.upgradePrice.toLocaleString('vi-VN')}đ từ ${oldBag.packageCode}`,
+        metadata: {
+          paidAt: new Date(),
+          upgradeFrom: {
+            creditId: oldBag._id,
+            packageCode: oldBag.packageCode,
+            remainingCredits: quote.remainingCredits,
+            totalCredits: quote.totalCredits,
+            remainingValue: quote.remainingValue,
+            fullPrice: pkg.price
+          }
+        }
+      });
+
+      const startedAt = new Date();
+      const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
+      const credit = await CvUnlockCredit.create({
+        employerUserId: employerId,
+        companyId: profile?.companyId || null,
+        packageId: pkg._id,
+        packageCode: pkg.code,
+        totalCredits: credits,
+        usedCredits: 0,
+        remainingCredits: credits,
+        pricePaid: pkg.price, // túi mới mang notional = giá gói mới (chain-safe)
+        startedAt,
+        expiredAt,
+        status: CvUnlockCreditStatus.ACTIVE,
+        transactionId: transaction._id
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          method: PaymentMethod.WALLET,
+          upgraded: true,
+          transactionId: transaction._id,
+          packageName: pkg.name,
+          amount: quote.upgradePrice,
+          fullPrice: pkg.price,
+          discount: quote.remainingValue,
+          newBalance: balanceAfter,
+          creditsGranted: credits,
+          remainingCredits: credit.remainingCredits,
+          expiredAt
+        }
+      });
+    }
+
+    // ══════════ NHÁNH MUA MỚI (tạo túi riêng — cộng dồn) ══════════
     const wallet = await Wallet.findOneAndUpdate(
       { userId: employerId, balance: { $gte: pkg.price } },
       { $inc: { balance: -pkg.price, totalSpent: pkg.price } },
@@ -262,7 +431,6 @@ export const purchaseCvUnlockPackage = async (req, res) => {
       metadata: { paidAt: new Date() }
     });
 
-    const profile = await EmployerProfile.findOne({ userId: employerId }).select('companyId').lean();
     const startedAt = new Date();
     const expiredAt = new Date(startedAt.getTime() + (pkg.durationDays || 365) * 24 * 60 * 60 * 1000);
 
@@ -274,6 +442,7 @@ export const purchaseCvUnlockPackage = async (req, res) => {
       totalCredits: credits,
       usedCredits: 0,
       remainingCredits: credits,
+      pricePaid: pkg.price,
       startedAt,
       expiredAt,
       status: CvUnlockCreditStatus.ACTIVE,
