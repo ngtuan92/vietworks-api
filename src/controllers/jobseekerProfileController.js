@@ -1,4 +1,4 @@
-﻿import User from '../models/userModels.js';
+import User from '../models/userModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import { UserRole } from '../enums/userEnums.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
@@ -76,6 +76,7 @@ export const getMyProfile = async (req, res) => {
         .populate('desiredJob.careerGroupId', 'name')
         .populate('desiredJob.careerId', 'name')
         .populate('desiredJob.careerPositionId', 'name')
+        .populate('desiredJob.jobLevelId', 'name')
         .populate('skills', 'name')
     ]);
 

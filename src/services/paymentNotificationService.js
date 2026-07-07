@@ -114,7 +114,7 @@ export const notifyPackageExpiringSoon = async ({ userId, subscription, pkg, day
     receiverUserId: userId,
     typeCode: NotificationTypeCode.PACKAGE_EXPIRING_SOON,
     title: 'Gói dịch vụ sắp hết hạn',
-    content: `Gói "${pkg?.name || subscription.packageCode}" của bạn sẽ hết hạn trong ${daysLeft} ngày (${formatDate(subscription.expiredAt)}). Gia hạn ngay để không bị gián đoạn dịch vụ.`,
+    content: `Gói "${pkg?.name || subscription.packageCode}" của bạn sẽ hết hạn trong ${daysLeft} ngày (${formatDate(subscription.expiredAt)}). Vui lòng mua gói mới khi gói hiện tại kết thúc để không bị gián đoạn dịch vụ.`,
     channels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
     metadata: {
       subscriptionId: subscription._id?.toString?.() ?? String(subscription._id),

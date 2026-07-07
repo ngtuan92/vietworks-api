@@ -225,7 +225,13 @@ async function syncSideEffectsAfterRenew(sub, newExpiredAt) {
     );
     await UploadedCV.updateOne(
       { _id: sub.targetId },
-      { $set: { isBoosted: true, boostedUntil: newExpiredAt } }
+      { 
+        $set: { 
+          isBoosted: true, 
+          boostedUntil: newExpiredAt,
+          boostedAt: new Date() 
+        } 
+      }
     );
   } else if (sub.targetType === PackageTargetType.JOB) {
     await JobBoost.updateMany(
@@ -234,7 +240,12 @@ async function syncSideEffectsAfterRenew(sub, newExpiredAt) {
     );
     await Job.updateOne(
       { _id: sub.targetId },
-      { $set: { 'premium.expiredAt': newExpiredAt } }
+      { 
+        $set: { 
+          'premium.expiredAt': newExpiredAt,
+          'premium.startedAt': new Date()
+        } 
+      }
     );
   }
 }
@@ -359,7 +370,14 @@ export const activateTrial = async (req, res) => {
       });
       await UploadedCV.updateOne(
         { _id: targetId },
-        { $set: { isBoosted: true, boostedUntil: endAt } }
+        { 
+          $set: { 
+            isBoosted: true, 
+            boostedUntil: endAt,
+            boostedAt: startAt,
+            boostPackagePrice: pkg.price || 0
+          } 
+        }
       );
     } else if (targetType === 'JOB') {
       await JobBoost.create({
@@ -372,13 +390,12 @@ export const activateTrial = async (req, res) => {
       });
       await Job.updateOne(
         { _id: targetId },
-        {
-          $set: {
-            'premium.isActive': true,
+        { 
+          $set: { 
+            isUrgent: true,
             'premium.startedAt': startAt,
-            'premium.expiredAt': endAt,
-            isUrgent: true
-          }
+            'premium.packagePrice': pkg.price || 0
+          } 
         }
       );
     }

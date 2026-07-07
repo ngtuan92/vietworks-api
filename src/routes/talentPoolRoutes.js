@@ -13,4 +13,8 @@ router.get('/employer/unlocked-candidates', protect, authorize(UserRole.EMPLOYER
 router.get('/employer/cv-unlock/credits', protect, authorize(UserRole.EMPLOYER), getCvUnlockCredits);
 router.post('/employer/cv-unlock/purchase', protect, authorize(UserRole.EMPLOYER), purchaseCvUnlockPackage);
 
+// Mời phỏng vấn trực tiếp từ Talent Pool (yêu cầu đã mở khóa)
+import { inviteToInterview } from '../controllers/talentPoolController.js';
+router.post('/employer/talent-pool/:candidateId/interview-invitation', protect, authorize(UserRole.EMPLOYER), inviteToInterview);
+
 export default router;

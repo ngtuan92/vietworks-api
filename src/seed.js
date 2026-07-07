@@ -33,50 +33,60 @@ const PACKAGES = [
     code: 'BOOST_CV_PREMIUM', name: 'Boost CV 1 tháng - Premium', targetRole: Role.JOBSEEKER, packageType: PType.CV_BOOST,
     price: 150000, durationDays: 30, unit: Unit.CV,
     benefits: { priorityDisplay: true, aiPremiumAccess: true },
-    description: 'Đẩy CV lên top + AI Premium, ưu tiên hiển thị trong 1 tháng.', sortOrder: 2
+    description: 'Đẩy CV lên top + Dùng tính năng AI Premium không giới hạn trong 1 tháng.', sortOrder: 2
   },
   {
     code: 'BOOST_CV_PRO', name: 'Boost CV 1 năm - Pro', targetRole: Role.JOBSEEKER, packageType: PType.CV_BOOST,
     price: 499000, durationDays: 365, unit: Unit.CV,
     benefits: { priorityDisplay: true, aiPremiumAccess: true },
-    description: 'Trọn gói boost CV + AI Premium suốt 1 năm — tiết kiệm nhất cho người tìm việc nghiêm túc.', sortOrder: 3
+    description: 'Trọn gói boost CV + Dùng tính năng AI Premium không giới hạn suốt 1 năm — tiết kiệm nhất.', sortOrder: 3
   },
 
   // ─── Nhà tuyển dụng (Mở khóa CV) ───
   {
     code: 'UNLOCK_CV_SINGLE', name: 'Mở khóa 1 CV', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
-    price: 20000, durationDays: null, unit: Unit.CV,
+    price: 20000, durationDays: 365, unit: Unit.CV,
     benefits: { cvAccessLimit: 1 },
-    description: 'Mở khóa thông tin liên hệ của 1 hồ sơ ứng viên.', sortOrder: 1
+    description: 'Mở khóa thông tin liên hệ của 1 hồ sơ ứng viên (hạn dùng 1 năm).', sortOrder: 1
   },
   {
-    code: 'UNLOCK_CV_50_30_DAYS', name: 'Gói mở khóa 50 CV - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK_BUNDLE,
+    code: 'UNLOCK_CV_50_30_DAYS', name: 'Gói mở khóa 50 CV - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 800000, durationDays: 30, unit: Unit.CV,
     benefits: { cvAccessLimit: 50 },
     description: 'Gói mở khóa 50 CV, hạn dùng 1 tháng.', sortOrder: 2
   },
   {
-    code: 'UNLOCK_CV_100_30_DAYS', name: 'Gói mở khóa 100 CV - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK_BUNDLE,
+    code: 'UNLOCK_CV_100_30_DAYS', name: 'Gói mở khóa 100 CV - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 1500000, durationDays: 30, unit: Unit.CV,
     benefits: { cvAccessLimit: 100 },
     description: 'Gói mở khóa 100 CV, hạn dùng 1 tháng.', sortOrder: 3
   },
 
-  // ─── Nhà tuyển dụng (Tin nổi bật + Gấp) — 1 tháng ───
+  // ─── Nhà tuyển dụng (Tin nổi bật + Gấp) ───
+  {
+    code: 'PREMIUM_JOB_7_DAYS', name: 'Tin nổi bật + Gấp - 7 ngày', targetRole: Role.EMPLOYER, packageType: PType.PREMIUM_JOB,
+    price: 150000, durationDays: 7, unit: Unit.JOB,
+    benefits: { featuredDays: 7, priorityDisplay: true },
+    description: 'Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 7 ngày.', sortOrder: 4
+  },
+  {
+    code: 'PREMIUM_JOB_14_DAYS', name: 'Tin nổi bật + Gấp - 14 ngày', targetRole: Role.EMPLOYER, packageType: PType.PREMIUM_JOB,
+    price: 250000, durationDays: 14, unit: Unit.JOB,
+    benefits: { featuredDays: 14, priorityDisplay: true },
+    description: 'Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 14 ngày.', sortOrder: 5
+  },
   {
     code: 'PREMIUM_JOB_30_DAYS', name: 'Tin nổi bật + Gấp - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.PREMIUM_JOB,
     price: 400000, durationDays: 30, unit: Unit.JOB,
     benefits: { featuredDays: 30, priorityDisplay: true },
-    description: 'Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 1 tháng.', sortOrder: 4
+    description: 'Đẩy tin lên top trang chủ, top tìm kiếm và gắn nhãn Gấp trong 1 tháng.', sortOrder: 6
   }
 ];
 
-// Mã gói cũ (7/14 ngày) sẽ bị tắt để không còn hiển thị cho user/NTD.
+// Mã gói cũ sẽ bị tắt để không còn hiển thị cho user/NTD.
 const LEGACY_CODES_TO_DEACTIVATE = [
   'BOOST_CV_7_DAYS',      // gói Boost CV 7 ngày cũ
   'BOOST_CV_30_DAYS',     // gói Boost CV 30 ngày cũ (đã thay bằng BASIC/PREMIUM/PRO)
-  'PREMIUM_JOB_7_DAYS',   // gói Premium Job 7 ngày cũ
-  'PREMIUM_JOB_14_DAYS',  // gói Premium Job 14 ngày cũ
   'BASIC_MONTHLY',        // gói "Pro" rác 499k benefits rỗng (đã thay bằng BOOST_CV_PRO)
   'monthly'               // gói "cơ bản" rác 190k benefits rỗng
 ];

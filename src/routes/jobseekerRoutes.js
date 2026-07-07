@@ -197,7 +197,7 @@ router.delete('/jobseeker/search-history', requireJobseeker, clearSearchHistory)
  *               careerGroupId: { type: string }
  *               careerId: { type: string }
  *               careerPositionId: { type: string }
- *               experienceLevelId: { type: string }
+ *               experience: { type: string }
  *               salaryMin: { type: number }
  *               salaryMax: { type: number }
  *               workLocations: { type: array }

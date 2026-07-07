@@ -1,4 +1,4 @@
-﻿import Wallet from '../models/walletModels.js';
+import Wallet from '../models/walletModels.js';
 import Transaction from '../models/transactionModels.js';
 import CvBoost from '../models/cvBoostModels.js';
 import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
@@ -265,7 +265,14 @@ async function processPaidTransaction(orderCode, sepay) {
           // Set CV thÃ nh "boosted" Ä‘á»ƒ Talent Pool sort Æ°u tiÃªn
           await UploadedCV.updateOne(
             { _id: updated.targetId, userId: updated.userId },
-            { $set: { isBoosted: true, boostedUntil: endAt } }
+            { 
+              $set: { 
+                isBoosted: true, 
+                boostedUntil: endAt,
+                boostedAt: startAt,
+                boostPackagePrice: pkg.price || 0
+              } 
+            }
           );
         }
       } else if (updated.targetType === 'JOB') {
@@ -303,15 +310,12 @@ async function processPaidTransaction(orderCode, sepay) {
           await JobBoost.create({ jobId: updated.targetId, employerId: updated.userId, packageId: pkg._id, startAt, endAt });
           await Job.updateOne(
             { _id: updated.targetId, createdBy: updated.userId },
-            {
-              $set: {
-                'premium.isActive': true,
+            { 
+              $set: { 
+                isUrgent: true,
                 'premium.startedAt': startAt,
-                'premium.expiredAt': endAt,
-                'premium.deactivatedAt': null,
-                'premium.deactivatedReason': null,
-                isUrgent: true
-              }
+                'premium.packagePrice': pkg.price || 0
+              } 
             }
           );
         }
@@ -665,7 +669,10 @@ export const getMySubscriptions = async (req, res) => {
       packageName: c.packageId?.name || c.packageCode,
       totalCredits: c.totalCredits,
       remainingCredits: c.remainingCredits,
-      expiredAt: c.expiredAt
+      expiredAt: c.expiredAt,
+      startedAt: c.startedAt,
+      pricePaid: c.pricePaid,
+      status: c.status
     }));
 
     res.status(200).json({

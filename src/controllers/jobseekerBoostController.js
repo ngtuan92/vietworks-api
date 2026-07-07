@@ -55,7 +55,14 @@ const activatePremiumCvPackage = async ({ userId, cvId, pkg, transactionId }) =>
     await CvBoost.create({ cvId, userId, packageId: pkg._id, startAt, endAt });
     await UploadedCV.updateOne(
       { _id: cvId, userId },
-      { $set: { isBoosted: true, boostedUntil: endAt } }
+      { 
+        $set: { 
+          isBoosted: true, 
+          boostedUntil: endAt,
+          boostedAt: startAt,
+          boostPackagePrice: pkg.price || 0
+        } 
+      }
     );
   }
 

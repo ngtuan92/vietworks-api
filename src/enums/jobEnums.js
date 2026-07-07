@@ -24,7 +24,8 @@ export const PremiumDeactivatedReason = {
   JOB_CLOSED: 'JOB_CLOSED',
   JOB_REJECTED: 'JOB_REJECTED',
   JOB_BANNED: 'JOB_BANNED',
-  ADMIN_ACTION: 'ADMIN_ACTION'
+  ADMIN_ACTION: 'ADMIN_ACTION',
+  DATA_CLEARED: 'DATA_CLEARED'
 };
 
 export const ApplicationStatus = {
