@@ -56,8 +56,12 @@ export const getApplyOptions = async (req, res) => {
 
     if (job.headcount > 0) {
       const Application = (await import('../models/applicationModels.js')).default;
-      const currentAppliedCount = await Application.countDocuments({ jobId: job._id });
-      if (currentAppliedCount >= job.headcount) {
+      const { ApplicationStatus } = await import('../enums/jobEnums.js');
+      const currentHiredCount = await Application.countDocuments({ 
+        jobId: job._id,
+        status: ApplicationStatus.APPROVED
+      });
+      if (currentHiredCount >= job.headcount) {
         return res.status(400).json({
           success: false,
           message: 'Tin tuyển dụng đã tuyển đủ số lượng'
@@ -184,8 +188,11 @@ export const applyJob = async (req, res) => {
     const { ApplicationStatus } = await import('../enums/jobEnums.js');
 
     if (job.headcount > 0) {
-      const currentAppliedCount = await Application.countDocuments({ jobId: job._id });
-      if (currentAppliedCount >= job.headcount) {
+      const currentHiredCount = await Application.countDocuments({ 
+        jobId: job._id,
+        status: ApplicationStatus.APPROVED 
+      });
+      if (currentHiredCount >= job.headcount) {
         return res.status(400).json({
           success: false,
           message: 'Tin tuyển dụng đã tuyển đủ số lượng'

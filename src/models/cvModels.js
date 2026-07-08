@@ -29,6 +29,8 @@ const cvSchema = new mongoose.Schema({
   },
   sections: { type: [mongoose.Schema.Types.Mixed], default: [] },
   isMain: { type: Boolean, default: false },
+  isPublic: { type: Boolean, default: false }, // Cho phép NTD tìm kiếm trong Talent Pool
+  extractedText: { type: String, default: null }, // Văn bản thô bóc tách từ các block để tìm kiếm
   status: { type: String, enum: Object.values(CvStatus), default: CvStatus.ACTIVE }
 }, { timestamps: true });
 

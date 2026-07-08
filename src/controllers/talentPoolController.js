@@ -1,4 +1,5 @@
 import UploadedCV from '../models/uploadedCvModels.js';
+import Cv from '../models/cvModels.js';
 import User from '../models/userModels.js';
 import UnlockedCandidate from '../models/unlockedCandidateModels.js';
 import Wallet from '../models/walletModels.js';
@@ -32,6 +33,7 @@ export const getTalentPool = async (req, res) => {
 
     const pipeline = [
       { $match: matchCV },
+      { $unionWith: { coll: 'cvs', pipeline: [{ $match: matchCV }] } },
       {
         $lookup: {
           from: 'users',
@@ -165,26 +167,40 @@ export const getTalentPool = async (req, res) => {
     const employerProfile = await EmployerProfile.findOne({ userId: employerId });
     const companyId = employerProfile?.companyId;
     let invitedMap = {};
+    let applicationsMap = {};
     if (companyId) {
-      const invitedApps = await Application.find({
+      const allApps = await Application.find({
         companyId,
-        jobseekerUserId: { $in: candidateIds },
-        status: ApplicationStatus.INTERVIEW_INVITED
-      });
-      invitedApps.forEach(app => {
-        invitedMap[app.jobseekerUserId.toString()] = true;
+        jobseekerUserId: { $in: candidateIds }
+      }).populate('jobId', 'title').sort({ createdAt: -1 }).lean();
+      
+      allApps.forEach(app => {
+        const uId = app.jobseekerUserId.toString();
+        // Chỉ lấy những Application đã qua bước mời phỏng vấn
+        if ([ApplicationStatus.INTERVIEW_INVITED, ApplicationStatus.APPROVED, ApplicationStatus.REJECTED].includes(app.status)) {
+          if (!applicationsMap[uId]) applicationsMap[uId] = [];
+          applicationsMap[uId].push({ 
+            _id: app._id, 
+            status: app.status, 
+            jobId: app.jobId?._id || app.jobId, 
+            jobTitle: app.jobId?.title || 'Công việc đã xóa' 
+          });
+          if (app.status === ApplicationStatus.INTERVIEW_INVITED) {
+            invitedMap[uId] = true;
+          }
+        }
       });
     }
 
     // Fetch fallback data from JobseekerProfile
     const skillIds = new Set();
-    
+
     candidates.forEach(c => {
       if (c.profile?.skills) c.profile.skills.forEach(s => skillIds.add(s.toString()));
     });
 
     const skillsData = await Skill.find({ _id: { $in: Array.from(skillIds) } });
-    
+
     const skillMap = {};
     skillsData.forEach(s => skillMap[s._id.toString()] = s.name);
 
@@ -208,6 +224,7 @@ export const getTalentPool = async (req, res) => {
         isUnlocked: unlockedMap[c.user._id.toString()] || false,
         isBoosted: c.isBoosted || false,
         isInvited: invitedMap[c.user._id.toString()] || false,
+        applications: applicationsMap[c.user._id.toString()] || [],
         fileUrl: unlockedMap[c.user._id.toString()] ? c.fileUrl : null,
         fileName: unlockedMap[c.user._id.toString()] ? c.fileName : null
       };
@@ -225,6 +242,38 @@ export const getTalentPool = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getTalentPoolCvPreview = async (req, res) => {
+  try {
+    const employerId = req.user._id;
+    const { cvId } = req.params;
+
+    // First check if the CV exists in Cv (Template) collection
+    const Cv = (await import('../models/cvModels.js')).default;
+    const cv = await Cv.findById(cvId).populate('templateId style.fontId style.themeColorId');
+    
+    if (!cv) {
+      return res.status(404).json({ success: false, message: 'CV không tồn tại' });
+    }
+
+    // Check if employer has unlocked the candidate
+    const isUnlocked = await UnlockedCandidate.exists({ employerId, candidateId: cv.userId });
+    
+    if (!cv.isPublic && !isUnlocked) {
+      return res.status(403).json({ success: false, message: 'CV này không công khai' });
+    }
+
+    // If not unlocked, we would mask contact info, but since the button is only shown WHEN unlocked, we just return the full CV.
+    if (!isUnlocked) {
+      return res.status(403).json({ success: false, message: 'Bạn cần mở khóa ứng viên để xem chi tiết CV' });
+    }
+
+    res.status(200).json({ success: true, data: { type: 'ONLINE', cvData: cv } });
+  } catch (error) {
+    console.error('Error in getTalentPoolCvPreview:', error);
+    res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống' });
   }
 };
 
@@ -271,7 +320,17 @@ export const unlockCandidate = async (req, res) => {
         targetId: cvId,
         description: `Mở khóa CV bằng gói (còn ${credit.remainingCredits} lượt)`
       });
-      const unlocked = await UnlockedCandidate.create({ employerId, candidateId, cvId: cvId || null, amountCharged: 0 });
+      const creditPkg = await ServicePackage.findById(credit.packageId).select('name');
+      const packageName = creditPkg ? creditPkg.name : credit.packageCode;
+
+      const unlocked = await UnlockedCandidate.create({ 
+        employerId, 
+        candidateId, 
+        cvId: cvId || null, 
+        amountCharged: 0,
+        packageId: credit.packageId,
+        packageName 
+      });
       return res.status(201).json({
         success: true,
         data: unlocked,
@@ -323,7 +382,14 @@ export const unlockCandidate = async (req, res) => {
       description: `Mở khóa CV (lẻ) - ${candidateId}`
     });
 
-    const unlocked = await UnlockedCandidate.create({ employerId, candidateId, cvId: cvId || null, amountCharged: amount });
+    const unlocked = await UnlockedCandidate.create({ 
+      employerId, 
+      candidateId, 
+      cvId: cvId || null, 
+      amountCharged: amount,
+      packageId: pkg._id,
+      packageName: pkg.name
+    });
     res.status(201).json({ success: true, data: unlocked });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -394,8 +460,8 @@ export const purchaseCvUnlockPackage = async (req, res) => {
 
     const pkg = await ServicePackage.findById(packageId);
     if (!pkg ||
-        ![ServicePackageType.CV_UNLOCK, ServicePackageType.CV_UNLOCK_BUNDLE].includes(pkg.packageType) ||
-        pkg.status !== 'ACTIVE') {
+      ![ServicePackageType.CV_UNLOCK, ServicePackageType.CV_UNLOCK_BUNDLE].includes(pkg.packageType) ||
+      pkg.status !== 'ACTIVE') {
       return res.status(400).json({ success: false, message: 'Gói không hợp lệ hoặc không phải gói mở khóa CV' });
     }
 
@@ -640,7 +706,47 @@ export const getUnlockedCandidates = async (req, res) => {
       .populate('cvId', 'title summary skills fileUrl fileName')
       .sort({ unlockedAt: -1 })
       .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
+
+    const candidateIds = unlocked.map(u => u.candidateId?._id).filter(Boolean);
+    const uploadedCvs = await UploadedCV.find({ userId: { $in: candidateIds }, isPublic: true, status: 'ACTIVE' })
+      .select('title summary skills fileUrl fileName userId')
+      .lean();
+    const templateCvs = await Cv.find({ userId: { $in: candidateIds }, isPublic: true, status: 'ACTIVE' })
+      .select('title summary skills userId')
+      .lean();
+    const allPublicCvs = [...uploadedCvs, ...templateCvs];
+
+    const employerProfile = await EmployerProfile.findOne({ userId: employerId });
+    const companyId = employerProfile?.companyId;
+    let applicationsMap = {};
+    if (companyId && candidateIds.length > 0) {
+      const allApps = await Application.find({
+        companyId,
+        jobseekerUserId: { $in: candidateIds }
+      }).populate('jobId', 'title').sort({ createdAt: -1 }).lean();
+      
+      allApps.forEach(app => {
+        const uId = app.jobseekerUserId.toString();
+        // Chỉ lấy những Application đã qua bước mời phỏng vấn
+        if ([ApplicationStatus.INTERVIEW_INVITED, ApplicationStatus.APPROVED, ApplicationStatus.REJECTED].includes(app.status)) {
+          if (!applicationsMap[uId]) applicationsMap[uId] = [];
+          applicationsMap[uId].push({ 
+            _id: app._id, 
+            status: app.status, 
+            jobId: app.jobId?._id || app.jobId, 
+            jobTitle: app.jobId?.title || 'Công việc đã xóa' 
+          });
+        }
+      });
+    }
+
+    unlocked.forEach(u => {
+      const cIdStr = u.candidateId?._id?.toString();
+      u.allCvs = allPublicCvs.filter(cv => cv.userId.toString() === cIdStr);
+      u.applications = applicationsMap[cIdStr] || [];
+    });
 
     const total = await UnlockedCandidate.countDocuments({ employerId });
 
@@ -663,7 +769,7 @@ export const inviteToInterview = async (req, res) => {
   try {
     const employerUserId = req.user._id;
     const { candidateId } = req.params;
-    const { jobId, interviewTime, interviewType, location, contactPerson, contactPhone, note } = req.body;
+    const { jobId, interviewTime, interviewType, location, contactPerson, contactPhone, note, cvId } = req.body;
 
     if (!jobId || !interviewTime || !interviewType || !location) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc (Công việc, Thời gian, Hình thức, Địa điểm)' });
@@ -702,6 +808,17 @@ export const inviteToInterview = async (req, res) => {
     if (application) {
       application.status = ApplicationStatus.INTERVIEW_INVITED;
       application.interviewInvitation = interviewInvitation;
+      application.uploadedCvId = application.uploadedCvId || cvId || null;
+      application.viewedAt = application.viewedAt || new Date();
+      if (!application.expectedWorkLocation && job.workLocations && job.workLocations.length > 0) {
+        application.expectedWorkLocation = {
+          provinceName: job.workLocations[0].provinceName,
+          provinceCode: job.workLocations[0].provinceCode,
+          districtName: job.workLocations[0].districtName,
+          districtCode: job.workLocations[0].districtCode,
+          address: job.workLocations[0].address
+        };
+      }
       application.statusHistory.push({
         status: ApplicationStatus.INTERVIEW_INVITED,
         changedBy: employerUserId,
@@ -714,9 +831,18 @@ export const inviteToInterview = async (req, res) => {
         jobId,
         companyId,
         jobseekerUserId: candidateId,
+        uploadedCvId: cvId || null,
+        expectedWorkLocation: job.workLocations && job.workLocations.length > 0 ? {
+          provinceName: job.workLocations[0].provinceName,
+          provinceCode: job.workLocations[0].provinceCode,
+          districtName: job.workLocations[0].districtName,
+          districtCode: job.workLocations[0].districtCode,
+          address: job.workLocations[0].address
+        } : null,
         status: ApplicationStatus.INTERVIEW_INVITED,
         personalDataAgreementAccepted: true,
         interviewInvitation,
+        viewedAt: new Date(),
         statusHistory: [{
           status: ApplicationStatus.INTERVIEW_INVITED,
           changedBy: employerUserId,
@@ -759,4 +885,4 @@ export const inviteToInterview = async (req, res) => {
     console.error('inviteToInterview error:', error);
     res.status(500).json({ success: false, message: 'Không thể gửi lời mời phỏng vấn' });
   }
-};
+};

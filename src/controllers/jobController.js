@@ -66,18 +66,27 @@ const attachHiringStats = async (jobs = []) => {
 
   const stats = await Application.aggregate([
     { $match: { jobId: { $in: jobIds } } },
-    { $group: { _id: '$jobId', appliedCount: { $sum: 1 } } }
+    { 
+      $group: { 
+        _id: '$jobId', 
+        appliedCount: { $sum: 1 },
+        hiredCount: { $sum: { $cond: [{ $eq: ['$status', 'APPROVED'] }, 1, 0] } }
+      } 
+    }
   ]);
 
-  const statsMap = new Map(stats.map((item) => [String(item._id), item.appliedCount || 0]));
+  const statsMap = new Map(stats.map((item) => [String(item._id), { appliedCount: item.appliedCount || 0, hiredCount: item.hiredCount || 0 }]));
 
   jobs.forEach((job) => {
     const neededCount = Number(job.headcount || 0);
-    const appliedCount = statsMap.get(String(job._id)) || 0;
+    const itemStats = statsMap.get(String(job._id)) || { appliedCount: 0, hiredCount: 0 };
+    const appliedCount = itemStats.appliedCount;
+    const hiredCount = itemStats.hiredCount;
     job.neededCount = neededCount;
     job.appliedCount = appliedCount;
-    job.isHiringFull = neededCount > 0 && appliedCount >= neededCount;
-    job.remainingSlots = neededCount > 0 ? Math.max(neededCount - appliedCount, 0) : null;
+    job.hiredCount = hiredCount;
+    job.isHiringFull = neededCount > 0 && hiredCount >= neededCount;
+    job.remainingSlots = neededCount > 0 ? Math.max(neededCount - hiredCount, 0) : null;
   });
 
   return jobs;
@@ -646,6 +655,7 @@ const activeBoosts = await UserServicePackage.find({
     }
 
     const enrichedJobs = jobs.map(j => ({ ...j, activeBoost: boostMap.get(j._id.toString()) || null }));
+    await attachHiringStats(enrichedJobs);
 
     const total = await Job.countDocuments(filter);
 

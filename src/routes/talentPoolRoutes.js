@@ -1,5 +1,5 @@
 import express from 'express';
-import { getTalentPool, unlockCandidate, getUnlockedCandidates, purchaseCvUnlockPackage, getCvUnlockCredits } from '../controllers/talentPoolController.js';
+import { getTalentPool, unlockCandidate, getUnlockedCandidates, purchaseCvUnlockPackage, getCvUnlockCredits, getTalentPoolCvPreview } from '../controllers/talentPoolController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
 
@@ -8,6 +8,7 @@ const router = express.Router();
 router.get('/employer/talent-pool', protect, authorize(UserRole.EMPLOYER), getTalentPool);
 router.post('/employer/talent-pool/:candidateId/unlock', protect, authorize(UserRole.EMPLOYER), unlockCandidate);
 router.get('/employer/unlocked-candidates', protect, authorize(UserRole.EMPLOYER), getUnlockedCandidates);
+router.get('/employer/talent-pool/cv-preview/:cvId', protect, authorize(UserRole.EMPLOYER), getTalentPoolCvPreview);
 
 // Mua / nâng cấp gói Mở khóa CV (CV_UNLOCK / CV_UNLOCK_BUNDLE) bằng ví → cấp lượt mở khóa
 router.get('/employer/cv-unlock/credits', protect, authorize(UserRole.EMPLOYER), getCvUnlockCredits);

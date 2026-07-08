@@ -44,22 +44,22 @@ const PACKAGES = [
 
   // ─── Nhà tuyển dụng (Mở khóa CV) ───
   {
-    code: 'UNLOCK_CV_SINGLE', name: 'Mở khóa 1 CV', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
+    code: 'UNLOCK_CV_SINGLE', name: 'Mở khóa 1 Ứng viên', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 20000, durationDays: 365, unit: Unit.CV,
     benefits: { cvAccessLimit: 1 },
-    description: 'Mở khóa thông tin liên hệ của 1 hồ sơ ứng viên (hạn dùng 1 năm).', sortOrder: 1
+    description: 'Mở khóa thông tin liên hệ của 1 ứng viên. Trả phí 1 lần, xem được toàn bộ các CV khác của người này miễn phí. (hạn dùng 1 năm).', sortOrder: 1
   },
   {
-    code: 'UNLOCK_CV_50_30_DAYS', name: 'Gói mở khóa 50 CV - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
+    code: 'UNLOCK_CV_50_30_DAYS', name: 'Gói mở khóa 50 Ứng viên - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 800000, durationDays: 30, unit: Unit.CV,
     benefits: { cvAccessLimit: 50 },
-    description: 'Gói mở khóa 50 CV, hạn dùng 1 tháng.', sortOrder: 2
+    description: 'Mở khóa thông tin của 50 ứng viên. Trả phí 1 lần/người, truy cập mọi CV mới của họ miễn phí. Hạn dùng 1 tháng.', sortOrder: 2
   },
   {
-    code: 'UNLOCK_CV_100_30_DAYS', name: 'Gói mở khóa 100 CV - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
+    code: 'UNLOCK_CV_100_30_DAYS', name: 'Gói mở khóa 100 Ứng viên - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 1500000, durationDays: 30, unit: Unit.CV,
     benefits: { cvAccessLimit: 100 },
-    description: 'Gói mở khóa 100 CV, hạn dùng 1 tháng.', sortOrder: 3
+    description: 'Mở khóa thông tin của 100 ứng viên. Trả phí 1 lần/người, truy cập mọi CV mới của họ miễn phí. Hạn dùng 1 tháng.', sortOrder: 3
   },
 
   // ─── Nhà tuyển dụng (Tin nổi bật + Gấp) ───
