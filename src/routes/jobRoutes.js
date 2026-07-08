@@ -55,7 +55,7 @@ const router = express.Router();
  *         schema:
  *           type: string
  *       - in: query
- *         name: experienceLevelId
+ *         name: experience
  *         schema:
  *           type: string
  *       - in: query
@@ -181,7 +181,7 @@ router.get('/jobs/public/:jobId', getPublicJobDetail);
  *               - careerId
  *               - careerPositionId
  *               - jobLevelId
- *               - experienceLevelId
+ *               - experience
  *               - description
  *               - requirements
  *               - benefits
@@ -199,7 +199,7 @@ router.get('/jobs/public/:jobId', getPublicJobDetail);
  *                 type: string
  *               jobLevelId:
  *                 type: string
- *               experienceLevelId:
+ *               experience:
  *                 type: string
  *               skills:
  *                 type: array
@@ -627,7 +627,7 @@ router.get('/jobs/:jobId', protect, authorize('EMPLOYER'), getJobById);
  *         schema:
  *           type: string
  *       - in: query
- *         name: experienceLevelId
+ *         name: experience
  *         schema:
  *           type: string
  *       - in: query

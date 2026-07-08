@@ -100,9 +100,17 @@ export const createCv = async (req, res) => {
   }
 };
 
+const extractTextFromObj = (obj) => {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj + ' ';
+  if (Array.isArray(obj)) return obj.map(extractTextFromObj).join('');
+  if (typeof obj === 'object') return Object.values(obj).map(extractTextFromObj).join('');
+  return '';
+};
+
 export const updateCv = async (req, res) => {
   try {
-    const { title, sections, style, isMain, previewImageUrl, status, templateId, templateSnapshot } = req.body;
+    const { title, sections, style, isMain, previewImageUrl, status, templateId, templateSnapshot, isPublic } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, message: 'Mã định danh CV không hợp lệ' });
@@ -139,6 +147,12 @@ export const updateCv = async (req, res) => {
       cv.isMain = true;
     } else if (isMain === false) {
       cv.isMain = false;
+    }
+
+    if (isPublic !== undefined) cv.isPublic = isPublic;
+
+    if (sections) {
+      cv.extractedText = extractTextFromObj(sections).trim();
     }
 
     await cv.save();

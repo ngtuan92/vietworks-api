@@ -11,7 +11,8 @@ const jobseekerProfileSchema = new mongoose.Schema({
     careerGroupId: { type: objectId, ref: 'CareerGroup', default: null },
     careerId: { type: objectId, ref: 'Career', default: null },
     careerPositionId: { type: objectId, ref: 'CareerPosition', default: null },
-    experienceLevelId: { type: objectId, ref: 'ExperienceLevel', default: null },
+    jobLevelId: { type: objectId, ref: 'JobLevel', default: null },
+    experience: { type: String, default: null },
     salaryExpectationMillion: {
       min: { type: Number, default: null },
       max: { type: Number, default: null }

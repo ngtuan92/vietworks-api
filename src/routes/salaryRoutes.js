@@ -32,7 +32,7 @@ router.get('/tools/salary-lookup/options', getSalaryLookupOptions);
  *         name: careerPositionId
  *         schema: { type: string }
  *       - in: query
- *         name: experienceLevelId
+ *         name: experience
  *         schema: { type: string }
  *       - in: query
  *         name: location

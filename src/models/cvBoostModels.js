@@ -3,7 +3,7 @@ import { objectId } from './sharedModels.js';
 import { UserServicePackageStatus } from '../enums/paymentEnums.js';
 
 const cvBoostSchema = new mongoose.Schema({
-  cvId: { type: objectId, ref: 'UploadedCV', required: true },
+  cvId: { type: objectId, ref: 'UploadedCv', required: true },
   userId: { type: objectId, ref: 'User', required: true },
   packageId: { type: objectId, ref: 'ServicePackage', required: true },
   startAt: { type: Date, required: true },

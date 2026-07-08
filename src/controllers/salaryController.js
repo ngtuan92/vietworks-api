@@ -3,7 +3,7 @@ import Job from '../models/jobModels.js';
 import Career from '../models/careerModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
-import ExperienceLevel from '../models/experienceLevelModels.js';
+
 import { JobStatus } from '../enums/jobEnums.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 
@@ -19,11 +19,10 @@ const toObjectId = (v) =>
  */
 export const getSalaryLookupOptions = async (req, res) => {
   try {
-    const [careerGroups, careers, careerPositions, experienceLevels, provincesData] = await Promise.all([
+    const [careerGroups, careers, careerPositions, provincesData] = await Promise.all([
       CareerGroup.find({ status: CommonStatus.ACTIVE }).select('name slug').sort({ order: 1, name: 1 }).lean(),
       Career.find({ status: CommonStatus.ACTIVE }).select('name slug careerGroupId').sort({ name: 1 }).lean(),
       CareerPosition.find({ status: CommonStatus.ACTIVE }).select('name careerId careerGroupId').sort({ name: 1 }).lean(),
-      ExperienceLevel.find({ status: CommonStatus.ACTIVE }).select('code name minYear maxYear').sort({ minYear: 1 }).lean(),
       addressService.getProvinces().catch(() => null)
     ]);
 
@@ -31,7 +30,7 @@ export const getSalaryLookupOptions = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: { careerGroups, careers, careerPositions, experienceLevels, provinces }
+      data: { careerGroups, careers, careerPositions, provinces }
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
@@ -51,7 +50,7 @@ const round1 = (n) => (n == null ? null : Math.round(n * 10) / 10);
  */
 export const getSalaryLookup = async (req, res) => {
   try {
-    const { careerGroupId, careerId, careerPositionId, experienceLevelId, location } = req.query;
+    const { careerGroupId, careerId, careerPositionId, experience, location } = req.query;
 
     // Chỉ thống kê job đã hiển thị, còn hạn và có khoảng lương cụ thể (không tính "Thỏa thuận")
     const match = {
@@ -70,8 +69,9 @@ export const getSalaryLookup = async (req, res) => {
     const cpId = toObjectId(careerPositionId);
     if (cpId) match.careerPositionId = cpId;
 
-    const expId = toObjectId(experienceLevelId);
-    if (expId) match.experienceLevelId = expId;
+    if (experience && experience.trim()) {
+      match.experience = experience.trim();
+    }
 
     if (location && location.trim()) {
       match['workLocations.provinceName'] = location.trim();
@@ -83,7 +83,7 @@ export const getSalaryLookup = async (req, res) => {
         $project: {
           minMillion: '$salary.minMillion',
           maxMillion: { $ifNull: ['$salary.maxMillion', '$salary.minMillion'] },
-          experienceLevelId: 1,
+          experience: 1,
           companyId: 1
         }
       },
@@ -91,7 +91,7 @@ export const getSalaryLookup = async (req, res) => {
         $project: {
           minMillion: 1,
           maxMillion: 1,
-          experienceLevelId: 1,
+          experience: 1,
           companyId: 1,
           midMillion: { $divide: [{ $add: ['$minMillion', '$maxMillion'] }, 2] }
         }
@@ -127,7 +127,7 @@ export const getSalaryLookup = async (req, res) => {
           byExperience: [
             {
               $group: {
-                _id: '$experienceLevelId',
+                _id: '$experience',
                 sampleSize: { $sum: 1 },
                 averageMillion: { $avg: '$midMillion' },
                 averageMinMillion: { $avg: '$minMillion' },
@@ -196,26 +196,27 @@ export const getSalaryLookup = async (req, res) => {
       distribution[0]
     );
 
-    // ─── Lương theo kinh nghiệm: gắn tên mức kinh nghiệm ───
-    const expIds = (facet.byExperience || [])
-      .map((e) => e._id)
-      .filter(Boolean);
-    const expLevels = await ExperienceLevel.find({ _id: { $in: expIds } })
-      .select('name minYear')
-      .lean();
-    const expNameMap = new Map(expLevels.map((e) => [String(e._id), e]));
-
+    // ─── Lương theo kinh nghiệm ───
     const byExperience = (facet.byExperience || [])
       .filter((e) => e._id)
-      .map((e) => ({
-        experienceLevelId: e._id,
-        name: expNameMap.get(String(e._id))?.name || 'Khác',
-        minYear: expNameMap.get(String(e._id))?.minYear ?? null,
-        sampleSize: e.sampleSize,
-        averageMillion: round1(e.averageMillion),
-        averageMinMillion: round1(e.averageMinMillion),
-        averageMaxMillion: round1(e.averageMaxMillion)
-      }))
+      .map((e) => {
+        // Trích xuất số năm kinh nghiệm để sắp xếp (ví dụ: "3 năm" -> 3, "Chưa có kinh nghiệm" -> 0)
+        let minYear = 0;
+        const match = String(e._id).match(/\d+/);
+        if (match) {
+          minYear = parseInt(match[0], 10);
+        }
+
+        return {
+          experience: e._id,
+          name: e._id,
+          minYear,
+          sampleSize: e.sampleSize,
+          averageMillion: round1(e.averageMillion),
+          averageMinMillion: round1(e.averageMinMillion),
+          averageMaxMillion: round1(e.averageMaxMillion)
+        };
+      })
       .sort((a, b) => (a.minYear ?? 0) - (b.minYear ?? 0));
 
     // ─── Công ty trả lương cao nhất: gắn tên công ty ───

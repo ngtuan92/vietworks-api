@@ -10,7 +10,7 @@ const jobSchema = new mongoose.Schema({
   careerId: { type: objectId, ref: 'Career', required: true },
   careerPositionId: { type: objectId, ref: 'CareerPosition', required: true },
   jobLevelId: { type: objectId, ref: 'JobLevel', required: true },
-  experienceLevelId: { type: objectId, ref: 'ExperienceLevel', required: true },
+  experience: { type: String, required: true },
   skills: [{ type: objectId, ref: 'Skill' }],
   salary: {
     type: { type: String, enum: Object.values(SalaryType), default: SalaryType.NEGOTIABLE },
@@ -33,6 +33,7 @@ const jobSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: false },
     startedAt: { type: Date, default: null },
     expiredAt: { type: Date, default: null },
+    packagePrice: { type: Number, default: 0 },
     deactivatedAt: { type: Date, default: null },
     deactivatedReason: { type: String, enum: Object.values(PremiumDeactivatedReason), default: null }
   },

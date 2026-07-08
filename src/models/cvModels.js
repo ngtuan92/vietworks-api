@@ -13,7 +13,7 @@ const cvSchema = new mongoose.Schema({
     fontId: { type: mongoose.Schema.Types.Mixed, default: null }, // Support either direct ID string or object
     themeColorId: { type: String, default: null }, // Support hex color strings or object ID
     backgroundType: { type: String, enum: Object.values(CvBackgroundType), default: CvBackgroundType.NONE },
-    backgroundId: { type: objectId, ref: 'CvBackground', default: null },
+    backgroundId: { type: objectId, default: null },
     customBackgroundUrl: { type: String, default: null },
     fontSize: { type: String, default: 'medium' },
     density: { type: String, default: 'normal' },
@@ -29,6 +29,8 @@ const cvSchema = new mongoose.Schema({
   },
   sections: { type: [mongoose.Schema.Types.Mixed], default: [] },
   isMain: { type: Boolean, default: false },
+  isPublic: { type: Boolean, default: false }, // Cho phép NTD tìm kiếm trong Talent Pool
+  extractedText: { type: String, default: null }, // Văn bản thô bóc tách từ các block để tìm kiếm
   status: { type: String, enum: Object.values(CvStatus), default: CvStatus.ACTIVE }
 }, { timestamps: true });
 

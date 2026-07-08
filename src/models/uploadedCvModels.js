@@ -12,9 +12,11 @@ const uploadedCvSchema = new mongoose.Schema({
   // ── Thêm bởi fix "Boost CV từ ví lỗi": Boost CV cập nhật các field này qua $set.
   // Nếu thiếu trong schema → Mongoose strict mode vẫn lưu vào DB nhưng query sort theo
   // isBoosted (Talent Pool) không hoạt động đáng tin cậy giữa các request.
-  isPublic: { type: Boolean, default: true }, // Có hiện trong Talent Pool hay không
+  isPublic: { type: Boolean, default: false }, // Có hiện trong Talent Pool hay không
   isBoosted: { type: Boolean, default: false }, // Đang trong gói Boost CV (cache ưu tiên)
   boostedUntil: { type: Date, default: null }, // Hạn boost — null = không boost
+  boostedAt: { type: Date, default: null }, // Thời gian kích hoạt gói Boost
+  boostPackagePrice: { type: Number, default: 0 }, // Giá gói Boost CV
   skills: [{ type: String }],
   summary: { type: String, default: null },
   experienceYears: { type: Number, default: null },

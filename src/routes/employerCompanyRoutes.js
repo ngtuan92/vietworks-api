@@ -63,8 +63,8 @@ router.get(
  *             required:
  *               - name
  *               - taxCode
- *               - industryId
- *               - sizeId
+ *               - industryIds
+ *               - size
  *               - email
  *               - phone
  *               - description
@@ -79,10 +79,12 @@ router.get(
  *                 type: string
  *                 nullable: true
  *                 example: https://abc.com
- *               industryId:
- *                 type: string
- *                 example: 665f1d24e123456789abc111
- *               sizeId:
+ *               industryIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["665f1d24e123456789abc111"]
+ *               size:
  *                 type: string
  *                 example: 665f1d24e123456789abc222
  *               email:

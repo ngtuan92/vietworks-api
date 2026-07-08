@@ -206,15 +206,15 @@ export const getHiringSuccess = async (req, res) => {
   try {
     const filter = parseDateRange(req);
 
-    const [total, approved, hired, rejected, viewed] = await Promise.all([
+    const [total, approved, rejected, viewed] = await Promise.all([
       Application.countDocuments(filter),
       Application.countDocuments({ ...filter, status: ApplicationStatus.APPROVED }),
-      Application.countDocuments({ ...filter, status: ApplicationStatus.HIRED }),
       Application.countDocuments({ ...filter, status: ApplicationStatus.REJECTED }),
       Application.countDocuments({ ...filter, status: ApplicationStatus.VIEWED })
     ]);
 
-    const successCount = approved + hired;
+    const hired = 0; // Not used anymore
+    const successCount = approved;
     const successRate = total > 0 ? +(successCount / total * 100).toFixed(2) : 0;
     const rejectionRate = total > 0 ? +(rejected / total * 100).toFixed(2) : 0;
     const viewedRate = total > 0 ? +((viewed + approved + hired + rejected) / total * 100).toFixed(2) : 0;

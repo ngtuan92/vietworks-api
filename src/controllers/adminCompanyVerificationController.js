@@ -9,9 +9,8 @@ import { NotificationTypeCode } from '../enums/notificationEnums.js';
 export const getPendingCompanies = async (req, res) => {
   try {
     const companies = await Company.find()
-      .select('name taxCode email phone website industryId sizeId businessLicenseFile verificationStatus createdAt updatedAt')
-      .populate('industryId', 'name slug')
-      .populate('sizeId', 'code name minEmployees maxEmployees')
+      .select('name taxCode email phone website industryIds size businessLicenseFile verificationStatus createdAt updatedAt')
+      .populate('industryIds', 'name slug')
       .sort({ updatedAt: -1 });
 
     return res.status(200).json({
@@ -24,8 +23,8 @@ export const getPendingCompanies = async (req, res) => {
         email: company.email,
         phone: company.phone,
         website: company.website,
-        industry: company.industryId,
-        size: company.sizeId,
+        industries: company.industryIds,
+        size: company.size,
         businessLicenseFile: company.businessLicenseFile,
         verificationStatus: company.verificationStatus,
         createdAt: company.createdAt,
@@ -52,10 +51,10 @@ export const getCompanyVerificationDetail = async (req, res) => {
       });
     }
 
-const company = await Company.findById(companyId) // Dùng findById ngắn gọn hơn      .select('ownerUserId name taxCode website industryId sizeId email phone avatarUrl coverUrl description businessLicenseFile verificationStatus rejectionReason verifiedBy verifiedAt followersCount createdAt updatedAt')
+    const company = await Company.findById(companyId) // Dùng findById ngắn gọn hơn
+      .select('ownerUserId name taxCode website industryIds size email phone avatarUrl coverUrl description businessLicenseFile verificationStatus rejectionReason verifiedBy verifiedAt followersCount createdAt updatedAt')
       .populate('ownerUserId', 'fullName email phone')
-      .populate('industryId', 'name slug')
-      .populate('sizeId', 'code name minEmployees maxEmployees')
+      .populate('industryIds', 'name slug')
       .populate('verifiedBy', 'fullName email');
 
     if (!company) {
@@ -80,8 +79,8 @@ const company = await Company.findById(companyId) // Dùng findById ngắn gọn
         name: company.name,
         taxCode: company.taxCode,
         website: company.website,
-        industry: company.industryId,
-        size: company.sizeId,
+        industries: company.industryIds,
+        size: company.size,
         email: company.email,
         phone: company.phone,
         avatarUrl: company.avatarUrl,

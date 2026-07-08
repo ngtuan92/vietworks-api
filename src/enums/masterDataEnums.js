@@ -35,16 +35,6 @@ export const JobLevelCode = {
   DIRECTOR: 'DIRECTOR'
 };
 
-export const ExperienceLevelCode = {
-  NO_REQUIREMENT: 'NO_REQUIREMENT',
-  UNDER_1_YEAR: 'UNDER_1_YEAR',
-  ONE_YEAR: 'ONE_YEAR',
-  TWO_YEARS: 'TWO_YEARS',
-  THREE_YEARS: 'THREE_YEARS',
-  FOUR_YEARS: 'FOUR_YEARS',
-  FIVE_YEARS: 'FIVE_YEARS',
-  OVER_5_YEARS: 'OVER_5_YEARS'
-};
 
 
 
@@ -52,12 +42,3 @@ export const Currency = {
   VND: 'VND'
 };
 
-export const CompanySizeCode = {
-  SIZE_1_10: 'SIZE_1_10',
-  SIZE_11_50: 'SIZE_11_50',
-  SIZE_51_100: 'SIZE_51_100',
-  SIZE_101_300: 'SIZE_101_300',
-  SIZE_301_500: 'SIZE_301_500',
-  SIZE_501_1000: 'SIZE_501_1000',
-  SIZE_OVER_1000: 'SIZE_OVER_1000'
-};

@@ -23,7 +23,7 @@ const buildMatchingJobFilter = (profile, since) => {
   if (desiredJob.careerGroupId) orConditions.push({ careerGroupId: desiredJob.careerGroupId });
   if (desiredJob.careerId) orConditions.push({ careerId: desiredJob.careerId });
   if (desiredJob.careerPositionId) orConditions.push({ careerPositionId: desiredJob.careerPositionId });
-  if (desiredJob.experienceLevelId) orConditions.push({ experienceLevelId: desiredJob.experienceLevelId });
+  if (desiredJob.experience) orConditions.push({ experience: desiredJob.experience });
   if (skills.length) orConditions.push({ skills: { $in: skills } });
 
   if (orConditions.length > 0) {

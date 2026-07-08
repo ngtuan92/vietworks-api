@@ -4,8 +4,10 @@ import { objectId } from './sharedModels.js';
 const unlockedCandidateSchema = new mongoose.Schema({
   employerId: { type: objectId, ref: 'User', required: true },
   candidateId: { type: objectId, ref: 'User', required: true },
-  cvId: { type: objectId, ref: 'UploadedCV', default: null },
+  cvId: { type: objectId, ref: 'UploadedCv', default: null },
   amountCharged: { type: Number, default: 0 },
+  packageId: { type: objectId, ref: 'ServicePackage', default: null },
+  packageName: { type: String, default: null },
   unlockedAt: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

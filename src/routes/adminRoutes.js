@@ -2,7 +2,6 @@ import express from 'express';
 import { getAllUsers, getUserById } from '../controllers/adminUserController.js';
 import { getAllTransactions, getTransactionById, getRevenueReport, getSepayWebhookLogs, replaySepayWebhookLog } from '../controllers/adminTransactionController.js';
 import { requestInvoice } from '../controllers/invoiceController.js';
-import { getEmailLogs } from '../controllers/emailLogController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { UserRole } from '../enums/userEnums.js';
 
@@ -28,7 +27,6 @@ router.get('/admin/users/:id', adminOnly, getUserById);
 // Invoice Request Route (chỉ cần đăng nhập, không bắt buộc admin)
 router.post('/transactions/:id/invoice-request', protect, requestInvoice);
 
-// Email Logs Route
-router.get('/admin/email-logs', authorize(UserRole.ADMIN), getEmailLogs);
+
 
 export default router;
