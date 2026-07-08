@@ -16,6 +16,8 @@ import NotificationService from '../services/notificationService.js';
 import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
 import User from '../models/userModels.js';
 import { UserRole } from '../enums/userEnums.js';
+import UserServicePackage from '../models/userServicePackageModels.js';
+import { UserServicePackageStatus } from '../enums/paymentEnums.js';
 
 const ensureCompanyVerifiedForEmployer = async (userId) => {
   const employerProfile = await EmployerProfile.findOne({ userId }).select('companyId');
@@ -80,10 +82,41 @@ const attachHiringStats = async (jobs = []) => {
     job.remainingSlots = neededCount > 0 ? Math.max(neededCount - appliedCount, 0) : null;
   });
 
-  return jobs;
+    return jobs;
 };
+
+const findEmployerActivePremiumJobPackage = async (userId) => {
+  const now = new Date();
+  const activeSubs = await UserServicePackage.find({
+    userId,
+    status: UserServicePackageStatus.ACTIVE,
+    targetType: 'JOB',
+    expiredAt: { $gt: now }
+  })
+    .select('packageId packageSnapshot packageCode packageType expiredAt status')
+    .populate('packageId', 'name code packageType durationDays')
+    .lean();
+
+  const premiumSubs = activeSubs.filter((sub) => {
+    const pkg = sub.packageId || sub.packageSnapshot || {};
+    const packageType = pkg.packageType || pkg.type || sub.packageType;
+    const packageCode = pkg.code || sub.packageCode || '';
+    return packageType === 'PREMIUM_JOB' || String(packageCode).includes('PREMIUM_JOB');
+  });
+
+  if (!premiumSubs.length) return null;
+
+  premiumSubs.sort((a, b) => new Date(b.expiredAt).getTime() - new Date(a.expiredAt).getTime());
+  return premiumSubs[0];
+};
+
+const checkEmployerUrgentPackage = async (userId) => {
+  return Boolean(await findEmployerActivePremiumJobPackage(userId));
+};
+
 /**
  * @desc Create a new job (draft status)
+
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
@@ -165,6 +198,16 @@ export const createJob = async (req, res) => {
   });
 }
 
+        const activePremiumPackage = isUrgent ? await findEmployerActivePremiumJobPackage(userId) : null;
+    if (isUrgent && !activePremiumPackage) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không có gói PREMIUM_JOB còn hiệu lực để bật tuyển gấp. Vui lòng mua gói Premium hoặc bỏ chọn Tuyển gấp.'
+      });
+    }
+
+    const canUseUrgent = Boolean(activePremiumPackage);
+
     // Create job
     const newJob = new Job({
       companyId: employerProfile.companyId,
@@ -185,7 +228,20 @@ export const createJob = async (req, res) => {
       workingTime,
       applyInstruction,
       deadline: new Date(deadline),
-      isUrgent: false, // Must buy a package to make it urgent
+      isUrgent: canUseUrgent,
+      premium: activePremiumPackage ? {
+              isActive: true,
+              startedAt: new Date(),
+              expiredAt: activePremiumPackage.expiredAt,
+              deactivatedAt: null,
+              deactivatedReason: null
+            } : {
+              isActive: false,
+              startedAt: null,
+              expiredAt: null,
+              deactivatedAt: null,
+              deactivatedReason: null
+            },
       headcount: headcount ? Number(headcount) : 1,
       status: JobStatus.DRAFT
     });
@@ -341,6 +397,18 @@ export const updateJob = async (req, res) => {
       });
     }
 
+    // 3.1. Nếu người dùng bật Tuyển gấp, kiểm tra xem employer có gói PREMIUM_JOB active hay không
+    let activePremiumPackage = null;
+    if (updates.isUrgent === true) {
+      activePremiumPackage = await findEmployerActivePremiumJobPackage(userId);
+      if (!activePremiumPackage) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không có gói PREMIUM_JOB còn hiệu lực để bật tuyển gấp. Vui lòng mua gói Premium hoặc bỏ chọn Tuyển gấp.'
+        });
+      }
+    }
+
     // 4. Định nghĩa các nhóm trường để kiểm tra "Quay xe" về chờ duyệt
     // Bao gồm các thông tin cốt lõi ảnh hưởng trực tiếp đến người lao động
     const coreFields = [
@@ -351,14 +419,15 @@ export const updateJob = async (req, res) => {
     const allowedUpdates = [
       ...coreFields,
       'skills', 'workLocations', 'saturdayPolicy', 'workingTime', 'applyInstruction',
-      'deadline'
+      'deadline', 'isUrgent'
     ];
 
     // Biến cờ đánh dấu xem có sự thay đổi ở trường cốt lõi nào không
     let hasCoreFieldChanged = false;
 
-    // 5. Duyệt qua các trường gửi lên và xử lý cập nhật
-    allowedUpdates.forEach(field => {
+        // 5. Duyệt qua các trường gửi lên và xử lý cập nhật
+    for (const field of allowedUpdates) {
+
       if (updates[field] !== undefined) {
         
         let newValue = updates[field];
@@ -402,6 +471,58 @@ export const updateJob = async (req, res) => {
           ) {
             isFieldChanged = true;
           }
+
+
+
+
+
+
+
+
+
+
+                } else if (field === 'isUrgent') {
+          newValue = Boolean(newValue);
+          
+          // Check if the actual isUrgent value is changing
+          if (Boolean(job[field]) !== newValue) {
+            isFieldChanged = true;
+          }
+          job[field] = newValue; // Set isUrgent field
+
+          // Update premium object based on the new isUrgent value and package availability
+          if (newValue && activePremiumPackage) {
+            // If turning ON urgent and package is available
+            job.premium = {
+              isActive: true,
+              // Keep existing startedAt if already premium, otherwise set new.
+              startedAt: job.premium?.startedAt || new Date(), 
+              expiredAt: activePremiumPackage.expiredAt,
+              deactivatedAt: null,
+              deactivatedReason: null,
+            };
+          } else if (!newValue && job.premium?.isActive) {
+            // If turning OFF urgent, and it was previously active premium
+            job.premium = {
+              isActive: false,
+              startedAt: job.premium.startedAt, // Keep previous startedAt for history
+              expiredAt: job.premium.expiredAt, // Keep previous expiredAt for history
+              deactivatedAt: new Date(), // Mark deactivation time
+              deactivatedReason: 'EMPLOYER_DEACTIVATED',
+            };
+          } else if (!newValue && !job.premium?.isActive) {
+            // If turning OFF urgent, and it was never active premium (or already deactivated)
+            job.premium = {
+              isActive: false,
+              startedAt: null,
+              expiredAt: null,
+              deactivatedAt: null,
+              deactivatedReason: null,
+            };
+          }
+
+
+
         } else {
           // So sánh các kiểu dữ liệu thông thường (String, Boolean)
           // Dùng hờ thêm toString() để tránh lệch kiểu dữ liệu hoặc khoảng trắng ngầm
@@ -410,6 +531,7 @@ export const updateJob = async (req, res) => {
           }
         }
 
+
         // --- Kết thúc chuẩn hóa ---
 
         // Nếu trường này thay đổi và nó nằm trong danh sách trường Cốt lõi (Core)
@@ -417,10 +539,10 @@ export const updateJob = async (req, res) => {
           hasCoreFieldChanged = true;
         }
 
-        // Gán giá trị mới vào document
+                // Gán giá trị mới vào document
         job[field] = newValue;
       }
-    });
+    }
 
     // 6. Xử lý chuyển đổi trạng thái nếu tin đang PUBLISHED mà sửa thông tin cốt lõi
     if (job.status === JobStatus.PUBLISHED && hasCoreFieldChanged) {
@@ -597,7 +719,8 @@ export const getMyJobs = async (req, res) => {
       .populate('jobLevelId', 'name')
       .populate('experienceLevelId', 'name')
       .populate('skills', 'name')
-      .sort({ createdAt: -1 })
+            .select('+isUrgent +premium') // Ensure these fields are selected
+            .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .lean();
@@ -1220,4 +1343,3 @@ export const getPublicJobDetail = async (req, res) => {
     });
   }
 };
-
