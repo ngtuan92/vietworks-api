@@ -45,7 +45,7 @@ const sendHtmlEmail = async ({ toEmail, subject, html }) => {
 };
 
 /**
- * Gửi email nghiệp vụ và ghi log kết quả vào email_logs.
+ * Gửi email nghiệp vụ bằng Nodemailer.
  * Dùng cho các luồng ATS: CV viewed, interview invitation, rejection, new message.
  *
  * @param {object} opts
@@ -54,7 +54,7 @@ const sendHtmlEmail = async ({ toEmail, subject, html }) => {
  * @param {string} opts.subject         - Tiêu đề email
  * @param {string} opts.html            - Nội dung HTML
  * @param {string} [opts.notificationId] - ID notification liên quan (optional)
- * @returns {Promise<object>} EmailLog document đã lưu
+ * @returns {Promise<object>} Kết quả gửi { success: boolean, error: string }
  */
 export const sendBusinessEmail = async ({ receiverUserId, toEmail, subject, html, notificationId = null }) => {
   try {
