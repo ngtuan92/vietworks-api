@@ -110,6 +110,7 @@ export const deposit = async (req, res) => {
  * 3. Kiểm tra trùng lặp bằng transactionId
  * 4. Tìm transaction theo orderCode (format: SEVN{ORDER_ID})
  * 5. Verify đúng amount và status PENDING
+
  * 6. Update transaction + wallet
  * 7. Respond ngay lập tức (BR-01: trong 30s)
  */
@@ -170,6 +171,7 @@ async function processPaidTransaction(orderCode, sepay) {
   if (updated.type === TransactionType.PACKAGE_PURCHASE) {
     // Luôn lấy data ServicePackage mới nhất từ DB (snapshot cũ có thể thiếu field do Mongoose strip null/undefined)
     // Chỉ fallback về snapshot nếu DB lookup thất bại (rất hiếm — package đã bị xoá).
+
     const freshPkg = updated.packageId
       ? await ServicePackage.findById(updated.packageId).lean()
       : null;
@@ -222,6 +224,11 @@ async function processPaidTransaction(orderCode, sepay) {
         // Logic: UserServicePackage ACTIVE có cùng (userId, targetType=CV, targetId=cvId)
         // nhưng transactionId KHÁC transaction hiện tại ⇒ đây là luồng upgrade.
         // Chỉ thực hiện khi transaction SUCCESS (đã thanh toán thành công).
+        console.error('', err.message);
+      }
+
+
+      if (updated.targetType === 'CV') {
         const oldSub = await UserServicePackage.findOne({
           userId: updated.userId,
           targetType: 'CV',
@@ -235,8 +242,8 @@ async function processPaidTransaction(orderCode, sepay) {
           oldSub.cancelledAt = new Date();
           oldSub.cancelledReason = 'UPGRADED';
           await oldSub.save();
-
           // Đồng bộ CvBoost cũ sang EXPIRED (nếu có)
+
           await CvBoost.updateMany(
             { cvId: updated.targetId, status: 'ACTIVE' },
             { $set: { status: 'EXPIRED' } }
@@ -263,6 +270,7 @@ async function processPaidTransaction(orderCode, sepay) {
         if (!ex) {
           await CvBoost.create({ cvId: updated.targetId, userId: updated.userId, packageId: pkg._id, startAt, endAt });
           // Set CV thành "boosted" để Talent Pool sort ưu tiên
+
           await UploadedCV.updateOne(
             { _id: updated.targetId, userId: updated.userId },
             { 
