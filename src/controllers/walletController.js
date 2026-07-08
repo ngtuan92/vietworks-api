@@ -25,7 +25,7 @@ export const createWallet = async (req, res) => {
     wallet = await Wallet.create({ userId, balance: 0 });
     res.status(201).json({ success: true, data: wallet });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -40,7 +40,7 @@ export const getWallet = async (req, res) => {
 
     res.status(200).json({ success: true, data: wallet });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -50,7 +50,7 @@ export const deposit = async (req, res) => {
     const { amount } = req.body;
 
     if (!amount || amount <= 0) {
-      return res.status(400).json({ success: false, message: 'Sá»‘ tiá»n khÃ´ng há»£p lá»‡' });
+      return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ' });
     }
 
     let wallet = await Wallet.findOne({ userId });
@@ -63,7 +63,7 @@ export const deposit = async (req, res) => {
       type: TransactionType.WALLET_DEPOSIT,
       amount,
       status: TransactionStatus.PENDING,
-      description: `Náº¡p tiá»n qua SePay - ${amount} VND`,
+      description: `Nạp tiền qua SePay - ${amount} VND`,
       paymentMethod: PaymentMethod.SEPAY
     });
 
@@ -97,29 +97,29 @@ export const deposit = async (req, res) => {
     });
   } catch (error) {
     console.error('Deposit Error:', error);
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
 /**
  * SePay Bank Transfer Webhook Handler
  *
- * Luá»“ng:
+ * Luồng:
  * 1. Verify HMAC signature
- * 2. Chá»‰ xá»­ lÃ½ transferType = "in" (tiá»n vÃ o)
- * 3. Kiá»ƒm tra trÃ¹ng láº·p báº±ng transactionId
- * 4. TÃ¬m transaction theo orderCode (format: SEVN{ORDER_ID})
- * 5. Verify Ä‘Ãºng amount vÃ  status PENDING
+ * 2. Chỉ xử lý transferType = "in" (tiền vào)
+ * 3. Kiểm tra trùng lặp bằng transactionId
+ * 4. Tìm transaction theo orderCode (format: SEVN{ORDER_ID})
+ * 5. Verify đúng amount và status PENDING
  * 6. Update transaction + wallet
- * 7. Respond ngay láº­p tá»©c (BR-01: trong 30s)
+ * 7. Respond ngay lập tức (BR-01: trong 30s)
  */
-// â”€â”€â”€ HÃ m xá»­ lÃ½ chung khi 1 giao dá»‹ch ÄÃƒ thanh toÃ¡n (dÃ¹ng cho Cáº¢ webhook láº«n polling) â”€â”€â”€
-// Tráº£ vá» true náº¿u vá»«a xá»­ lÃ½ thÃ nh cÃ´ng láº§n Ä‘áº§u; false náº¿u khÃ´ng há»£p lá»‡ / Ä‘Ã£ xá»­ lÃ½ rá»“i.
+// ─── Hàm xử lý chung khi 1 giao dịch ĐÃ thanh toán (dùng cho CẢ webhook lẫn polling) ───
+// Trả về true nếu vừa xử lý thành công lần đầu; false nếu không hợp lệ / đã xử lý rồi.
 async function processPaidTransaction(orderCode, sepay) {
   // sepay = { transactionId, amount, referenceCode, transactionDate }
   if (!orderCode || !orderCode.startsWith('SEVQR')) return false;
 
-  // Chá»‘ng trÃ¹ng: sepayTransactionId nÃ y Ä‘Ã£ ghi nháº­n chÆ°a
+  // Chống trùng: sepayTransactionId này đã ghi nhận chưa
   if (sepay.transactionId) {
     const dup = await Transaction.findOne({ 'metadata.sepayTransactionId': sepay.transactionId });
     if (dup) return false;
@@ -127,11 +127,11 @@ async function processPaidTransaction(orderCode, sepay) {
 
   const transaction = await Transaction.findOne({ 'metadata.orderCode': orderCode });
   if (!transaction) {
-    console.error('SePay: KhÃ´ng tÃ¬m tháº¥y giao dá»‹ch cho orderCode', orderCode);
+    console.error('SePay: Không tìm thấy giao dịch cho orderCode', orderCode);
     return false;
   }
   if (transaction.amount !== sepay.amount) {
-    console.error(`SePay: Lá»‡ch sá»‘ tiá»n ${orderCode}: cáº§n ${transaction.amount}, nháº­n ${sepay.amount}`);
+    console.error(`SePay: Lệch số tiền ${orderCode}: cần ${transaction.amount}, nhận ${sepay.amount}`);
     // Mark transaction FAILED + notify user
     await Transaction.findOneAndUpdate(
       { _id: transaction._id, status: TransactionStatus.PENDING },
@@ -139,19 +139,19 @@ async function processPaidTransaction(orderCode, sepay) {
         $set: {
           status: TransactionStatus.FAILED,
           'metadata.failedAt': new Date(),
-          'metadata.failedReason': `Sá»‘ tiá»n chuyá»ƒn ${sepay.amount} khÃ´ng khá»›p yÃªu cáº§u ${transaction.amount}`
+          'metadata.failedReason': `Số tiền chuyển ${sepay.amount} không khớp yêu cầu ${transaction.amount}`
         }
       }
     );
     notifyPaymentFailed({
       userId: transaction.userId,
       transaction: { ...transaction.toObject?.() ?? transaction, status: TransactionStatus.FAILED },
-      reason: `Sá»‘ tiá»n chuyá»ƒn ${sepay.amount.toLocaleString('vi-VN')} VND khÃ´ng khá»›p yÃªu cáº§u ${transaction.amount.toLocaleString('vi-VN')} VND`
+      reason: `Số tiền chuyển ${sepay.amount.toLocaleString('vi-VN')} VND không khớp yêu cầu ${transaction.amount.toLocaleString('vi-VN')} VND`
     });
     return false;
   }
 
-  // Chuyá»ƒn PENDING -> SUCCESS NGUYÃŠN Tá»¬ (láº§n 2 tráº£ null â†’ khÃ´ng xá»­ lÃ½ láº¡i)
+  // Chuyển PENDING -> SUCCESS NGUYÊN TỬ (lần 2 trả null → không xử lý lại)
   const updated = await Transaction.findOneAndUpdate(
     { _id: transaction._id, status: TransactionStatus.PENDING },
     {
@@ -168,8 +168,8 @@ async function processPaidTransaction(orderCode, sepay) {
 
   // Mua gói boost → kích hoạt ngay
   if (updated.type === TransactionType.PACKAGE_PURCHASE) {
-    // LuÃ´n láº¥y data ServicePackage má»›i nháº¥t tá»« DB (snapshot cÅ© cÃ³ thá»ƒ thiáº¿u field do Mongoose strip null/undefined)
-    // Chá»‰ fallback vá» snapshot náº¿u DB lookup tháº¥t báº¡i (ráº¥t hiáº¿m â€” package Ä‘Ã£ bá»‹ xoÃ¡).
+    // Luôn lấy data ServicePackage mới nhất từ DB (snapshot cũ có thể thiếu field do Mongoose strip null/undefined)
+    // Chỉ fallback về snapshot nếu DB lookup thất bại (rất hiếm — package đã bị xoá).
     const freshPkg = updated.packageId
       ? await ServicePackage.findById(updated.packageId).lean()
       : null;
@@ -179,7 +179,7 @@ async function processPaidTransaction(orderCode, sepay) {
       const durationDays = pkg.durationDays || 7;
       const endAt = new Date(startAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-      // â”€â”€â”€ Táº¡o UserServicePackage (source of truth cho subscription cáº¥p user) â”€â”€â”€
+      // ─── Tạo UserServicePackage (source of truth cho subscription cấp user) ───
       try {
         const existed = await UserServicePackage.findOne({
           transactionId: updated._id
@@ -189,8 +189,8 @@ async function processPaidTransaction(orderCode, sepay) {
           await UserServicePackage.create({
             userId: updated.userId,
             packageId: pkgId,
-            // Defensive defaults: pkg cÃ³ thá»ƒ lÃ  fresh ServicePackage (.lean()) HOáº¶C snapshot cÅ©.
-            // TrÃ¡nh validation error khi cáº£ 6 field Ä‘á»u undefined.
+            // Defensive defaults: pkg có thể là fresh ServicePackage (.lean()) HOẶC snapshot cũ.
+            // Tránh validation error khi cả 6 field đều undefined.
             packageSnapshot: {
               id: pkgId,
               code: pkg.code ?? null,
@@ -212,16 +212,16 @@ async function processPaidTransaction(orderCode, sepay) {
           });
         }
       } catch (err) {
-        console.error('Táº¡o UserServicePackage lá»—i (khÃ´ng rollback):', err.message);
+        console.error('Tạo UserServicePackage lỗi (không rollback):', err.message);
       }
 
-      // â”€â”€â”€ Táº¡o CvBoost / JobBoost (giá»¯ backward compat - dÃ¹ng cho query nhanh) â”€â”€â”€
-      // â”€â”€â”€ Äá»’NG THá»œI: cáº­p nháº­t field "premium" / "boosted" trÃªn Job/CV Ä‘á»ƒ query sort â”€â”€â”€
+      // ─── Tạo CvBoost / JobBoost (giữ backward compat - dùng cho query nhanh) ───
+      // ─── ĐỒNG THỜI: cập nhật field "premium" / "boosted" trên Job/CV để query sort ───
       if (updated.targetType === 'CV') {
-        // â”€â”€â”€ UPGRADE: huá»· gÃ³i cÅ© (náº¿u cÃ³) trÆ°á»›c khi táº¡o gÃ³i má»›i â”€â”€â”€
-        // Logic: UserServicePackage ACTIVE cÃ³ cÃ¹ng (userId, targetType=CV, targetId=cvId)
-        // nhÆ°ng transactionId KHÃC transaction hiá»‡n táº¡i â‡’ Ä‘Ã¢y lÃ  luá»“ng upgrade.
-        // Chá»‰ thá»±c hiá»‡n khi transaction SUCCESS (Ä‘Ã£ thanh toÃ¡n thÃ nh cÃ´ng).
+        // ─── UPGRADE: huỷ gói cũ (nếu có) trước khi tạo gói mới ───
+        // Logic: UserServicePackage ACTIVE có cùng (userId, targetType=CV, targetId=cvId)
+        // nhưng transactionId KHÁC transaction hiện tại ⇒ đây là luồng upgrade.
+        // Chỉ thực hiện khi transaction SUCCESS (đã thanh toán thành công).
         const oldSub = await UserServicePackage.findOne({
           userId: updated.userId,
           targetType: 'CV',
@@ -236,25 +236,25 @@ async function processPaidTransaction(orderCode, sepay) {
           oldSub.cancelledReason = 'UPGRADED';
           await oldSub.save();
 
-          // Äá»“ng bá»™ CvBoost cÅ© sang EXPIRED (náº¿u cÃ³)
+          // Đồng bộ CvBoost cũ sang EXPIRED (nếu có)
           await CvBoost.updateMany(
             { cvId: updated.targetId, status: 'ACTIVE' },
             { $set: { status: 'EXPIRED' } }
           );
 
-          // Táº¡m thá»i táº¯t cá» boosted trÃªn CV; sáº½ Ä‘Æ°á»£c set láº¡i true ngay bÃªn dÆ°á»›i báº±ng gÃ³i má»›i
+          // Tạm thời tắt cờ boosted trên CV; sẽ được set lại true ngay bên dưới bằng gói mới
           await UploadedCV.updateOne(
             { _id: updated.targetId, userId: updated.userId },
             { $set: { isBoosted: false, boostedUntil: null } }
           );
 
-          // Notify user ráº±ng gÃ³i cÅ© Ä‘Ã£ bá»‹ thay tháº¿ (sau khi CK thÃ nh cÃ´ng)
+          // Notify user rằng gói cũ đã bị thay thế (sau khi CK thành công)
           const oldTxn = await Transaction.findById(oldSub.transactionId).lean();
           if (oldTxn) {
             notifyPaymentCancelled({
               userId: updated.userId,
               transaction: oldTxn,
-              reason: 'ÄÃ£ nÃ¢ng cáº¥p lÃªn gÃ³i má»›i'
+              reason: 'Đã nâng cấp lên gói mới'
             });
           }
         }
@@ -262,7 +262,7 @@ async function processPaidTransaction(orderCode, sepay) {
         const ex = await CvBoost.findOne({ cvId: updated.targetId, status: 'ACTIVE' });
         if (!ex) {
           await CvBoost.create({ cvId: updated.targetId, userId: updated.userId, packageId: pkg._id, startAt, endAt });
-          // Set CV thÃ nh "boosted" Ä‘á»ƒ Talent Pool sort Æ°u tiÃªn
+          // Set CV thành "boosted" để Talent Pool sort ưu tiên
           await UploadedCV.updateOne(
             { _id: updated.targetId, userId: updated.userId },
             { 
@@ -340,7 +340,7 @@ async function processPaidTransaction(orderCode, sepay) {
         });
       }
 
-      // â”€â”€â”€ Táº¡o Notification (in-app) â”€â”€â”€
+      // ─── Tạo Notification (in-app) ───
       notifyPackagePurchaseSuccess({
         userId: updated.userId,
         transaction: updated,
@@ -365,12 +365,12 @@ async function processPaidTransaction(orderCode, sepay) {
     });
   }
 
-  console.log(`SePay: âœ… ÄÃ£ xá»­ lÃ½ giao dá»‹ch ${orderCode}, amount ${sepay.amount}`);
+  console.log(`SePay: ✅ Đã xử lý giao dịch ${orderCode}, amount ${sepay.amount}`);
   return true;
 }
 
 export const sepayWebhook = async (req, res) => {
-  // 1. LuÃ´n respond NGAY trÆ°á»›c khi xá»­ lÃ½ async (trÃ¡nh SePay timeout 30s)
+  // 1. Luôn respond NGAY trước khi xử lý async (tránh SePay timeout 30s)
   res.status(200).json({ success: true });
 
   setImmediate(async () => {
@@ -378,7 +378,7 @@ export const sepayWebhook = async (req, res) => {
     const timestamp = req.headers['x-sepay-timestamp'] || '';
     const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
 
-    // Táº¡o log entry NGAY tá»« Ä‘áº§u Ä‘á»ƒ audit (ká»ƒ cáº£ khi fail cÅ©ng pháº£i cÃ³ dáº¥u váº¿t)
+    // Tạo log entry NGAY từ đầu để audit (kể cả khi fail cũng phải có dấu vết)
     const parsed = parseSepayWebhook(req.body);
     const isVerifiedSignature = verifySepayWebhook(rawBody, signature, timestamp) === true;
     const allowUnsignedWebhook = process.env.NODE_ENV !== 'production' || process.env.SEPAY_ALLOW_UNSIGNED_WEBHOOK === 'true';
@@ -402,12 +402,12 @@ export const sepayWebhook = async (req, res) => {
         processed: false
       });
     } catch (logErr) {
-      console.error('SePay Webhook: KhÃ´ng thá»ƒ ghi SepayWebhookLog:', logErr.message);
-      // KhÃ´ng throw â€” váº«n tiáº¿p tá»¥c xá»­ lÃ½ transaction
+      console.error('SePay Webhook: Không thể ghi SepayWebhookLog:', logErr.message);
+      // Không throw — vẫn tiếp tục xử lý transaction
     }
 
     try {
-      // 2. XÃ¡c thá»±c chá»¯ kÃ½ HMAC-SHA256
+      // 2. Xác thực chữ ký HMAC-SHA256
       if (!isVerifiedSignature && !allowUnsignedWebhook) {
         console.error('SePay Webhook: chữ ký HMAC không hợp lệ');
         await _markLogFailed(log, 'Invalid HMAC signature');
@@ -419,12 +419,12 @@ export const sepayWebhook = async (req, res) => {
       }
 
       if (parsed.transferType !== 'in') {
-        // KhÃ´ng pháº£i tiá»n vÃ o â†’ ghi nháº­n nhÆ°ng khÃ´ng xá»­ lÃ½
+        // Không phải tiền vào → ghi nhận nhưng không xử lý
         await _markLogProcessed(log, { skipped: true, reason: `transferType=${parsed.transferType}` });
         return;
       }
 
-      // 3. Xá»­ lÃ½ (dÃ¹ng chung vá»›i polling)
+      // 3. Xử lý (dùng chung với polling)
       const ok = await processPaidTransaction(parsed.orderCode, {
         transactionId: parsed.transactionId,
         amount: parsed.amount,
@@ -434,7 +434,7 @@ export const sepayWebhook = async (req, res) => {
 
       await _markLogProcessed(log, {
         skipped: !ok,
-        reason: ok ? null : 'processPaidTransaction tráº£ vá» false (khÃ´ng tÃ¬m tháº¥y / trÃ¹ng / lá»‡ch tiá»n)'
+        reason: ok ? null : 'processPaidTransaction trả về false (không tìm thấy / trùng / lệch tiền)'
       });
     } catch (error) {
       console.error('SePay Webhook Error:', error);
@@ -443,7 +443,7 @@ export const sepayWebhook = async (req, res) => {
   });
 };
 
-// Helper: Ä‘Ã¡nh dáº¥u log Ä‘Ã£ xá»­ lÃ½ thÃ nh cÃ´ng (hoáº·c skip cÃ³ lÃ½ do)
+// Helper: đánh dấu log đã xử lý thành công (hoặc skip có lý do)
 async function _markLogProcessed(log, { skipped = false, reason = null } = {}) {
   if (!log) return;
   try {
@@ -458,11 +458,11 @@ async function _markLogProcessed(log, { skipped = false, reason = null } = {}) {
       }
     );
   } catch (e) {
-    console.error('KhÃ´ng thá»ƒ update SepayWebhookLog processed:', e.message);
+    console.error('Không thể update SepayWebhookLog processed:', e.message);
   }
 }
 
-// Helper: Ä‘Ã¡nh dáº¥u log xá»­ lÃ½ lá»—i
+// Helper: đánh dấu log xử lý lỗi
 async function _markLogFailed(log, errorMessage) {
   if (!log) return;
   try {
@@ -471,25 +471,25 @@ async function _markLogFailed(log, errorMessage) {
       { $set: { processed: false, processedAt: new Date(), errorMessage: (errorMessage || '').slice(0, 1000) } }
     );
   } catch (e) {
-    console.error('KhÃ´ng thá»ƒ update SepayWebhookLog failed:', e.message);
+    console.error('Không thể update SepayWebhookLog failed:', e.message);
   }
 }
 
-// â”€â”€â”€ FALLBACK: FE há»i "Ä‘Ã£ thanh toÃ¡n chÆ°a?" â†’ há»i tháº³ng API SePay (VietinBank hay miss webhook) â”€â”€â”€
+// ─── FALLBACK: FE hỏi "đã thanh toán chưa?" → hỏi thẳng API SePay (VietinBank hay miss webhook) ───
 // GET /api/transactions/sepay-check/:orderCode
 export const checkSepayPayment = async (req, res) => {
   try {
     const { orderCode } = req.params;
     const transaction = await Transaction.findOne({ 'metadata.orderCode': orderCode, userId: req.user._id });
     if (!transaction) {
-      return res.status(404).json({ success: false, message: 'KhÃ´ng tÃ¬m tháº¥y giao dá»‹ch' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy giao dịch' });
     }
-    // ÄÃ£ xong rá»“i thÃ¬ bÃ¡o luÃ´n
+    // Đã xong rồi thì báo luôn
     if (transaction.status === TransactionStatus.SUCCESS) {
       return res.status(200).json({ success: true, data: { paid: true } });
     }
 
-    // Há»i API SePay xem tiá»n Ä‘Ã£ vÃ o chÆ°a
+    // Hỏi API SePay xem tiền đã vào chưa
     const sepayTxn = await findSepayTransactionByCode(orderCode, transaction.amount);
     if (sepayTxn) {
       console.log('SePay polling: tìm thấy giao dịch khớp', { orderCode, amount: transaction.amount });
@@ -502,7 +502,7 @@ export const checkSepayPayment = async (req, res) => {
     return res.status(200).json({ success: true, data: { paid: after.status === TransactionStatus.SUCCESS } });
   } catch (error) {
     console.error('checkSepayPayment error:', error);
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
@@ -533,12 +533,12 @@ export const getTransactions = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
-// â”€â”€â”€ GET /api/transactions/by-order-code/:orderCode â”€â”€â”€
-// FE PaymentSuccess page gá»i Ä‘á»ƒ láº¥y chi tiáº¿t giao dá»‹ch + gÃ³i + target
+// ─── GET /api/transactions/by-order-code/:orderCode ───
+// FE PaymentSuccess page gọi để lấy chi tiết giao dịch + gói + target
 export const getTransactionByOrderCode = async (req, res) => {
   try {
     const { orderCode } = req.params;
@@ -550,10 +550,10 @@ export const getTransactionByOrderCode = async (req, res) => {
     }).lean();
 
     if (!transaction) {
-      return res.status(404).json({ success: false, message: 'KhÃ´ng tÃ¬m tháº¥y giao dá»‹ch' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy giao dịch' });
     }
 
-    // Láº¥y package info
+    // Lấy package info
     let packageInfo = transaction.packageSnapshot || null;
     if (!packageInfo && transaction.packageId) {
       packageInfo = await ServicePackage.findById(transaction.packageId)
@@ -561,14 +561,14 @@ export const getTransactionByOrderCode = async (req, res) => {
         .lean();
     }
 
-    // Láº¥y UserServicePackage tÆ°Æ¡ng á»©ng (theo transactionId)
+    // Lấy UserServicePackage tương ứng (theo transactionId)
     const userServicePackage = await UserServicePackage.findOne({
       transactionId: transaction._id
     })
       .select('startedAt expiredAt status packageType targetType targetId')
       .lean();
 
-    // Láº¥y target info (CV title hoáº·c Job title)
+    // Lấy target info (CV title hoặc Job title)
     let target = null;
     if (transaction.targetType === 'CV' && transaction.targetId) {
       const UploadedCV = (await import('../models/uploadedCvModels.js')).default;
@@ -603,12 +603,12 @@ export const getTransactionByOrderCode = async (req, res) => {
     });
   } catch (error) {
     console.error('getTransactionByOrderCode error:', error);
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
 
-// â”€â”€â”€ GET /api/employer/my-subscriptions | /api/jobseeker/my-subscriptions â”€â”€â”€
-// List cÃ¡c UserServicePackage cá»§a user (cÃ³ thá»ƒ filter theo status / targetType)
+// ─── GET /api/employer/my-subscriptions | /api/jobseeker/my-subscriptions ───
+// List các UserServicePackage của user (có thể filter theo status / targetType)
 export const getMySubscriptions = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -619,7 +619,7 @@ export const getMySubscriptions = async (req, res) => {
     if (targetType) filter.targetType = targetType;
 
     const subscriptions = await UserServicePackage.find(filter)
-      .populate('packageId', 'name code packageType durationDays benefits price') // Fallback cho dá»¯ liá»‡u cÅ©
+      .populate('packageId', 'name code packageType durationDays benefits price') // Fallback cho dữ liệu cũ
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
@@ -644,12 +644,12 @@ export const getMySubscriptions = async (req, res) => {
       if (s.targetType === 'CV') targetTitle = cvMap.get(s.targetId?.toString()) || null;
       else if (s.targetType === 'JOB') targetTitle = jobMap.get(s.targetId?.toString()) || null;
 
-      // Tá»± tÃ­nh sá»‘ ngÃ y cÃ²n láº¡i Ä‘á»ƒ FE Ä‘á»¡ pháº£i tÃ­nh
+      // Tự tính số ngày còn lại để FE đỡ phải tính
       const now = Date.now();
       const expired = s.expiredAt ? new Date(s.expiredAt).getTime() : null;
       const daysRemaining = expired ? Math.max(0, Math.ceil((expired - now) / (1000 * 60 * 60 * 24))) : null;
 
-      // Æ¯u tiÃªn dÃ¹ng packageSnapshot náº¿u cÃ³
+      // Ưu tiên dùng packageSnapshot nếu có
       const pkgInfo = s.packageSnapshot || s.packageId;
 
       return { ...s, packageId: pkgInfo, targetTitle, daysRemaining };
@@ -657,7 +657,7 @@ export const getMySubscriptions = async (req, res) => {
 
     const total = await UserServicePackage.countDocuments(filter);
 
-    // LÆ°á»£t má»Ÿ khÃ³a CV cÃ²n hiá»‡u lá»±c (mua gÃ³i CV_UNLOCK / BUNDLE) â€” chá»‰ employer má»›i cÃ³
+    // Lượt mở khóa CV còn hiệu lực (mua gói CV_UNLOCK / BUNDLE) — chỉ employer mới có
     const credits = await CvUnlockCredit.find({
       employerUserId: userId,
       status: CvUnlockCreditStatus.ACTIVE,
@@ -688,6 +688,6 @@ export const getMySubscriptions = async (req, res) => {
     });
   } catch (error) {
     console.error('getMySubscriptions error:', error);
-    res.status(500).json({ success: false, message: 'Lá»—i mÃ¡y chá»§' });
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
 };
