@@ -6,15 +6,22 @@ import JobLevel from '../models/jobLevelModels.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import Skill from '../models/skillModels.js';
 import mongoose from 'mongoose';
-// 1. Lấy toàn bộ Nhóm Nghề (Active)
-// 1. Lấy toàn bộ Nhóm Nghề (Có lọc theo status gửi từ Frontend)
+
+// ==========================================
+// 1. QUẢN LÝ NHÓM NGHỀ (CAREER GROUP) - GET
+// ==========================================
+
+// [GET] Lấy danh sách nhóm nghề - Mặc định chỉ lấy ACTIVE
 export const getCareerGroups = async (req, res) => {
   try {
-    const { status } = req.query; // Lấy status từ query string (?status=ACTIVE)
+    const { status } = req.query;
     const filter = {};
     
+    // Nếu không truyền status, mặc định lấy ACTIVE
     if (status) {
       filter.status = status;
+    } else {
+      filter.status = CommonStatus.ACTIVE;
     }
 
     const groups = await CareerGroup.find(filter).sort({ order: 1, name: 1 });
@@ -24,13 +31,23 @@ export const getCareerGroups = async (req, res) => {
   }
 };
 
-// 2. Lấy Nghề (Có lọc theo careerGroupId và status)
+// ==========================================
+// 2. QUẢN LÝ NGHỀ (CAREER) - GET
+// ==========================================
+
+// [GET] Lấy danh sách nghề - Mặc định chỉ lấy ACTIVE
 export const getCareers = async (req, res) => {
   try {
     const { careerGroupId, status } = req.query;
     const filter = {};
     
-    if (status) filter.status = status;
+    // Nếu không truyền status, mặc định lấy ACTIVE
+    if (status) {
+      filter.status = status;
+    } else {
+      filter.status = CommonStatus.ACTIVE;
+    }
+    
     if (careerGroupId) filter.careerGroupId = careerGroupId;
 
     const careers = await Career.find(filter).sort({ order: 1, name: 1 });
@@ -40,13 +57,23 @@ export const getCareers = async (req, res) => {
   }
 };
 
-// 3. Lấy Vị trí chuyên môn (Có lọc theo ngành cha và status)
+// ==========================================
+// 3. QUẢN LÝ VỊ TRÍ CHUYÊN MÔN (CAREER POSITION) - GET
+// ==========================================
+
+// [GET] Lấy danh sách vị trí - Mặc định chỉ lấy ACTIVE
 export const getCareerPositions = async (req, res) => {
   try {
     const { careerGroupId, careerId, status } = req.query;
     const filter = {};
-
-    if (status) filter.status = status;
+    
+    // Nếu không truyền status, mặc định lấy ACTIVE
+    if (status) {
+      filter.status = status;
+    } else {
+      filter.status = CommonStatus.ACTIVE;
+    }
+    
     if (careerGroupId) filter.careerGroupId = careerGroupId;
     if (careerId) filter.careerId = careerId;
 
@@ -57,27 +84,39 @@ export const getCareerPositions = async (req, res) => {
   }
 };
 
-// 4. Lấy danh sách Cấp bậc
+// ==========================================
+// 4. QUẢN LÝ CẤP BẬC (JOB LEVEL) - GET
+// ==========================================
+
+// [GET] Lấy danh sách cấp bậc - Mặc định chỉ lấy ACTIVE
 export const getJobLevels = async (req, res) => {
   try {
     const { status } = req.query;
     const filter = {};
-    if (status) filter.status = status;
-    // Bỏ careerGroupId filter
+    
+    // Nếu không truyền status, mặc định lấy ACTIVE
+    if (status) {
+      filter.status = status;
+    } else {
+      filter.status = CommonStatus.ACTIVE;
+    }
 
     const levels = await JobLevel.find(filter).sort({ levelOrder: 1 });
     res.status(200).json({ success: true, data: levels });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }
-}; 
+};
 
+// ==========================================
+// 5. QUẢN LÝ KỸ NĂNG (SKILL) - GET
+// ==========================================
 
-// 6. Lấy danh sách Kỹ năng theo Career Group
+// [GET] Lấy danh sách kỹ năng theo Career Group - Mặc định chỉ lấy ACTIVE
 export const getSkillsByCareerGroup = async (req, res) => {
   try {
     const { careerGroupId } = req.params;
-    const { status } = req.query; // Nhận thêm filter status từ query
+    const { status } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(careerGroupId)) {
       return res.status(400).json({
@@ -87,12 +126,16 @@ export const getSkillsByCareerGroup = async (req, res) => {
     }
 
     const filter = { careerGroupIds: careerGroupId };
+    
+    // Nếu không truyền status, mặc định lấy ACTIVE
     if (status) {
       filter.status = status;
+    } else {
+      filter.status = CommonStatus.ACTIVE;
     }
 
     const skills = await Skill.find(filter)
-      .select('name slug aliases status') // Lấy thêm trường status để hiển thị badge ở front
+      .select('name slug aliases status')
       .sort({ name: 1 });
 
     return res.status(200).json({
@@ -100,7 +143,6 @@ export const getSkillsByCareerGroup = async (req, res) => {
       count: skills.length,
       data: skills
     });
-
   } catch (error) {
     console.error('Error fetching skills:', error);
     return res.status(500).json({
@@ -110,11 +152,18 @@ export const getSkillsByCareerGroup = async (req, res) => {
   }
 };
 
+// [GET] Lấy tất cả kỹ năng - Mặc định chỉ lấy ACTIVE
 export const getAllSkills = async (req, res) => {
   try {
     const { status } = req.query;
     const filter = {};
-    if (status) filter.status = status;
+    
+    // Nếu không truyền status, mặc định lấy ACTIVE
+    if (status) {
+      filter.status = status;
+    } else {
+      filter.status = CommonStatus.ACTIVE;
+    }
 
     const skills = await Skill.find(filter)
       .select('name slug aliases status careerGroupIds')
@@ -130,11 +179,15 @@ export const getAllSkills = async (req, res) => {
   }
 };
 
+// ==========================================
+// CÁC HÀM CRUD KHÁC GIỮ NGUYÊN
+// ==========================================
+
+// [POST] Tạo nhóm nghề
 export const createCareerGroup = async (req, res) => {
   try {
     const { name, slug, code, description, order } = req.body;
 
-    // Kiểm tra trùng mã code hoặc slug
     const existingGroup = await CareerGroup.findOne({ $or: [{ code }, { slug }] });
     if (existingGroup) {
       return res.status(400).json({ success: false, message: 'Mã Code hoặc Slug của nhóm nghề đã tồn tại!' });
@@ -153,7 +206,6 @@ export const updateCareerGroup = async (req, res) => {
     const { id } = req.params;
     const { name, slug, code, description, order } = req.body;
 
-    // Kiểm tra trùng code/slug với các bản ghi khác ngoại trừ chính nó
     const existingGroup = await CareerGroup.findOne({ 
       _id: { $ne: id }, 
       $or: [{ code }, { slug }] 
@@ -180,7 +232,6 @@ export const deleteCareerGroup = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Thay vì xóa cứng, ta chuyển trạng thái sang INACTIVE
     const updatedGroup = await CareerGroup.findByIdAndUpdate(
       id,
       { status: CommonStatus.INACTIVE },
@@ -189,7 +240,6 @@ export const deleteCareerGroup = async (req, res) => {
 
     if (!updatedGroup) return res.status(404).json({ success: false, message: 'Không tìm thấy nhóm nghề!' });
     
-    // Tùy chọn: Khi ẩn nhóm nghề, có thể ẩn luôn các nghề (Career) thuộc nhóm này
     await Career.updateMany({ careerGroupId: id }, { status: CommonStatus.INACTIVE });
 
     res.status(200).json({ success: true, message: 'Đã ẩn nhóm nghề thành công (Bảo toàn lịch sử).' });
@@ -198,16 +248,14 @@ export const deleteCareerGroup = async (req, res) => {
   }
 };
 
-
 // ==========================================
-// 2. QUẢN LÝ NGHỀ (CAREER)
+// 2. QUẢN LÝ NGHỀ (CAREER) - CRUD
 // ==========================================
 
 export const createCareer = async (req, res) => {
   try {
     const { careerGroupId, name, slug, description, order } = req.body;
 
-    // Kiểm tra nhóm nghề cha có tồn tại và đang active không
     const parentGroup = await CareerGroup.findOne({ _id: careerGroupId, status: CommonStatus.ACTIVE });
     if (!parentGroup) return res.status(400).json({ success: false, message: 'Nhóm nghề cha không tồn tại hoặc đã bị ẩn!' });
 
@@ -249,7 +297,6 @@ export const deleteCareer = async (req, res) => {
     
     if (!updatedCareer) return res.status(404).json({ success: false, message: 'Không tìm thấy bản ghi!' });
     
-    // Tự động ẩn các Vị trí chuyên môn (CareerPosition) thuộc nghề này
     await CareerPosition.updateMany({ careerId: id }, { status: CommonStatus.INACTIVE });
 
     res.status(200).json({ success: true, message: 'Đã ẩn nghề thành công.' });
@@ -258,22 +305,18 @@ export const deleteCareer = async (req, res) => {
   }
 };
 
-
 // ==========================================
-// 5. QUẢN LÝ VỊ TRÍ CHUYÊN MÔN (CAREER POSITION)
+// 3. QUẢN LÝ VỊ TRÍ CHUYÊN MÔN (CAREER POSITION) - CRUD
 // ==========================================
 
-// [POST] Thêm Vị trí chuyên môn mới
 export const createCareerPosition = async (req, res) => {
   try {
     const { careerGroupId, careerId, name, slug, description, order } = req.body;
 
-    // 1. Kiểm tra định dạng ObjectId
     if (!mongoose.Types.ObjectId.isValid(careerGroupId) || !mongoose.Types.ObjectId.isValid(careerId)) {
       return res.status(400).json({ success: false, message: 'Định dạng ID Nhóm nghề hoặc Nghề không hợp lệ!' });
     }
 
-    // 2. Kiểm tra tính tồn tại và trạng thái của Nghề (Career) thuộc Nhóm nghề đó
     const parentCareer = await Career.findOne({ 
       _id: careerId, 
       careerGroupId: careerGroupId,
@@ -287,13 +330,11 @@ export const createCareerPosition = async (req, res) => {
       });
     }
 
-    // 3. Kiểm tra trùng lặp Slug của Vị trí chuyên môn
     const existingPosition = await CareerPosition.findOne({ slug });
     if (existingPosition) {
       return res.status(400).json({ success: false, message: 'Slug vị trí chuyên môn này đã tồn tại!' });
     }
 
-    // 4. Tạo mới dữ liệu gốc chuẩn
     const newPosition = await CareerPosition.create({ 
       careerGroupId, 
       careerId, 
@@ -309,13 +350,11 @@ export const createCareerPosition = async (req, res) => {
   }
 };
 
-// [PUT] Sửa Vị trí chuyên môn
 export const updateCareerPosition = async (req, res) => {
   try {
     const { id } = req.params;
     const { careerGroupId, careerId, name, slug, description, order } = req.body;
 
-    // 1. Kiểm tra trùng slug với các vị trí khác (ngoại trừ chính nó)
     if (slug) {
       const existingPosition = await CareerPosition.findOne({ _id: { $ne: id }, slug });
       if (existingPosition) {
@@ -323,7 +362,6 @@ export const updateCareerPosition = async (req, res) => {
       }
     }
 
-    // 2. Nếu thay đổi cấu trúc cha (careerId), cần check lại tính hợp lệ
     if (careerId && careerGroupId) {
       const parentCareer = await Career.findOne({ 
         _id: careerId, 
@@ -335,7 +373,6 @@ export const updateCareerPosition = async (req, res) => {
       }
     }
 
-    // 3. Tiến hành cập nhật (Giữ nguyên ID, chỉ đổi thông tin hiển thị)
     const updatedPosition = await CareerPosition.findByIdAndUpdate(
       id,
       { careerGroupId, careerId, name, slug, description, order },
@@ -352,12 +389,10 @@ export const updateCareerPosition = async (req, res) => {
   }
 };
 
-// [DELETE] Ẩn Vị trí chuyên môn thay vì xóa cứng (Soft Delete)
 export const deleteCareerPosition = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Chuyển status sang INACTIVE để bảo toàn dữ liệu cho Job/CV cũ đã dùng ID này
     const updatedPosition = await CareerPosition.findByIdAndUpdate(
       id,
       { status: CommonStatus.INACTIVE },
@@ -377,16 +412,14 @@ export const deleteCareerPosition = async (req, res) => {
   }
 };
 
-
 // ==========================================
-// 3. QUẢN LÝ CẤP BẬC (JOB LEVEL)
+// 4. QUẢN LÝ CẤP BẬC (JOB LEVEL) - CRUD
 // ==========================================
 
 export const createJobLevel = async (req, res) => {
   try {
     const { code, name, levelOrder } = req.body;
 
-    // Kiểm tra trùng code cấp bậc trên toàn hệ thống
     const existingLevel = await JobLevel.findOne({ code });
     if (existingLevel) {
       return res.status(400).json({ success: false, message: 'Mã cấp bậc này đã tồn tại trong hệ thống!' });
@@ -395,15 +428,15 @@ export const createJobLevel = async (req, res) => {
     const newLevel = await JobLevel.create({ code, name, levelOrder });
     res.status(201).json({ success: true, data: newLevel });
   } catch (error) {
-console.log("=== LỖI THỰC TẾ ĐÂY RỒI: ===", error); // <-- Thêm dòng này
-  res.status(500).json({ success: false, message: 'Lỗi hệ thống', detail: error.message });  }
+    console.log("=== LỖI THỰC TẾ ĐÂY RỒI: ===", error);
+    res.status(500).json({ success: false, message: 'Lỗi hệ thống', detail: error.message });
+  }
 };
 
 export const updateJobLevel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, levelOrder, status } = req.body; 
-    // KHÔNG cho phép sửa 'code' và 'careerGroupId' bừa bãi để tránh gãy logic Job cũ đang chạy bậc đó.
+    const { name, levelOrder, status } = req.body;
 
     const updatedLevel = await JobLevel.findByIdAndUpdate(
       id,
@@ -428,9 +461,8 @@ export const deleteJobLevel = async (req, res) => {
   }
 };
 
-
 // ==========================================
-// 4. QUẢN LÝ KỸ NĂNG (SKILL / TAG)
+// 5. QUẢN LÝ KỸ NĂNG (SKILL) - CRUD
 // ==========================================
 
 export const createSkill = async (req, res) => {
@@ -474,13 +506,3 @@ export const deleteSkill = async (req, res) => {
     res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
   }
 };
-
-
-
-
-
-
-
-
-
-

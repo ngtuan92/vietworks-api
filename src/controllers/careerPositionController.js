@@ -313,7 +313,9 @@ export const updateCareerPosition = async (req, res) => {
   }
 };
 
-// Xóa mềm (chuyển trạng thái thành INACTIVE)
+// controllers/careerPositionController.js
+
+// Xóa mềm - KHÔNG RÀNG BUỘC
 export const softDeleteCareerPosition = async (req, res) => {
   try {
     const { id } = req.params;
@@ -327,33 +329,20 @@ export const softDeleteCareerPosition = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy vị trí' });
     }
 
-    // Kiểm tra xem có job nào đang sử dụng vị trí này không
-    const jobCount = await Job.countDocuments({ 
-      careerPositionId: id,
-      status: { $in: ['PUBLISHED', 'PENDING', 'DRAFT'] }
-    });
-
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể ẩn vị trí này vì có ${jobCount} công việc đang sử dụng. Vui lòng chuyển đổi hoặc xóa các công việc này trước.`
-      });
-    }
-
     position.status = CommonStatus.INACTIVE;
     await position.save();
 
     res.status(200).json({
       success: true,
       data: position,
-      message: 'Đã ẩn vị trí thành công'
+      message: 'Đã ẩn vị trí thành công. Các job cũ vẫn hiển thị bình thường.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Xóa cứng (kiểm tra ràng buộc)
+// Xóa cứng - VẪN KIỂM TRA
 export const hardDeleteCareerPosition = async (req, res) => {
   try {
     const { id } = req.params;
@@ -367,13 +356,11 @@ export const hardDeleteCareerPosition = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy vị trí' });
     }
 
-    // Kiểm tra xem có bất kỳ job nào sử dụng vị trí này không (tất cả trạng thái)
     const jobCount = await Job.countDocuments({ careerPositionId: id });
-    
     if (jobCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa vị trí này vì có ${jobCount} công việc đang sử dụng (bao gồm cả công việc đã xóa). Vui lòng xóa hoặc chuyển đổi tất cả công việc này trước.`
+        message: `Không thể xóa vị trí này vì có ${jobCount} công việc đang sử dụng.`
       });
     }
 

@@ -262,7 +262,9 @@ export const updateCareer = async (req, res) => {
   }
 };
 
-// Xóa mềm (chuyển trạng thái thành INACTIVE)
+// controllers/careerController.js
+
+// Xóa mềm (chuyển trạng thái thành INACTIVE) - KHÔNG RÀNG BUỘC
 export const softDeleteCareer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -276,33 +278,21 @@ export const softDeleteCareer = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy nghề' });
     }
 
-    // Kiểm tra xem có job nào đang sử dụng nghề này không
-    const jobCount = await Job.countDocuments({ 
-      careerId: id,
-      status: { $in: ['PUBLISHED', 'PENDING', 'DRAFT'] }
-    });
-
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể ẩn nghề này vì có ${jobCount} công việc đang sử dụng. Vui lòng chuyển đổi hoặc xóa các công việc này trước.`
-      });
-    }
-
+    // KHÔNG KIỂM TRA JOB, vẫn cho phép ẩn
     career.status = CommonStatus.INACTIVE;
     await career.save();
 
     res.status(200).json({
       success: true,
       data: career,
-      message: 'Đã ẩn nghề thành công'
+      message: 'Đã ẩn nghề thành công. Các job cũ vẫn hiển thị bình thường.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Xóa cứng (kiểm tra ràng buộc)
+// Xóa cứng (kiểm tra ràng buộc) - VẪN KIỂM TRA
 export const hardDeleteCareer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -316,24 +306,22 @@ export const hardDeleteCareer = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy nghề' });
     }
 
-    // Kiểm tra xem có bất kỳ job nào sử dụng nghề này không (tất cả trạng thái)
+    // Kiểm tra Job
     const jobCount = await Job.countDocuments({ careerId: id });
-    
     if (jobCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa nghề này vì có ${jobCount} công việc đang sử dụng (bao gồm cả công việc đã xóa). Vui lòng xóa hoặc chuyển đổi tất cả công việc này trước.`
+        message: `Không thể xóa nghề này vì có ${jobCount} công việc đang sử dụng.`
       });
     }
 
-    // Kiểm tra xem có career position nào sử dụng không
+    // Kiểm tra CareerPosition
     const CareerPosition = mongoose.model('CareerPosition');
     const positionCount = await CareerPosition.countDocuments({ careerId: id });
-    
     if (positionCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa nghề này vì có ${positionCount} vị trí chuyên môn đang sử dụng. Vui lòng xóa hoặc chuyển đổi các vị trí này trước.`
+        message: `Không thể xóa nghề này vì có ${positionCount} vị trí chuyên môn đang sử dụng.`
       });
     }
 

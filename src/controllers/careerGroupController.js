@@ -184,6 +184,9 @@ export const updateCareerGroup = async (req, res) => {
 };
 
 // Xóa mềm (chuyển trạng thái thành INACTIVE)
+// controllers/careerGroupController.js
+
+// Xóa mềm (chuyển trạng thái thành INACTIVE) - KHÔNG RÀNG BUỘC
 export const softDeleteCareerGroup = async (req, res) => {
   try {
     const { id } = req.params;
@@ -197,33 +200,21 @@ export const softDeleteCareerGroup = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy nhóm nghề' });
     }
 
-    // Kiểm tra xem có job nào đang sử dụng nhóm nghề này không
-    const jobCount = await Job.countDocuments({ 
-      careerGroupId: id,
-      status: { $in: ['PUBLISHED', 'PENDING', 'DRAFT'] } // Các trạng thái không cho phép xóa
-    });
-
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa nhóm nghề này vì có ${jobCount} công việc đang sử dụng. Vui lòng chuyển đổi hoặc xóa các công việc này trước.`
-      });
-    }
-
+    // KHÔNG KIỂM TRA JOB, vẫn cho phép ẩn
     careerGroup.status = CommonStatus.INACTIVE;
     await careerGroup.save();
 
     res.status(200).json({
       success: true,
       data: careerGroup,
-      message: 'Đã vô hiệu hóa nhóm nghề thành công'
+      message: 'Đã vô hiệu hóa nhóm nghề thành công. Các job cũ vẫn hiển thị bình thường.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Xóa cứng (kiểm tra ràng buộc)
+// Xóa cứng (kiểm tra ràng buộc) - VẪN KIỂM TRA JOB
 export const hardDeleteCareerGroup = async (req, res) => {
   try {
     const { id } = req.params;
@@ -244,6 +235,26 @@ export const hardDeleteCareerGroup = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: `Không thể xóa nhóm nghề này vì có ${jobCount} công việc đang sử dụng (bao gồm cả công việc đã xóa). Vui lòng xóa hoặc chuyển đổi tất cả công việc này trước.`
+      });
+    }
+
+    // Cũng nên kiểm tra Career và CareerPosition có sử dụng không
+    const Career = mongoose.model('Career');
+    const CareerPosition = mongoose.model('CareerPosition');
+    
+    const careerCount = await Career.countDocuments({ careerGroupId: id });
+    if (careerCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Không thể xóa nhóm nghề này vì có ${careerCount} nghề đang sử dụng. Vui lòng xóa hoặc chuyển đổi các nghề này trước.`
+      });
+    }
+
+    const positionCount = await CareerPosition.countDocuments({ careerGroupId: id });
+    if (positionCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Không thể xóa nhóm nghề này vì có ${positionCount} vị trí chuyên môn đang sử dụng. Vui lòng xóa hoặc chuyển đổi các vị trí này trước.`
       });
     }
 
