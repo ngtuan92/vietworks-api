@@ -61,6 +61,11 @@ import chatRoutes from './routes/chatRoutes.js';
 import aiChatbotRoutes from './routes/aiChatbotRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import cronRoutes from './routes/cronRoutes.js';
+import careerGroupRoutes from './routes/careerGroupRoutes.js';
+import careerRoutes from './routes/careerRoutes.js';
+import careerPositionRoutes from './routes/careerPositionRoutes.js';
+import jobLevelRoutes from './routes/jobLevelRoutes.js';
+import skillRoutes from './routes/skillRoutes.js';
 
 // ─── Public & Static Routes ───
 app.use('/api/ai-chatbot', aiChatbotRoutes);
@@ -68,6 +73,12 @@ app.use('/api', addressRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/cv-templates', cvTemplateRoutes);
 app.use('/api', jobRoutes);
+app.use('/api/career-groups', careerGroupRoutes);
+app.use('/api/careers', careerRoutes);
+app.use('/api/career-positions', careerPositionRoutes);
+app.use('/api/job-levels', jobLevelRoutes);
+app.use('/api/skills', skillRoutes);
+
 app.use('/api', masterDataRoutes);
 app.use('/api', companyLocationRoutes);
 app.use('/api', companyMasterData);
