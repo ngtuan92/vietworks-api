@@ -9,7 +9,7 @@ import CvBoost from '../models/cvBoostModels.js';
 import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import Skill from '../models/skillModels.js';
-import ExperienceLevel from '../models/experienceLevelModels.js';
+
 import Application from '../models/applicationModels.js';
 import Job from '../models/jobModels.js';
 import NotificationService from '../services/notificationService.js';

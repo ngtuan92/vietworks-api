@@ -3,7 +3,7 @@ import Job from '../models/jobModels.js';
 import Career from '../models/careerModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
-import ExperienceLevel from '../models/experienceLevelModels.js';
+
 import { JobStatus } from '../enums/jobEnums.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 
@@ -19,11 +19,10 @@ const toObjectId = (v) =>
  */
 export const getSalaryLookupOptions = async (req, res) => {
   try {
-    const [careerGroups, careers, careerPositions, experienceLevels, provincesData] = await Promise.all([
+    const [careerGroups, careers, careerPositions, provincesData] = await Promise.all([
       CareerGroup.find({ status: CommonStatus.ACTIVE }).select('name slug').sort({ order: 1, name: 1 }).lean(),
       Career.find({ status: CommonStatus.ACTIVE }).select('name slug careerGroupId').sort({ name: 1 }).lean(),
       CareerPosition.find({ status: CommonStatus.ACTIVE }).select('name careerId careerGroupId').sort({ name: 1 }).lean(),
-      ExperienceLevel.find({ status: CommonStatus.ACTIVE }).select('code name minYear maxYear').sort({ minYear: 1 }).lean(),
       addressService.getProvinces().catch(() => null)
     ]);
 
@@ -31,7 +30,7 @@ export const getSalaryLookupOptions = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: { careerGroups, careers, careerPositions, experienceLevels, provinces }
+      data: { careerGroups, careers, careerPositions, provinces }
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });

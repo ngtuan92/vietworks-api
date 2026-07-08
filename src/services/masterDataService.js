@@ -31,14 +31,12 @@ import CareerGroup from '../models/careerGroup.model.js';
 import Career from '../models/career.model.js';
 import CareerPosition from '../models/careerPosition.model.js';
 import CompanyIndustry from '../models/companyIndustry.model.js';
-import CompanySize from '../models/companySize.model.js';
-import ExperienceLevel from '../models/experienceLevel.model.js';
+
 import JobLevel from '../models/jobLevel.model.js';
 
 export const careerGroupService = new BaseMasterService(CareerGroup);
 export const companyIndustryService = new BaseMasterService(CompanyIndustry);
-export const companySizeService = new BaseMasterService(CompanySize);
-export const experienceLevelService = new BaseMasterService(ExperienceLevel);
+
 
 // Các service cần custom logic nâng cao (ví dụ: populate relationship hoặc cascade filter)
 export const careerService = {

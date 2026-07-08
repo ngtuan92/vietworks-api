@@ -1,4 +1,4 @@
-﻿import EmailLog from '../models/emailLogModels.js';
+
 import { EmailDeliveryStatus, EmailProvider } from '../enums/notificationEnums.js';
 
 const createMailTransporter = async () => {
@@ -57,32 +57,13 @@ const sendHtmlEmail = async ({ toEmail, subject, html }) => {
  * @returns {Promise<object>} EmailLog document đã lưu
  */
 export const sendBusinessEmail = async ({ receiverUserId, toEmail, subject, html, notificationId = null }) => {
-  // Tạo log với trạng thái PENDING trước
-  const log = await EmailLog.create({
-    receiverUserId,
-    notificationId,
-    toEmail,
-    subject,
-    body: html,
-    provider: EmailProvider.NODEMAILER,
-    status: EmailDeliveryStatus.PENDING,
-    sentAt: null,
-    failedReason: null
-  });
-
   try {
     await sendHtmlEmail({ toEmail, subject, html });
-
-    log.status = EmailDeliveryStatus.SENT;
-    log.sentAt = new Date();
-    await log.save();
+    return { success: true };
   } catch (err) {
-    log.status = EmailDeliveryStatus.FAILED;
-    log.failedReason = err?.message || 'Lỗi không xác định';
-    await log.save();
+    console.error('Lỗi gửi email:', err);
+    return { success: false, error: err?.message };
   }
-
-  return log;
 };
 
 

@@ -8,7 +8,7 @@ import Skill from '../models/skillModels.js';
 import Career from '../models/careerModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
 import JobLevel from '../models/jobLevelModels.js';
-import ExperienceLevel from '../models/experienceLevelModels.js';
+
 import { CompanyVerificationStatus, CommonStatus } from '../enums/masterDataEnums.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import Application from '../models/applicationModels.js';
