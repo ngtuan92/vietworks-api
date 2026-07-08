@@ -43,8 +43,6 @@ const DISTRIBUTION_BOUNDARIES = [0, 5, 10, 15, 20, 25, 30, 40, 50];
 
 const round1 = (n) => (n == null ? null : Math.round(n * 10) / 10);
 
-const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 /**
  * @desc Tra cứu lương trung bình theo vị trí/nghề, kinh nghiệm và địa điểm
  * @route GET /tools/salary-lookup
@@ -52,11 +50,12 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  */
 export const getSalaryLookup = async (req, res) => {
   try {
-    const { careerGroupId, careerId, careerPositionId, experience, location, keyword } = req.query;
+    const { careerGroupId, careerId, careerPositionId, experience, location } = req.query;
 
-    // Chỉ thống kê job đã hiển thị và có khoảng lương cụ thể (không tính "Thỏa thuận")
+    // Chỉ thống kê job đã hiển thị, còn hạn và có khoảng lương cụ thể (không tính "Thỏa thuận")
     const match = {
       status: JobStatus.PUBLISHED,
+      deadline: { $gte: new Date() },
       'salary.type': 'RANGE',
       'salary.minMillion': { $ne: null }
     };
@@ -78,17 +77,14 @@ export const getSalaryLookup = async (req, res) => {
       match['workLocations.provinceName'] = location.trim();
     }
 
-    if (keyword && keyword.trim()) {
-      match.title = { $regex: escapeRegex(keyword.trim()), $options: 'i' };
-    }
-
     const result = await Job.aggregate([
       { $match: match },
       {
         $project: {
           minMillion: '$salary.minMillion',
           maxMillion: { $ifNull: ['$salary.maxMillion', '$salary.minMillion'] },
-          experience: 1
+          experience: 1,
+          companyId: 1
         }
       },
       {
@@ -96,6 +92,7 @@ export const getSalaryLookup = async (req, res) => {
           minMillion: 1,
           maxMillion: 1,
           experience: 1,
+          companyId: 1,
           midMillion: { $divide: [{ $add: ['$minMillion', '$maxMillion'] }, 2] }
         }
       },
@@ -138,6 +135,20 @@ export const getSalaryLookup = async (req, res) => {
               }
             },
             { $sort: { averageMillion: 1 } }
+          ],
+          // Công ty trả lương cao nhất (theo lương trung bình)
+          byCompany: [
+            {
+              $group: {
+                _id: '$companyId',
+                sampleSize: { $sum: 1 },
+                averageMillion: { $avg: '$midMillion' },
+                averageMinMillion: { $avg: '$minMillion' },
+                averageMaxMillion: { $avg: '$maxMillion' }
+              }
+            },
+            { $sort: { averageMillion: -1 } },
+            { $limit: 6 }
           ]
         }
       }
@@ -208,6 +219,28 @@ export const getSalaryLookup = async (req, res) => {
       })
       .sort((a, b) => (a.minYear ?? 0) - (b.minYear ?? 0));
 
+    // ─── Công ty trả lương cao nhất: gắn tên công ty ───
+    const companyIds = (facet.byCompany || [])
+      .map((c) => c._id)
+      .filter(Boolean);
+    const companies = await mongoose.model('Company').find({ _id: { $in: companyIds } })
+      .select('name avatarUrl slug')
+      .lean();
+    const companyMap = new Map(companies.map((c) => [String(c._id), c]));
+
+    const topCompanies = (facet.byCompany || [])
+      .filter((c) => c._id)
+      .map((c) => ({
+        companyId: c._id,
+        name: companyMap.get(String(c._id))?.name || '—',
+        avatarUrl: companyMap.get(String(c._id))?.avatarUrl || null,
+        slug: companyMap.get(String(c._id))?.slug || '',
+        sampleSize: c.sampleSize,
+        averageMillion: round1(c.averageMillion),
+        averageMinMillion: round1(c.averageMinMillion),
+        averageMaxMillion: round1(c.averageMaxMillion)
+      }));
+
     return res.status(200).json({
       success: true,
       enoughData: true,
@@ -226,6 +259,7 @@ export const getSalaryLookup = async (req, res) => {
         },
         distribution,
         byExperience,
+        topCompanies,
         currency: 'VND',
         unit: 'million'
       }
