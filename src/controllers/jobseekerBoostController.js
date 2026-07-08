@@ -3,6 +3,7 @@ import Transaction from '../models/transactionModels.js';
 import CvBoost from '../models/cvBoostModels.js';
 import Wallet from '../models/walletModels.js';
 import UploadedCV from '../models/uploadedCvModels.js';
+import Cv from '../models/cvModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
@@ -31,7 +32,8 @@ const activatePremiumCvPackage = async ({ userId, cvId, pkg, transactionId }) =>
           name: pkg.name ?? null,
           type: pkg.packageType ?? null,
           price: pkg.price ?? null,
-          durationDays: pkg.durationDays ?? 7
+          durationDays: pkg.durationDays ?? 7,
+          aiPremiumAccess: pkg.benefits?.aiPremiumAccess ?? false
         },
         packageCode: pkg.code ?? null,
         packageType: pkg.packageType ?? null,
@@ -61,6 +63,17 @@ const activatePremiumCvPackage = async ({ userId, cvId, pkg, transactionId }) =>
           boostedUntil: endAt,
           boostedAt: startAt,
           boostPackagePrice: pkg.price || 0
+        } 
+      }
+    );
+    await Cv.updateOne(
+      { _id: cvId, userId },
+      { 
+        $set: { 
+          'boost.isBoosted': true, 
+          'boost.boostedUntil': endAt,
+          'boost.boostedAt': startAt,
+          'boost.boostPackagePrice': pkg.price || 0
         } 
       }
     );
@@ -127,7 +140,10 @@ export const createBoostPayment = async (req, res) => {
     const { cvId } = req.params;
     const { packageId, action = 'new', paymentMethod: requestedMethod } = req.body;
 
-    const cv = await UploadedCV.findOne({ _id: cvId, userId });
+    let cv = await UploadedCV.findOne({ _id: cvId, userId });
+    if (!cv) {
+      cv = await Cv.findOne({ _id: cvId, userId });
+    }
     if (!cv) {
       return res.status(404).json({ success: false, message: 'CV not found or not owned by user' });
     }
@@ -242,6 +258,10 @@ export const createBoostPayment = async (req, res) => {
         await UploadedCV.updateOne(
           { _id: cvId, userId },
           { $set: { isBoosted: false, boostedUntil: null } }
+        );
+        await Cv.updateOne(
+          { _id: cvId, userId },
+          { $set: { 'boost.isBoosted': false, 'boost.boostedUntil': null } }
         );
       }
 

@@ -1,10 +1,16 @@
 import mongoose from 'mongoose';
 import axios from 'axios';
 import { AiCvReview, UploadedCv } from '../models/index.js';
+import UserServicePackage from '../models/userServicePackageModels.js';
+import ServicePackage from '../models/servicePackageModels.js';
+import AiUsageQuota from '../models/aiUsageQuotaModels.js';
+import { UserServicePackageStatus } from '../enums/paymentEnums.js';
 import {
   AiCvType,
   AiJdInputType,
-  AiReviewStatus
+  AiReviewStatus,
+  AiFeature,
+  AiQuotaPeriodType
 } from '../enums/aiEnums.js';
 
 // URL của FastAPI server từ .env hoặc mặc định
@@ -17,6 +23,53 @@ export const createAiReview = async (req, res) => {
     if (!target_position) {
       return res.status(400).json({ success: false, message: 'Vị trí công việc mong muốn là bắt buộc.' });
     }
+
+    // -- BẮT ĐẦU KIỂM TRA QUOTA --
+    const now = new Date();
+    
+    // 1. Kiểm tra gói Boost CV có AI Premium
+    const activeAiPackages = await UserServicePackage.find({
+      userId: req.user._id,
+      status: UserServicePackageStatus.ACTIVE,
+      expiredAt: { $gt: now }
+    }).populate({ path: 'packageId', model: 'ServicePackage', select: 'benefits' });
+
+    const isUnlimited = activeAiPackages.some(sub => 
+      sub.packageSnapshot?.aiPremiumAccess === true || 
+      sub.packageId?.benefits?.aiPremiumAccess === true
+    );
+    let todayQuota = null;
+
+    // 2. Nếu không có gói, kiểm tra Quota hàng ngày (2 lượt/ngày)
+    if (!isUnlimited) {
+      const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      todayQuota = await AiUsageQuota.findOne({
+        userId: req.user._id,
+        feature: AiFeature.AI_CV_REVIEW,
+        periodType: AiQuotaPeriodType.DAILY,
+        periodKey: todayStr
+      });
+
+      if (!todayQuota) {
+        todayQuota = await AiUsageQuota.create({
+          userId: req.user._id,
+          feature: AiFeature.AI_CV_REVIEW,
+          periodType: AiQuotaPeriodType.DAILY,
+          periodKey: todayStr,
+          limitCount: 2,
+          usedCount: 0,
+          resetAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+        });
+      }
+
+      if (todayQuota.usedCount >= todayQuota.limitCount) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn đã sử dụng hết 2 lượt AI miễn phí trong ngày. Vui lòng nâng cấp gói dịch vụ để sử dụng không giới hạn.'
+        });
+      }
+    }
+    // -- KẾT THÚC KIỂM TRA QUOTA --
 
     let pdfBuffer = null;
     let fileName = 'cv.pdf';
@@ -100,6 +153,12 @@ export const createAiReview = async (req, res) => {
 
         await aiReviewRecord.save();
         
+        // Cập nhật quota nếu không phải bản Unlimited
+        if (!isUnlimited && todayQuota) {
+          todayQuota.usedCount += 1;
+          await todayQuota.save();
+        }
+
         return res.status(200).json({
           success: true,
           data: aiReviewRecord
