@@ -103,7 +103,8 @@ export const updateJobPreferences = async (req, res) => {
       careerGroupId,
       careerId,
       careerPositionId,
-      experienceLevelId,
+      jobLevelId,
+      experience,
       salaryMin,
       salaryMax,
       workLocations,
@@ -115,7 +116,8 @@ export const updateJobPreferences = async (req, res) => {
     if (careerGroupId !== undefined) update.desiredJob.careerGroupId = toObjectId(careerGroupId);
     if (careerId !== undefined) update.desiredJob.careerId = toObjectId(careerId);
     if (careerPositionId !== undefined) update.desiredJob.careerPositionId = toObjectId(careerPositionId);
-    if (experienceLevelId !== undefined) update.desiredJob.experienceLevelId = toObjectId(experienceLevelId);
+    if (jobLevelId !== undefined) update.desiredJob.jobLevelId = toObjectId(jobLevelId);
+    if (experience !== undefined) update.desiredJob.experience = experience;
     if (salaryMin !== undefined || salaryMax !== undefined) {
       update.desiredJob.salaryExpectationMillion = {
         min: salaryMin !== undefined ? Number(salaryMin) : null,
@@ -137,7 +139,7 @@ export const updateJobPreferences = async (req, res) => {
       .populate('desiredJob.careerGroupId', 'name')
       .populate('desiredJob.careerId', 'name')
       .populate('desiredJob.careerPositionId', 'name')
-      .populate('desiredJob.experienceLevelId', 'name')
+      .populate('desiredJob.jobLevelId', 'name')
       .populate('skills', 'name');
 
     return res.status(200).json({
@@ -159,7 +161,7 @@ export const getJobPreferences = async (req, res) => {
       .populate('desiredJob.careerGroupId', 'name')
       .populate('desiredJob.careerId', 'name')
       .populate('desiredJob.careerPositionId', 'name')
-      .populate('desiredJob.experienceLevelId', 'name')
+      .populate('desiredJob.jobLevelId', 'name')
       .populate('skills', 'name')
       .lean();
 
@@ -171,7 +173,8 @@ export const getJobPreferences = async (req, res) => {
             careerGroupId: null,
             careerId: null,
             careerPositionId: null,
-            experienceLevelId: null,
+            jobLevelId: null,
+            experience: null,
             salaryExpectationMillion: { min: null, max: null },
             workLocations: []
           },
@@ -187,7 +190,8 @@ export const getJobPreferences = async (req, res) => {
           careerGroupId: null,
           careerId: null,
           careerPositionId: null,
-          experienceLevelId: null,
+          jobLevelId: null,
+          experience: null,
           salaryExpectationMillion: { min: null, max: null },
           workLocations: []
         },
@@ -260,7 +264,6 @@ export const getMatchedJobs = async (req, res) => {
       .populate('careerId', 'name')
       .populate('careerPositionId', 'name')
       .populate('jobLevelId', 'name')
-      .populate('experienceLevelId', 'name')
       .populate('skills', 'name')
       .lean();
 
@@ -272,7 +275,7 @@ export const getMatchedJobs = async (req, res) => {
       // Khớp đúng vị trí mong muốn → ưu tiên cao.
       if (desiredJob.careerPositionId && idStr(job.careerPositionId) === idStr(desiredJob.careerPositionId)) score += 5;
       // Khớp mức kinh nghiệm mong muốn.
-      if (desiredJob.experienceLevelId && idStr(job.experienceLevelId) === idStr(desiredJob.experienceLevelId)) score += 3;
+      if (desiredJob.experience && job.experience === desiredJob.experience) score += 3;
       // Lương job nằm trong khoảng mong muốn.
       if ((salaryMin || salaryMax) && job.salary?.type !== 'NEGOTIABLE') {
         const okMin = !salaryMin || (job.salary?.maxMillion ?? 0) >= salaryMin;
@@ -480,7 +483,7 @@ export const getFollowedCompanies = async (req, res) => {
 
     const [followed, total] = await Promise.all([
       FollowedCompany.find({ userId: req.user._id })
-        .populate('companyId', 'name avatarUrl coverUrl followersCount verificationStatus industryId sizeId')
+        .populate('companyId', 'name avatarUrl coverUrl followersCount verificationStatus industryIds size')
         .sort({ createdAt: -1 })
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum)
@@ -553,24 +556,10 @@ export const getPublicCompanies = async (req, res) => {
         {
           $lookup: {
             from: 'company_industries',
-            localField: 'industryId',
+            localField: 'industryIds',
             foreignField: '_id',
-            as: 'industryId'
+            as: 'industries'
           }
-        },
-        {
-          $unwind: { path: '$industryId', preserveNullAndEmptyArrays: true }
-        },
-        {
-          $lookup: {
-            from: 'company_sizes',
-            localField: 'sizeId',
-            foreignField: '_id',
-            as: 'sizeId'
-          }
-        },
-        {
-          $unwind: { path: '$sizeId', preserveNullAndEmptyArrays: true }
         }
       ]),
       Company.countDocuments(filter)
@@ -597,8 +586,7 @@ export const getPublicCompanyDetail = async (req, res) => {
       _id: companyId,
       verificationStatus: CompanyVerificationStatus.VERIFIED
     })
-      .populate('industryId', 'name slug')
-      .populate('sizeId', 'name code minEmployees maxEmployees')
+      .populate('industryIds', 'name slug')
       .lean();
 
     if (!company) {
@@ -651,11 +639,10 @@ export const getCompanyOpenJobs = async (req, res) => {
 
     const [jobs, total] = await Promise.all([
       Job.find(filter)
-        .select('title salary workLocations deadline isUrgent premium careerGroupId careerId jobLevelId experienceLevelId headcount')
+        .select('title salary workLocations deadline isUrgent premium careerGroupId careerId jobLevelId experience headcount')
         .populate('careerGroupId', 'name')
         .populate('careerId', 'name')
         .populate('jobLevelId', 'name')
-        .populate('experienceLevelId', 'name')
         .sort({ 'premium.isActive': -1, isUrgent: -1, publishedAt: -1 })
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum)

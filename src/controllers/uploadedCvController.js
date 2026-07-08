@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse-new');
 import { v2 as cloudinary } from 'cloudinary';
 import { UploadedCv } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
@@ -40,6 +43,26 @@ export const uploadCv = async (req, res) => {
     const folder = `vietworks/uploaded-cvs/${userId}`;
     const result = await uploadBufferToCloudinary(req.file.buffer, folder, 'raw');
 
+    let extractedText = null;
+    let textExtractStatus = 'NOT_EXTRACTED';
+
+    const isPdf = fileType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+
+    if (isPdf) {
+      try {
+        const pdfData = await pdfParse(req.file.buffer);
+        if (pdfData && pdfData.text && pdfData.text.trim()) {
+          extractedText = pdfData.text.trim();
+          textExtractStatus = 'EXTRACTED';
+        } else {
+          textExtractStatus = 'FAILED';
+        }
+      } catch (err) {
+        console.error('Failed to parse PDF text:', err);
+        textExtractStatus = 'FAILED';
+      }
+    }
+
     const uploadedCv = await UploadedCv.create({
       userId,
       title: title || fileName.replace(/\.[^/.]+$/, ''),
@@ -47,7 +70,8 @@ export const uploadCv = async (req, res) => {
       fileName,
       fileType,
       fileSize,
-      textExtractStatus: 'NOT_EXTRACTED',
+      textExtractStatus,
+      extractedText,
       status: CvStatus.ACTIVE
     });
 
@@ -108,7 +132,7 @@ export const getUploadedCvById = async (req, res) => {
 export const updateUploadedCv = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title } = req.body;
+    const { title, isPublic } = req.body;
     const userId = req.user._id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -125,8 +149,12 @@ export const updateUploadedCv = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy CV' });
     }
 
-    if (title) {
+    if (title !== undefined) {
       uploadedCv.title = title;
+    }
+    
+    if (isPublic !== undefined) {
+      uploadedCv.isPublic = isPublic;
     }
 
     await uploadedCv.save();

@@ -47,6 +47,37 @@ const attachJobseekerAvatarsToMessages = async (messages) => {
   return messages;
 };
 
+import EmployerProfile from '../models/employerProfileModels.js';
+
+const attachEmployerCompaniesToConversations = async (payload) => {
+  const conversations = Array.isArray(payload) ? payload : [payload];
+  const employerIds = conversations
+    .flatMap((conversation) => conversation?.participants || [])
+    .filter((participant) => participant?.role === UserRole.EMPLOYER && participant?.userId)
+    .map((participant) => toId(participant.userId?._id || participant.userId));
+
+  const uniqueIds = [...new Set(employerIds)].filter(Boolean);
+  if (!uniqueIds.length) return payload;
+
+  const profiles = await EmployerProfile.find({ userId: { $in: uniqueIds } }).populate('companyId').lean();
+  const companyByEmployerId = new Map(profiles.map((profile) => [toId(profile.userId), profile.companyId]));
+
+  conversations.forEach((conversation) => {
+    if (!conversation.jobId) {
+      conversation.participants?.forEach((participant) => {
+        if (participant?.role === UserRole.EMPLOYER && participant?.userId) {
+          const company = companyByEmployerId.get(toId(participant.userId?._id || participant.userId));
+          if (company) {
+            conversation.companyId = company;
+          }
+        }
+      });
+    }
+  });
+
+  return payload;
+};
+
 // 1. Get or Create Conversation
 export const getOrCreateConversation = async (req, res) => {
   try {
@@ -136,6 +167,7 @@ export const getOrCreateConversation = async (req, res) => {
 
     const conversationData = conversationDoc.toObject();
     await attachJobseekerAvatarsToConversations(conversationData);
+    await attachEmployerCompaniesToConversations(conversationData);
 
     res.status(200).json({ success: true, data: conversationData });
   } catch (error) {
@@ -158,6 +190,7 @@ export const getConversations = async (req, res) => {
       .lean();
 
     await attachJobseekerAvatarsToConversations(conversations);
+    await attachEmployerCompaniesToConversations(conversations);
 
     res.status(200).json({ success: true, data: conversations });
   } catch (error) {

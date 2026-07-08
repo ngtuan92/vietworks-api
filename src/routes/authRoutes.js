@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { protect } from '../middlewares/authMiddleware.js';
 import {
   registerJobseeker,
@@ -102,12 +102,12 @@ router.post('/register/jobseeker', registerJobseeker);
  *                 enum: [MALE, FEMALE, OTHER]
  *               company:
  *                 type: object
- *                 required: [name, taxCode, industryId, sizeId, email, phone, description]
+ *                 required: [name, taxCode, industryIds, size, email, phone, description]
  *                 properties:
  *                   name: { type: string }
  *                   taxCode: { type: string }
- *                   industryId: { type: string }
- *                   sizeId: { type: string }
+ *                   industryIds: { type: array, items: { type: string } }
+ *                   size: { type: string }
  *                   email: { type: string, format: email }
  *                   phone: { type: string }
  *                   website: { type: string }

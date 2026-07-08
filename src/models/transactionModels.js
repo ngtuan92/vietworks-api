@@ -18,7 +18,7 @@ const transactionSchema = new mongoose.Schema({
   balanceAfter: { type: Number, default: null },
   status: { type: String, enum: Object.values(TransactionStatus), default: TransactionStatus.PENDING },
   paymentMethod: { type: String, enum: Object.values(PaymentMethod), required: true },
-  paymentOrderId: { type: objectId, ref: 'PaymentOrder', default: null },
+  paymentOrderId: { type: objectId, default: null },
   packageId: { type: objectId, default: null }, // Mất ref, giờ dùng snapshot
   packageSnapshot: {
     id: { type: objectId, default: null },

@@ -21,7 +21,8 @@ const userServicePackageSchema = new mongoose.Schema({
     name: { type: String, default: null },
     type: { type: String, default: null },
     price: { type: Number, default: null },
-    durationDays: { type: Number, default: null }
+    durationDays: { type: Number, default: null },
+    aiPremiumAccess: { type: Boolean, default: false }
   },
   packageCode: { type: String, required: true },
   packageType: { type: String, enum: Object.values(ServicePackageType), required: true },

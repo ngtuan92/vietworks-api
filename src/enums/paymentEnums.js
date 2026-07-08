@@ -53,22 +53,13 @@ export const PaymentMethod = {
   SEPAY: 'SEPAY'
 };
 
-export const PaymentOrderPurpose = {
-  WALLET_DEPOSIT: 'WALLET_DEPOSIT',
-  PACKAGE_PURCHASE: 'PACKAGE_PURCHASE'
-};
+
 
 export const PaymentProvider = {
   SEPAY: 'SETTLEMENT'
 };
 
-export const PaymentOrderStatus = {
-  PENDING: 'PENDING',
-  SUCCESS: 'SUCCESS',
-  FAILED: 'FAILED',
-  CANCELLED: 'CANCELLED',
-  EXPIRED: 'EXPIRED'
-};
+
 
 export const PackageTargetType = {
   JOB: 'JOB',

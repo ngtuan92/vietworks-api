@@ -208,7 +208,7 @@ export const registerEmployer = async (req, res) => {
       return badRequest(res, 'Giới tính không hợp lệ');
     }
 
-    const requiredCompanyFields = ['name', 'taxCode', 'industryId', 'sizeId', 'email', 'phone', 'description'];
+    const requiredCompanyFields = ['name', 'taxCode', 'industryIds', 'size', 'email', 'phone', 'description'];
     const missingCompanyField = requiredCompanyFields.find((field) => !company[field]);
     if (missingCompanyField) {
       return badRequest(res, `Thiếu thông tin công ty bắt buộc: ${missingCompanyField}`);
@@ -219,8 +219,8 @@ export const registerEmployer = async (req, res) => {
     const companyEmail = normalizeEmail(company.email);
     const companyPhone = normalizeString(company.phone);
     const companyDescription = normalizeString(company.description);
-    const companyIndustryId = company.industryId;
-    const companySizeId = company.sizeId;
+    const companyIndustryIds = company.industryIds;
+    const companySize = company.size;
     const companyWebsite = company.website ? String(company.website).trim() : null;
 
     if (!companyName) {
@@ -243,12 +243,12 @@ export const registerEmployer = async (req, res) => {
       return badRequest(res, 'Mô tả công ty là bắt buộc');
     }
 
-    if (!isValidObjectId(companyIndustryId)) {
+    if (!Array.isArray(companyIndustryIds) || companyIndustryIds.length === 0 || companyIndustryIds.some(id => !isValidObjectId(id))) {
       return badRequest(res, 'Ngành nghề công ty không hợp lệ');
     }
 
-    if (!isValidObjectId(companySizeId)) {
-      return badRequest(res, 'Quy mô công ty không hợp lệ');
+    if (!companySize) {
+      return badRequest(res, 'Quy mô công ty là bắt buộc');
     }
 
     const userExists = await User.findOne({ email });
@@ -286,8 +286,8 @@ export const registerEmployer = async (req, res) => {
       name: companyName,
       taxCode: companyTaxCode,
       website: companyWebsite || null,
-      industryId: companyIndustryId,
-      sizeId: companySizeId,
+      industryIds: companyIndustryIds,
+      size: companySize,
       email: companyEmail,
       phone: companyPhone,
       avatarUrl: company.avatarUrl || null,

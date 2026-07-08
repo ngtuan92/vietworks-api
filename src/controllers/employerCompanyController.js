@@ -25,9 +25,8 @@ export const getMyCompanyProfile = async (req, res) => {
       _id: employerProfile.companyId,
       ownerUserId: req.user._id
     })
-      .select('name taxCode website industryId sizeId email phone description avatarUrl coverUrl verificationStatus rejectionReason businessLicenseFile')
-      .populate('industryId', 'name slug')
-      .populate('sizeId', 'code name minEmployees maxEmployees');
+      .select('name taxCode website industryIds size email phone description avatarUrl coverUrl verificationStatus rejectionReason businessLicenseFile')
+      .populate('industryIds', 'name slug');
 
     if (!company) {
       return res.status(404).json({
@@ -48,8 +47,8 @@ export const getMyCompanyProfile = async (req, res) => {
         name: company.name,
         taxCode: company.taxCode,
         website: company.website,
-        industry: company.industryId,
-        size: company.sizeId,
+        industries: company.industryIds,
+        size: company.size,
         email: company.email,
         phone: company.phone,
         description: company.description,
@@ -80,8 +79,8 @@ export const updateMyCompanyProfile = async (req, res) => {
       name,
       taxCode,
       website,
-      industryId,
-      sizeId,
+      industryIds,
+      size,
       email,
       phone,
       avatarUrl,
@@ -90,10 +89,20 @@ export const updateMyCompanyProfile = async (req, res) => {
       businessLicenseFile
     } = req.body;
 
-    if (!name || !taxCode || !industryId || !sizeId || !email || !phone || !description) {
+    const missingFields = [];
+    if (!name) missingFields.push('Tên công ty');
+    if (!taxCode) missingFields.push('Mã số thuế');
+    if (!industryIds || !industryIds.length) missingFields.push('Ngành nghề');
+    if (!size) missingFields.push(`Quy mô (${size})`);
+    if (!email) missingFields.push('Email');
+    if (!phone) missingFields.push('Số điện thoại');
+    if (!description) missingFields.push('Mô tả');
+
+    if (missingFields.length > 0) {
+      console.log('Validation Failed. Missing:', missingFields, 'Body:', req.body);
       return res.status(400).json({
         success: false,
-        message: 'Tên công ty, mã số thuế, ngành nghề, quy mô, email, số điện thoại và mô tả là bắt buộc'
+        message: `Vui lòng nhập đầy đủ: ${missingFields.join(', ')} (Hiện đang thiếu)`
       });
     }
 
@@ -112,8 +121,8 @@ export const updateMyCompanyProfile = async (req, res) => {
       name,
       taxCode,
       website: website || null,
-      industryId,
-      sizeId,
+      industryIds,
+      size,
       email,
       phone,
       description
@@ -179,8 +188,7 @@ if (isCrucialInfoChanged) {
         runValidators: true
       }
     )
-      .populate('industryId', 'name slug')
-      .populate('sizeId', 'code name minEmployees maxEmployees');
+      .populate('industryIds', 'name slug');
 
     if (!company) {
       return res.status(404).json({
@@ -229,8 +237,8 @@ if (isCrucialInfoChanged) {
         name: company.name,
         taxCode: company.taxCode,
         website: company.website,
-        industry: company.industryId,
-        size: company.sizeId,
+        industries: company.industryIds,
+        size: company.size,
         email: company.email,
         phone: company.phone,
         description: company.description,
@@ -284,7 +292,7 @@ export const submitMyCompanyForVerification = async (req, res) => {
       });
     }
 
-    if (!company.name || !company.taxCode || !company.industryId || !company.sizeId || !company.email || !company.phone || !company.description) {
+    if (!company.name || !company.taxCode || !company.industryIds || !company.industryIds.length || !company.size || !company.email || !company.phone || !company.description) {
       return res.status(400).json({
         success: false,
         message: 'Company profile is incomplete'

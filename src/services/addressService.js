@@ -15,3 +15,9 @@ export const getDistrictsByProvince = async (provinceCode, effectiveDate = 'late
   const { data } = await addressApi.get(`/${effectiveDate}/provinces/${provinceCode}/districts`);
   return data;
 };
+
+// 3. Lấy danh sách Phường/Xã theo Mã Tỉnh
+export const getCommunesByProvince = async (provinceCode, effectiveDate = 'latest') => {
+  const { data } = await addressApi.get(`/${effectiveDate}/provinces/${provinceCode}/communes`);
+  return data;
+};

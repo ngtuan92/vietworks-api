@@ -3,7 +3,7 @@ import { objectId } from './sharedModels.js';
 
 const sepayWebhookLogSchema = new mongoose.Schema({
   orderCode: { type: String, required: true },
-  paymentOrderId: { type: objectId, ref: 'PaymentOrder', default: null },
+  paymentOrderId: { type: objectId, default: null },
   transactionId: { type: String, required: true },
   transferAmount: { type: Number, required: true },
   transferType: { type: String, required: true },

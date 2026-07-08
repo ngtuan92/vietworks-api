@@ -2,7 +2,6 @@ import CareerGroup from '../models/careerGroupModels.js';
 import Career from '../models/careerModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
 import JobLevel from '../models/jobLevelModels.js';
-import ExperienceLevel from '../models/experienceLevelModels.js';
 
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import Skill from '../models/skillModels.js';
@@ -73,20 +72,6 @@ export const getJobLevels = async (req, res) => {
   }
 }; 
 
-// 5. Lấy danh sách Kinh nghiệm
-export const getExperienceLevels = async (req, res) => {
-  try {
-    const { status } = req.query;
-    const filter = {};
-
-    if (status) filter.status = status;
-
-    const experiences = await ExperienceLevel.find(filter).sort({ minYear: 1 });
-    res.status(200).json({ success: true, data: experiences });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
-  }
-};
 
 // 6. Lấy danh sách Kỹ năng theo Career Group
 export const getSkillsByCareerGroup = async (req, res) => {
@@ -493,102 +478,7 @@ export const deleteSkill = async (req, res) => {
 
 
 
-// ==========================================
-// 6. QUẢN LÝ MỨC KINH NGHIỆM (EXPERIENCE LEVEL)
-// ==========================================
 
-// [POST] Thêm mới Mức kinh nghiệm
-export const createExperienceLevel = async (req, res) => {
-  try {
-    const { code, name, minYear, maxYear } = req.body;
-
-    // 1. Kiểm tra trùng Unique Code
-    const existingExp = await ExperienceLevel.findOne({ code });
-    if (existingExp) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Mã định danh kinh nghiệm '${code}' đã tồn tại!` 
-      });
-    }
-
-    // 2. Validate logic số năm kinh nghiệm cơ bản
-    if (maxYear !== null && minYear > maxYear) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Số năm kinh nghiệm tối thiểu không được lớn hơn số năm tối đa!' 
-      });
-    }
-
-    // 3. Tiến hành tạo mới dữ liệu gốc
-    const newExp = await ExperienceLevel.create({
-      code,
-      name,
-      minYear,
-      maxYear,
-      status: CommonStatus.ACTIVE
-    });
-
-    res.status(201).json({ success: true, data: newExp });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi hệ thống khi tạo mức kinh nghiệm', error: error.message });
-  }
-};
-
-// [PUT] Sửa Mức kinh nghiệm
-export const updateExperienceLevel = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, minYear, maxYear, status } = req.body; 
-    // KHÔNG cho phép sửa 'code' để bảo vệ logic lịch sử của Job/CV cũ
-
-    // Validate logic số năm nếu có truyền lên
-    if (minYear !== undefined && maxYear !== undefined && maxYear !== null) {
-      if (minYear > maxYear) {
-        return res.status(400).json({ success: false, message: 'Số năm tối thiểu không được lớn hơn số năm tối đa!' });
-      }
-    }
-
-    const updatedExp = await ExperienceLevel.findByIdAndUpdate(
-      id,
-      { name, minYear, maxYear, status },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedExp) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy mức kinh nghiệm cần sửa!' });
-    }
-
-    res.status(200).json({ success: true, data: updatedExp });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi hệ thống khi cập nhật mức kinh nghiệm', error: error.message });
-  }
-};
-
-
-// [DELETE] Ẩn mức kinh nghiệm (Soft Delete)
-export const deleteExperienceLevel = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Thay vì xóa cứng, ta chuyển trạng thái sang INACTIVE để giữ an toàn dữ liệu lịch sử
-    const updatedExp = await ExperienceLevel.findByIdAndUpdate(
-      id,
-      { status: CommonStatus.INACTIVE },
-      { new: true }
-    );
-
-    if (!updatedExp) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy mức kinh nghiệm!' });
-    }
-
-    res.status(200).json({ 
-      success: true, 
-      message: 'Đã ẩn mức kinh nghiệm thành công. Dữ liệu cũ trong hệ thống được bảo toàn.' 
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi hệ thống khi ẩn mức kinh nghiệm' });
-  }
-};
 
 
 

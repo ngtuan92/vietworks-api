@@ -78,7 +78,6 @@ const jobAdminController = {
         .populate('careerId', 'name') // Ngành nghề chi tiết
         .populate('careerPositionId', 'name') // Vị trí chuyên môn
         .populate('jobLevelId', 'name') // Cấp bậc
-        .populate('experienceLevelId', 'name') // Kinh nghiệm
         .populate('skills', 'name') // Danh sách các kỹ năng yêu cầu
         .populate('reviewedBy', 'fullName email'); // Admin đã duyệt trước đó (nếu có)
 

@@ -135,30 +135,6 @@ router.get('/master-data/career-positions', adminCtrl.getCareerPositions);
  */
 router.get('/master-data/job-levels', adminCtrl.getJobLevels);
 
-/**
- * @swagger
- * /api/master-data/experience-levels:
- *   get:
- *     summary: Get all active experience levels
- *     tags: [Master Data]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of experience levels
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- */
-router.get('/master-data/experience-levels', adminCtrl.getExperienceLevels);
 
 
 /**
@@ -246,7 +222,5 @@ router.delete('/admin/master-data/skills/:id', adminCtrl.deleteSkill);
 
 
 
-router.post('/admin/master-data/experience-levels', adminCtrl.createExperienceLevel);
-router.put('/admin/master-data/experience-levels/:id', adminCtrl.updateExperienceLevel);
-router.delete('/admin/master-data/experience-levels/:id', adminCtrl.deleteExperienceLevel);
+
 export default router;

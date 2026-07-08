@@ -13,7 +13,7 @@ export const getProvinces = async (req, res) => {
   }
 };
 
-// 2. Hàm lấy Huyện theo mã Tỉnh (Bóc tách chuẩn .districts)
+// 2. Hàm lấy Phường/Xã theo mã Tỉnh
 export const getCommunes = async (req, res) => {
   try {
     let { provinceCode } = req.params; 
@@ -22,17 +22,14 @@ export const getCommunes = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu mã Tỉnh/Thành phố' });
     }
 
-    // Làm sạch chuỗi mã tỉnh đầu vào
     provinceCode = String(provinceCode).trim();
 
-    // 1. GỌI LẦN 1: Thử gọi với mã hiện tại (ví dụ: "01" hoặc "1")
-    let responseData = await addressService.getDistrictsByProvince(provinceCode);
-    let districtsArray = responseData?.districts || responseData?.data?.districts || responseData?.data || [];
+    // 1. Gọi API lấy communes thay vì districts
+    let responseData = await addressService.getCommunesByProvince(provinceCode);
+    let communesArray = responseData?.communes || responseData?.data?.communes || [];
 
-    // 2. CƠ CHẾ TỰ ĐỘNG KHẮC PHỤC (MẸO): Nếu lần 1 trả về mảng rỗng [], thử chuyển đổi mã tỉnh
-    // Nếu mã đang có số 0 ở đầu (VD: "01"), ta bỏ số 0 đi thành "1"
-    // Nếu mã đang không có số 0 (VD: "1"), ta thêm số 0 vào thành "01"
-    if (!Array.isArray(districtsArray) || districtsArray.length === 0) {
+    // 2. CÓ CHÚT TỰ ĐỘNG KHẮC PHỤC (MẸO): Nếu lần 1 trả về mảng rỗng [], thử chuyển đổi mã tỉnh
+    if (!Array.isArray(communesArray) || communesArray.length === 0) {
       let alternativeCode = provinceCode;
       if (provinceCode.startsWith('0') && provinceCode.length > 1) {
         alternativeCode = provinceCode.substring(1); // "01" -> "1"
@@ -42,19 +39,13 @@ export const getCommunes = async (req, res) => {
 
       console.log(`[CAS Kit] Mã ${provinceCode} trả về mảng rỗng. Đang thử lại với mã thay thế: ${alternativeCode}`);
       
-      responseData = await addressService.getDistrictsByProvince(alternativeCode);
-      districtsArray = responseData?.districts || responseData?.data?.districts || responseData?.data || [];
+      responseData = await addressService.getCommunesByProvince(alternativeCode);
+      communesArray = responseData?.communes || responseData?.data?.communes || [];
     }
 
-    // 3. IN KIỂM TRA RA THÔNG TIN TRÊN CMD/TERMINAL BACKEND
-    console.log("=== KẾT QUẢ CUỐI CÙNG SAU KHI LỌC TỪ CAS KIT ===");
-    console.log("Kiểu dữ liệu:", typeof districtsArray, "Có phải mảng không:", Array.isArray(districtsArray));
-    console.log("Nội dung dữ liệu:", JSON.stringify(districtsArray).substring(0, 200) + "...");
-
-    // Nếu sau tất cả vẫn không phải mảng, ép về mảng rỗng
-    const finalResult = Array.isArray(districtsArray) ? districtsArray : [];
+    const finalResult = Array.isArray(communesArray) ? communesArray : [];
     
-    console.log(`=> Gửi về Frontend ${finalResult.length} Quận/Huyện.`);
+    console.log(`=> Gửi về Frontend ${finalResult.length} Phường/Xã.`);
     return res.json(finalResult);
 
   } catch (error) {

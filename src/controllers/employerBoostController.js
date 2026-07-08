@@ -56,15 +56,12 @@ const activatePremiumJobPackage = async ({ userId, jobId, pkg, transactionId }) 
     await JobBoost.create({ jobId, employerId: userId, packageId: pkg._id, startAt, endAt });
     await Job.updateOne(
       { _id: jobId, createdBy: userId },
-      {
-        $set: {
-          'premium.isActive': true,
+      { 
+        $set: { 
+          isUrgent: true,
           'premium.startedAt': startAt,
-          'premium.expiredAt': endAt,
-          'premium.deactivatedAt': null,
-          'premium.deactivatedReason': null,
-          isUrgent: true
-        }
+          'premium.packagePrice': pkg.price || 0
+        } 
       }
     );
   }

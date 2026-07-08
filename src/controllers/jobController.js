@@ -1,4 +1,4 @@
-﻿import Job from '../models/jobModels.js';
+import Job from '../models/jobModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
 import Company from '../models/companyModels.js';
@@ -8,7 +8,7 @@ import Skill from '../models/skillModels.js';
 import Career from '../models/careerModels.js';
 import CareerPosition from '../models/careerPositionModels.js';
 import JobLevel from '../models/jobLevelModels.js';
-import ExperienceLevel from '../models/experienceLevelModels.js';
+
 import { CompanyVerificationStatus, CommonStatus } from '../enums/masterDataEnums.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import Application from '../models/applicationModels.js';
@@ -66,18 +66,27 @@ const attachHiringStats = async (jobs = []) => {
 
   const stats = await Application.aggregate([
     { $match: { jobId: { $in: jobIds } } },
-    { $group: { _id: '$jobId', appliedCount: { $sum: 1 } } }
+    { 
+      $group: { 
+        _id: '$jobId', 
+        appliedCount: { $sum: 1 },
+        hiredCount: { $sum: { $cond: [{ $eq: ['$status', 'APPROVED'] }, 1, 0] } }
+      } 
+    }
   ]);
 
-  const statsMap = new Map(stats.map((item) => [String(item._id), item.appliedCount || 0]));
+  const statsMap = new Map(stats.map((item) => [String(item._id), { appliedCount: item.appliedCount || 0, hiredCount: item.hiredCount || 0 }]));
 
   jobs.forEach((job) => {
     const neededCount = Number(job.headcount || 0);
-    const appliedCount = statsMap.get(String(job._id)) || 0;
+    const itemStats = statsMap.get(String(job._id)) || { appliedCount: 0, hiredCount: 0 };
+    const appliedCount = itemStats.appliedCount;
+    const hiredCount = itemStats.hiredCount;
     job.neededCount = neededCount;
     job.appliedCount = appliedCount;
-    job.isHiringFull = neededCount > 0 && appliedCount >= neededCount;
-    job.remainingSlots = neededCount > 0 ? Math.max(neededCount - appliedCount, 0) : null;
+    job.hiredCount = hiredCount;
+    job.isHiringFull = neededCount > 0 && hiredCount >= neededCount;
+    job.remainingSlots = neededCount > 0 ? Math.max(neededCount - hiredCount, 0) : null;
   });
 
   return jobs;
@@ -96,7 +105,7 @@ export const createJob = async (req, res) => {
       careerId,
       careerPositionId,
       jobLevelId,
-      experienceLevelId,
+      experience,
       skills,
       salary,
       workLocations,
@@ -112,7 +121,7 @@ export const createJob = async (req, res) => {
     } = req.body;
 
     // Validation
-    if (!title || !careerGroupId || !careerId || !careerPositionId || !jobLevelId || !experienceLevelId) {
+    if (!title || !careerGroupId || !careerId || !careerPositionId || !jobLevelId || !experience) {
       return res.status(400).json({
         success: false,
         message: 'Thiếu thông tin bắt buộc: tiêu đề, nhóm nghề, nghề, vị trí chuyên môn, cấp bậc và kinh nghiệm'
@@ -174,7 +183,7 @@ export const createJob = async (req, res) => {
       careerId: new mongoose.Types.ObjectId(careerId),
       careerPositionId: new mongoose.Types.ObjectId(careerPositionId),
       jobLevelId: new mongoose.Types.ObjectId(jobLevelId),
-      experienceLevelId: new mongoose.Types.ObjectId(experienceLevelId),
+      experience,
       skills: skills ? skills.map(id => new mongoose.Types.ObjectId(id)) : [],
       salary: salary || { type: 'NEGOTIABLE' },
       workLocations: workLocations || [],
@@ -201,8 +210,7 @@ export const createJob = async (req, res) => {
     console.error('[createJob] error:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ',
-      error: process.env.NODE_ENV === 'production' ? undefined : error.message
+      message: error.message
     });
   }
 };
@@ -332,12 +340,12 @@ export const updateJob = async (req, res) => {
       });
     }
 
-    // 3. Kiểm tra trạng thái cho phép sửa (Chỉ cho phép sửa khi là DRAFT hoặc PUBLISHED)
-    const allowedStatuses = [JobStatus.DRAFT, JobStatus.PUBLISHED];
+    // 3. Kiểm tra trạng thái cho phép sửa (Chỉ cho phép sửa khi là DRAFT hoặc PENDING_APPROVAL)
+    const allowedStatuses = [JobStatus.DRAFT, JobStatus.PENDING_APPROVAL];
     if (!allowedStatuses.includes(job.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Can only update jobs in draft or published status'
+        message: 'Chỉ được phép chỉnh sửa tin tuyển dụng đang ở trạng thái Nháp hoặc Chờ duyệt.'
       });
     }
 
@@ -345,7 +353,7 @@ export const updateJob = async (req, res) => {
     // Bao gồm các thông tin cốt lõi ảnh hưởng trực tiếp đến người lao động
     const coreFields = [
       'title', 'salary', 'description', 'requirements', 'benefits', 
-      'careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'experienceLevelId', 'headcount'
+      'careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'experience', 'headcount'
     ];
 
     const allowedUpdates = [
@@ -365,7 +373,7 @@ export const updateJob = async (req, res) => {
         let isFieldChanged = false;
 
         // --- Bắt đầu chuẩn hóa dữ liệu đầu vào ---
-        if (['careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'experienceLevelId'].includes(field)) {
+        if (['careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId'].includes(field)) {
           if (newValue && newValue !== "") {
             newValue = new mongoose.Types.ObjectId(newValue);
           } else {
@@ -444,6 +452,23 @@ export const updateJob = async (req, res) => {
       }).catch(err => console.error('Find admins error:', err));
     }
 
+    // Gửi thông báo khi tin đang PENDING_APPROVAL được chỉnh sửa
+    if (job.status === JobStatus.PENDING_APPROVAL) {
+      job.submittedAt = new Date(); // Cập nhật thời gian gửi để admin biết có chỉnh sửa mới
+      User.find({ role: UserRole.ADMIN }).select('_id').then(admins => {
+        admins.forEach(admin => {
+          NotificationService.create({
+            receiverUserId: admin._id,
+            typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+            title: 'Tin tuyển dụng chờ duyệt vừa được cập nhật',
+            content: `Tin tuyển dụng "${job.title}" đang chờ duyệt vừa được nhà tuyển dụng chỉnh sửa. Vui lòng kiểm tra lại.`,
+            channels: [NotificationChannel.IN_APP],
+            metadata: { actionUrl: '/admin/jobs' }
+          }).catch(err => console.error('Notify admin error:', err));
+        });
+      }).catch(err => console.error('Find admins error:', err));
+    }
+
     // 7. Lưu lại vào Database
     await job.save();
 
@@ -459,9 +484,10 @@ export const updateJob = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Update job error:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ'
+      message: error.message || 'Lỗi máy chủ'
     });
   }
 };
@@ -595,7 +621,6 @@ export const getMyJobs = async (req, res) => {
       .populate('careerId', 'name')
       .populate('careerPositionId', 'name')
       .populate('jobLevelId', 'name')
-      .populate('experienceLevelId', 'name')
       .populate('skills', 'name')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -630,6 +655,7 @@ const activeBoosts = await UserServicePackage.find({
     }
 
     const enrichedJobs = jobs.map(j => ({ ...j, activeBoost: boostMap.get(j._id.toString()) || null }));
+    await attachHiringStats(enrichedJobs);
 
     const total = await Job.countDocuments(filter);
 
@@ -666,7 +692,6 @@ export const getJobById = async (req, res) => {
       .populate('careerId')
       .populate('careerPositionId')
       .populate('jobLevelId')
-      .populate('experienceLevelId')
       .populate('skills')
       .populate('createdBy', 'fullName email').
       lean();
@@ -746,7 +771,7 @@ export const getJobs = async (req, res) => {
       careerGroupId,
       careerId,
       jobLevelId,
-      experienceLevelId,
+      experience,
       salaryMin,
       salaryMax,
       skills,
@@ -774,7 +799,7 @@ export const getJobs = async (req, res) => {
     if (careerGroupId) filter.careerGroupId = new mongoose.Types.ObjectId(careerGroupId);
     if (careerId) filter.careerId = new mongoose.Types.ObjectId(careerId);
     if (jobLevelId) filter.jobLevelId = new mongoose.Types.ObjectId(jobLevelId);
-    if (experienceLevelId) filter.experienceLevelId = new mongoose.Types.ObjectId(experienceLevelId);
+    if (experience) filter.experience = experience;
     if (companyId) filter.companyId = new mongoose.Types.ObjectId(companyId);
 
     if (skills && Array.isArray(skills)) {
@@ -798,7 +823,6 @@ export const getJobs = async (req, res) => {
       .populate('careerId', 'name')
       .populate('careerPositionId', 'name')
       .populate('jobLevelId', 'name')
-      .populate('experienceLevelId', 'name')
       .populate('skills', 'name')
       .sort(sortObj)
       .skip((page - 1) * limit)
@@ -888,7 +912,7 @@ export const getPublicJobs = async (req, res) => {
       location = '',
       careerGroupId,
       careerId,
-      experienceLevelId,
+      experience,
       jobLevelId,
       salaryMin,
       salaryMax,
@@ -941,8 +965,7 @@ export const getPublicJobs = async (req, res) => {
     const careerObjectId = toObjectId(careerId);
     if (careerObjectId) filter.careerId = careerObjectId;
 
-    const experienceObjectId = toObjectId(experienceLevelId);
-    if (experienceObjectId) filter.experienceLevelId = experienceObjectId;
+    if (experience) filter.experience = experience;
 
     const jobLevelObjectId = toObjectId(jobLevelId);
     if (jobLevelObjectId) filter.jobLevelId = jobLevelObjectId;
@@ -994,8 +1017,13 @@ export const getPublicJobs = async (req, res) => {
       }
     }
 
+    const { isUrgent } = req.query;
+    if (isUrgent === 'true') filter.isUrgent = true;
+
     const pageNumber = Math.max(Number(page) || 1, 1);
-    const limitNumber = Math.min(Math.max(Number(limit) || 12, 1), 50);
+    const limitNumber = isUrgent === 'true'
+      ? Math.max(Number(limit) || 1000, 1)
+      : Math.min(Math.max(Number(limit) || 12, 1), 50);
 
     const allowedSortFields = ['publishedAt', 'createdAt', 'deadline', 'salary.minMillion'];
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'publishedAt';
@@ -1008,10 +1036,11 @@ export const getPublicJobs = async (req, res) => {
         .populate('careerId', 'name')
         .populate('careerPositionId', 'name')
         .populate('jobLevelId', 'name')
-        .populate('experienceLevelId', 'name')
         .populate('skills', 'name')
         .sort({
           'premium.isActive': -1,
+          'premium.packagePrice': -1,
+          'premium.startedAt': -1,
           isUrgent: -1,
           [sortField]: sortDirection,
           createdAt: -1
@@ -1038,7 +1067,7 @@ export const getPublicJobs = async (req, res) => {
         location,
         careerGroupId,
         careerId,
-        experienceLevelId,
+        experience,
         jobLevelId,
         salaryMin,
         salaryMax,
@@ -1171,17 +1200,15 @@ export const getPublicJobDetail = async (req, res) => {
     })
       .populate({
         path: 'companyId',
-        select: 'name website industryId sizeId avatarUrl coverUrl description verificationStatus',
+        select: 'name website industryIds size avatarUrl coverUrl description verificationStatus',
         populate: [
-          { path: 'industryId', select: 'name slug' },
-          { path: 'sizeId', select: 'code name minEmployees maxEmployees' }
+          { path: 'industryIds', select: 'name slug' }
         ]
       })
       .populate('careerGroupId', 'name slug')
       .populate('careerId', 'name slug')
       .populate('careerPositionId', 'name')
       .populate('jobLevelId', 'name')
-      .populate('experienceLevelId', 'name')
       .populate('skills', 'name slug')
       .lean();
 
