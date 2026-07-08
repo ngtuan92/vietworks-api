@@ -211,7 +211,9 @@ export const updateJobLevel = async (req, res) => {
   }
 };
 
-// Xóa mềm (chuyển trạng thái thành INACTIVE)
+// controllers/jobLevelController.js
+
+// Xóa mềm - KHÔNG RÀNG BUỘC
 export const softDeleteJobLevel = async (req, res) => {
   try {
     const { id } = req.params;
@@ -225,33 +227,20 @@ export const softDeleteJobLevel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy cấp bậc' });
     }
 
-    // Kiểm tra xem có job nào đang sử dụng cấp bậc này không
-    const jobCount = await Job.countDocuments({ 
-      jobLevelId: id,
-      status: { $in: ['PUBLISHED', 'PENDING', 'DRAFT'] }
-    });
-
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể ẩn cấp bậc này vì có ${jobCount} công việc đang sử dụng. Vui lòng chuyển đổi hoặc xóa các công việc này trước.`
-      });
-    }
-
     jobLevel.status = CommonStatus.INACTIVE;
     await jobLevel.save();
 
     res.status(200).json({
       success: true,
       data: jobLevel,
-      message: 'Đã ẩn cấp bậc thành công'
+      message: 'Đã ẩn cấp bậc thành công. Các job cũ vẫn hiển thị bình thường.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Xóa cứng (kiểm tra ràng buộc)
+// Xóa cứng - VẪN KIỂM TRA
 export const hardDeleteJobLevel = async (req, res) => {
   try {
     const { id } = req.params;
@@ -265,13 +254,11 @@ export const hardDeleteJobLevel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy cấp bậc' });
     }
 
-    // Kiểm tra xem có bất kỳ job nào sử dụng cấp bậc này không (tất cả trạng thái)
     const jobCount = await Job.countDocuments({ jobLevelId: id });
-    
     if (jobCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa cấp bậc này vì có ${jobCount} công việc đang sử dụng (bao gồm cả công việc đã xóa). Vui lòng xóa hoặc chuyển đổi tất cả công việc này trước.`
+        message: `Không thể xóa cấp bậc này vì có ${jobCount} công việc đang sử dụng.`
       });
     }
 

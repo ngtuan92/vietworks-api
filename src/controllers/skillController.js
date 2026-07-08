@@ -288,7 +288,9 @@ export const updateSkill = async (req, res) => {
   }
 };
 
-// Xóa mềm (chuyển trạng thái thành INACTIVE)
+// controllers/skillController.js
+
+// Xóa mềm - KHÔNG RÀNG BUỘC
 export const softDeleteSkill = async (req, res) => {
   try {
     const { id } = req.params;
@@ -302,19 +304,6 @@ export const softDeleteSkill = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy kỹ năng' });
     }
 
-    // Kiểm tra xem có job nào đang sử dụng kỹ năng này không
-    const jobCount = await Job.countDocuments({ 
-      skills: { $in: [id] },
-      status: { $in: ['PUBLISHED', 'PENDING', 'DRAFT'] }
-    });
-
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể ẩn kỹ năng này vì có ${jobCount} công việc đang sử dụng. Vui lòng chuyển đổi hoặc xóa các công việc này trước.`
-      });
-    }
-
     skill.status = 'INACTIVE';
     skill.updatedAt = new Date();
     await skill.save();
@@ -322,14 +311,14 @@ export const softDeleteSkill = async (req, res) => {
     res.status(200).json({
       success: true,
       data: skill,
-      message: 'Đã ẩn kỹ năng thành công'
+      message: 'Đã ẩn kỹ năng thành công. Các job cũ vẫn hiển thị bình thường.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Xóa cứng (kiểm tra ràng buộc)
+// Xóa cứng - VẪN KIỂM TRA
 export const hardDeleteSkill = async (req, res) => {
   try {
     const { id } = req.params;
@@ -343,15 +332,11 @@ export const hardDeleteSkill = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy kỹ năng' });
     }
 
-    // Kiểm tra xem có bất kỳ job nào sử dụng kỹ năng này không (tất cả trạng thái)
-    const jobCount = await Job.countDocuments({ 
-      skills: { $in: [id] }
-    });
-    
+    const jobCount = await Job.countDocuments({ skills: { $in: [id] } });
     if (jobCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa kỹ năng này vì có ${jobCount} công việc đang sử dụng (bao gồm cả công việc đã xóa). Vui lòng xóa hoặc chuyển đổi tất cả công việc này trước.`
+        message: `Không thể xóa kỹ năng này vì có ${jobCount} công việc đang sử dụng.`
       });
     }
 
@@ -365,7 +350,6 @@ export const hardDeleteSkill = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // Khôi phục kỹ năng
 export const restoreSkill = async (req, res) => {
   try {
