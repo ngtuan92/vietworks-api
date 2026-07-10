@@ -47,7 +47,10 @@ export const notifyExpiringSoonOnly = async (req, res) => {
 
     let notified = 0;
     for (const sub of subs) {
-      const pkg = await ServicePackage.findById(sub.packageId).select('name code durationDays').lean();
+      let pkg = await ServicePackage.findById(sub.packageId).select('name code durationDays').lean();
+      if (!pkg && sub.packageCode) {
+        pkg = await ServicePackage.findOne({ code: sub.packageCode }).select('name code durationDays').lean();
+      }
       const daysLeft = Math.max(
         1,
         Math.ceil((new Date(sub.expiredAt).getTime() - now.getTime()) / DAY_MS)
