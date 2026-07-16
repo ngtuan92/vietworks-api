@@ -36,7 +36,10 @@ const userServicePackageSchema = new mongoose.Schema({
   transactionId: { type: objectId, ref: 'Transaction', required: true },
   cancelledReason: { type: String, default: null },
   cancelledAt: { type: Date, default: null },
-  refundAmount: { type: Number, default: 0 }
+  refundAmount: { type: Number, default: 0 },
+  // Cờ trạng thái phái sinh (vd notifiedExpiringSoonAt) để cron chống gửi thông báo trùng.
+  // Bắt buộc khai báo: Mongoose strict-mode sẽ bỏ qua $set vào path không có trong schema.
+  metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { timestamps: true });
 
 // Index để query nhanh "user X có gói active nào cho target Y" (chặn mua trùng)

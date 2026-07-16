@@ -485,6 +485,9 @@ async function _markLogFailed(log, errorMessage) {
 
 // ─── FALLBACK: FE hỏi "đã thanh toán chưa?" → hỏi thẳng API SePay (VietinBank hay miss webhook) ───
 // GET /api/transactions/sepay-check/:orderCode
+// Thời hạn 1 mã QR: quá 15 phút chưa thanh toán → tự hủy giao dịch (FAILED / QR_TIMEOUT).
+const QR_TIMEOUT_MS = 15 * 60 * 1000;
+
 export const checkSepayPayment = async (req, res) => {
   try {
     const { orderCode } = req.params;
@@ -496,8 +499,12 @@ export const checkSepayPayment = async (req, res) => {
     if (transaction.status === TransactionStatus.SUCCESS) {
       return res.status(200).json({ success: true, data: { paid: true } });
     }
+    // Đã hủy / thất bại trước đó (vd hết hạn QR) → báo expired
+    if (transaction.status === TransactionStatus.FAILED || transaction.status === TransactionStatus.REJECTED) {
+      return res.status(200).json({ success: true, data: { paid: false, expired: true } });
+    }
 
-    // Hỏi API SePay xem tiền đã vào chưa
+    // Hỏi API SePay xem tiền đã vào chưa (ưu tiên xử lý nếu tiền vừa vào sát giờ hết hạn)
     const sepayTxn = await findSepayTransactionByCode(orderCode, transaction.amount);
     if (sepayTxn) {
       console.log('SePay polling: tìm thấy giao dịch khớp', { orderCode, amount: transaction.amount });
@@ -507,7 +514,27 @@ export const checkSepayPayment = async (req, res) => {
     }
 
     const after = await Transaction.findById(transaction._id);
-    return res.status(200).json({ success: true, data: { paid: after.status === TransactionStatus.SUCCESS } });
+    if (after.status === TransactionStatus.SUCCESS) {
+      return res.status(200).json({ success: true, data: { paid: true } });
+    }
+
+    // Chưa thanh toán + mã QR đã quá 15 phút → tự hủy (nguyên tử, chỉ khi còn PENDING)
+    const isExpired = Date.now() - new Date(after.createdAt).getTime() > QR_TIMEOUT_MS;
+    if (after.status === TransactionStatus.PENDING && isExpired) {
+      await Transaction.findOneAndUpdate(
+        { _id: after._id, status: TransactionStatus.PENDING },
+        {
+          $set: {
+            status: TransactionStatus.FAILED,
+            'metadata.failedAt': new Date(),
+            'metadata.failedReason': 'QR_TIMEOUT'
+          }
+        }
+      );
+      return res.status(200).json({ success: true, data: { paid: false, expired: true } });
+    }
+
+    return res.status(200).json({ success: true, data: { paid: false, expired: false } });
   } catch (error) {
     console.error('checkSepayPayment error:', error);
     res.status(500).json({ success: false, message: 'Lỗi máy chủ' });

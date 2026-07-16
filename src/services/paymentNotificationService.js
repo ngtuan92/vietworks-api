@@ -106,16 +106,18 @@ export const notifyPaymentCancelled = async ({ userId, transaction, reason }) =>
 };
 
 /**
- * Gọi từ cron job khi phát hiện gói sắp hết hạn trong vòng `daysLeft` ngày.
- * Chỉ notify 1 lần / gói (dựa vào metadata.notifiedExpiringSoonAt trên subscription).
+ * Thông báo gói sắp hết hạn. `channels` để tách kênh:
+ *   - In-app  → gọi khi user đăng nhập phiên đầu tiên trong ngày (channels: [IN_APP])
+ *   - Email   → gọi từ cron 09:00 trong 2 ngày cuối (channels: [EMAIL])
+ * Mặc định gửi cả 2 kênh (giữ tương thích code cũ).
  */
-export const notifyPackageExpiringSoon = async ({ userId, subscription, pkg, daysLeft }) => {
+export const notifyPackageExpiringSoon = async ({ userId, subscription, pkg, daysLeft, channels }) => {
   return safe(() => createNotification({
     receiverUserId: userId,
     typeCode: NotificationTypeCode.PACKAGE_EXPIRING_SOON,
     title: 'Gói dịch vụ sắp hết hạn',
     content: `Gói "${pkg?.name || subscription.packageSnapshot?.name || subscription.packageCode}" của bạn sẽ hết hạn trong ${daysLeft} ngày (${formatDate(subscription.expiredAt)}). Vui lòng mua gói mới khi gói hiện tại kết thúc để không bị gián đoạn dịch vụ.`,
-    channels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+    channels: channels || [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
     metadata: {
       subscriptionId: subscription._id?.toString?.() ?? String(subscription._id),
       packageId: subscription.packageId?.toString?.() ?? String(subscription.packageId),

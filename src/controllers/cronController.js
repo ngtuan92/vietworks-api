@@ -17,34 +17,38 @@ export const expirePremiumServices = async (req, res) => {
 
     // ─── 1) Notify gói sắp hết hạn (3 ngày tới, chưa từng notify) ───
     //   Lưu cờ notifiedExpiringSoonAt trên metadata subscription để tránh spam.
-    const expiringSubs = await UserServicePackage.find({
-      status: UserServicePackageStatus.ACTIVE,
-      expiredAt: { $gt: now, $lte: expiringSoonThreshold },
-      'metadata.notifiedExpiringSoonAt': { $exists: false }
-    }).lean();
-
+    //   Bỏ qua phase này khi ?skipExpiringSoon=1 (cron 00:00 chỉ expire; nhắc sắp hết hạn
+    //   để cron 09:00 gọi notifyExpiringSoonOnly cho đẹp — tránh nhắc lúc nửa đêm).
     let expiringSoonNotified = 0;
-    for (const sub of expiringSubs) {
-      let pkg = await ServicePackage.findById(sub.packageId).select('name code durationDays').lean();
-      if (!pkg && sub.packageCode) {
-        pkg = await ServicePackage.findOne({ code: sub.packageCode }).select('name code durationDays').lean();
+    if (!req.query?.skipExpiringSoon) {
+      const expiringSubs = await UserServicePackage.find({
+        status: UserServicePackageStatus.ACTIVE,
+        expiredAt: { $gt: now, $lte: expiringSoonThreshold },
+        'metadata.notifiedExpiringSoonAt': { $exists: false }
+      }).lean();
+
+      for (const sub of expiringSubs) {
+        let pkg = await ServicePackage.findById(sub.packageId).select('name code durationDays').lean();
+        if (!pkg && sub.packageCode) {
+          pkg = await ServicePackage.findOne({ code: sub.packageCode }).select('name code durationDays').lean();
+        }
+        const daysLeft = Math.max(
+          1,
+          Math.ceil((new Date(sub.expiredAt).getTime() - now.getTime()) / DAY_MS)
+        );
+        await notifyPackageExpiringSoon({
+          userId: sub.userId,
+          subscription: sub,
+          pkg,
+          daysLeft
+        });
+        // Đánh dấu đã notify để cron lần sau không gửi lại
+        await UserServicePackage.updateOne(
+          { _id: sub._id },
+          { $set: { 'metadata.notifiedExpiringSoonAt': now } }
+        );
+        expiringSoonNotified++;
       }
-      const daysLeft = Math.max(
-        1,
-        Math.ceil((new Date(sub.expiredAt).getTime() - now.getTime()) / DAY_MS)
-      );
-      await notifyPackageExpiringSoon({
-        userId: sub.userId,
-        subscription: sub,
-        pkg,
-        daysLeft
-      });
-      // Đánh dấu đã notify để cron lần sau không gửi lại
-      await UserServicePackage.updateOne(
-        { _id: sub._id },
-        { $set: { 'metadata.notifiedExpiringSoonAt': now } }
-      );
-      expiringSoonNotified++;
     }
 
     // ─── 2) Snapshot subscription ACTIVE sắp expire TRƯỚC khi flip (để notify khi đã expired) ───
