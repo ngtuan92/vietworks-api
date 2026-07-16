@@ -744,7 +744,7 @@ export const getMyJobs = async (req, res) => {
       .populate('careerPositionId', 'name')
       .populate('jobLevelId', 'name')
       .populate('skills', 'name')
-            .select('+isUrgent +premium') // Ensure these fields are selected
+            .select('+isUrgent +premium +rejectedReason +bannedReason') // Ensure these fields are selected
             .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))

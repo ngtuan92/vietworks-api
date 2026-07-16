@@ -60,7 +60,7 @@ export const getCompanyVerificationDetail = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Pending company not found'
+        message: 'Company not found'
       });
     }
 
