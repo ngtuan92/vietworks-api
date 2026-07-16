@@ -2,9 +2,13 @@ import cron from 'node-cron';
 import Job from '../models/jobModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import User from '../models/userModels.js';
+import { Notification } from '../models/index.js';
 import { JobStatus } from '../enums/jobEnums.js';
 import NotificationService from '../services/notificationService.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
+
+// Giờ VN — để cron 08:00 chạy đúng 8h sáng Việt Nam bất kể timezone của server.
+const TZ = 'Asia/Ho_Chi_Minh';
 
 const buildMatchingJobFilter = (profile, since) => {
   const desiredJob = profile.desiredJob || {};
@@ -58,8 +62,14 @@ export const runMatchingJobScan = async ({ since } = {}) => {
   const result = {
     scannedProfiles: 0,
     notifiedUsers: 0,
-    matchedJobs: 0
+    matchedJobs: 0,
+    skippedAlreadyNotified: 0
   };
+
+  // Mốc đầu ngày (theo giờ server) — dùng để chống trùng: mỗi user tối đa
+  // 1 thông báo MATCHING_JOB / ngày, kể cả khi cron chạy lại hoặc restart giữa ngày.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
   const profiles = await JobseekerProfile.find({
     $or: [
@@ -75,6 +85,17 @@ export const runMatchingJobScan = async ({ since } = {}) => {
   for (const profile of profiles) {
     const user = await User.findById(profile.userId).select('notificationSettings email fullName').lean();
     if (!user || user.notificationSettings?.jobRecommendations === false) {
+      continue;
+    }
+
+    // Chống trùng: đã có thông báo việc-làm-phù-hợp trong ngày hôm nay thì bỏ qua.
+    const alreadyNotified = await Notification.exists({
+      receiverUserId: profile.userId,
+      typeCode: NotificationTypeCode.MATCHING_JOB,
+      createdAt: { $gte: startOfToday }
+    });
+    if (alreadyNotified) {
+      result.skippedAlreadyNotified += 1;
       continue;
     }
 
@@ -103,12 +124,14 @@ export const runMatchingJobScan = async ({ since } = {}) => {
   return result;
 };
 
+// 08:00 (giờ VN) mỗi ngày — quét việc làm phù hợp, gửi thông báo IN-APP + EMAIL.
+// NotificationService.create() mặc định gửi cả 2 kênh; dedup ở trên bảo đảm 1 lần/ngày.
 cron.schedule('0 8 * * *', async () => {
   try {
-    console.log('[CRON] Bắt đầu quét việc làm phù hợp cho ứng viên...');
+    console.log('=== [CRON 08:00] Bắt đầu quét việc làm phù hợp cho ứng viên... ===');
     const result = await runMatchingJobScan();
-    console.log('[CRON] Hoàn thành quét việc làm phù hợp:', result);
+    console.log('=== [CRON 08:00] Hoàn thành quét việc làm phù hợp:', JSON.stringify(result), '===');
   } catch (error) {
-    console.error('[CRON] Lỗi quét việc làm phù hợp:', error);
+    console.error('=== [CRON 08:00] Lỗi quét việc làm phù hợp:', error);
   }
-});
+}, { timezone: TZ });
