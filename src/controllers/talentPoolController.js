@@ -153,8 +153,21 @@ export const getTalentPool = async (req, res) => {
     const [countResult] = await UploadedCV.aggregate(countPipeline);
     const total = countResult?.total || 0;
 
-    // Sort: CV đang boost lên đầu, sau đó theo createdAt desc
-    pipeline.push({ $sort: { isBoosted: -1, boostPackagePrice: -1, boostedAt: -1, createdAt: -1 } }, { $skip: skip }, { $limit: parseInt(limit) });
+    // Add randomSort field for resolving ties between boosted CVs with same package price
+    pipeline.push({
+      $addFields: {
+        randomSort: {
+          $cond: {
+            if: "$isBoosted",
+            then: { $rand: {} },
+            else: 0
+          }
+        }
+      }
+    });
+
+    // Sort: CV đang boost lên đầu, sau đó ngẫu nhiên nếu cùng package, cuối cùng theo createdAt desc
+    pipeline.push({ $sort: { isBoosted: -1, boostPackagePrice: -1, randomSort: -1, createdAt: -1 } }, { $skip: skip }, { $limit: parseInt(limit) });
 
     const candidates = await UploadedCV.aggregate(pipeline);
 
@@ -259,8 +272,22 @@ export const getTalentPoolCvPreview = async (req, res) => {
     }
 
     // Check if employer has unlocked the candidate
-    const isUnlocked = await UnlockedCandidate.exists({ employerId, candidateId: cv.userId });
+    let isUnlocked = await UnlockedCandidate.exists({ employerId, candidateId: cv.userId });
     
+    if (!isUnlocked) {
+      // Check if candidate applied to any of the employer's jobs
+      const { EmployerProfile } = await import('../models/employerModels.js');
+      const employerProfile = await EmployerProfile.findOne({ userId: employerId });
+      if (employerProfile?.companyId) {
+        const Job = (await import('../models/jobModels.js')).default;
+        const Application = (await import('../models/jobModels.js')).Application;
+        const employerJobs = await Job.find({ companyId: employerProfile.companyId }).select('_id');
+        const jobIds = employerJobs.map(j => j._id);
+        const hasApplied = await Application.exists({ jobseekerUserId: cv.userId, jobId: { $in: jobIds } });
+        if (hasApplied) isUnlocked = true;
+      }
+    }
+
     if (!cv.isPublic && !isUnlocked) {
       return res.status(403).json({ success: false, message: 'CV này không công khai' });
     }

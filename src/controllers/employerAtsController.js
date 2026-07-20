@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
 import { v2 as cloudinary } from 'cloudinary';
-import { Application, Company, Cv, Job, UploadedCv } from '../models/index.js';
+import { Application, Company, Cv, Job, UploadedCv, JobseekerProfile } from '../models/index.js';
 import User from '../models/userModels.js';
 import { ApplicationStatus } from '../enums/jobEnums.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
@@ -114,7 +114,7 @@ const formatApplicationListItem = (application) => {
     jobTitle: application.jobId?.title || 'Tin tuyển dụng',
     candidateName: jobseeker.fullName || 'Ứng viên',
     candidateEmail: jobseeker.email || null,
-    avatar: (jobseeker.fullName || 'Ứng viên').trim().charAt(0).toUpperCase(),
+    avatar: application.avatarUrl || (jobseeker.fullName || 'Ứng viên').trim().charAt(0).toUpperCase(),
     cv,
     cvName: cv.title,
     cvViewUrl: buildCvViewUrl(toId(application), cv),
@@ -209,11 +209,25 @@ export const getApplicationsByJob = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    const userIds = applications.map(app => app.jobseekerUserId?._id).filter(Boolean);
+    const profiles = await JobseekerProfile.find({ userId: { $in: userIds } }).select('userId avatarUrl').lean();
+    const profileMap = profiles.reduce((acc, profile) => {
+      acc[profile.userId.toString()] = profile.avatarUrl;
+      return acc;
+    }, {});
+
+    const applicationsWithAvatar = applications.map(app => {
+      if (app.jobseekerUserId) {
+        app.avatarUrl = profileMap[app.jobseekerUserId._id.toString()];
+      }
+      return formatApplicationListItem(app);
+    });
+
     const stats = await countApplicationsByStatus({ jobId: job._id });
 
     res.json({
       success: true,
-      data: applications.map(formatApplicationListItem),
+      data: applicationsWithAvatar,
       job: {
         id: toId(job),
         title: job.title,
@@ -233,6 +247,11 @@ export const getEmployerApplicationDetail = async (req, res) => {
     const application = await findApplicationForEmployer(req.params.id, req.user._id);
     if (!application) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ hoặc bạn không có quyền xem' });
+    }
+
+    if (application.jobseekerUserId) {
+      const profile = await JobseekerProfile.findOne({ userId: application.jobseekerUserId._id }).select('avatarUrl').lean();
+      if (profile) application.avatarUrl = profile.avatarUrl;
     }
 
     res.json({
