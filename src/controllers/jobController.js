@@ -1049,6 +1049,26 @@ export const getPublicJobs = async (req, res) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
+    const fullJobs = await Job.aggregate([
+      { $match: { status: JobStatus.PUBLISHED } },
+      {
+        $lookup: {
+          from: 'applications',
+          let: { jobId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $and: [ { $eq: ['$jobId', '$$jobId'] }, { $eq: ['$status', 'APPROVED'] } ] } } },
+            { $count: 'count' }
+          ],
+          as: 'apps'
+        }
+      },
+      { $addFields: { hiredCount: { $ifNull: [{ $arrayElemAt: ['$apps.count', 0] }, 0] } } },
+      { $match: { $expr: { $gte: ['$hiredCount', { $max: ['$headcount', 1] }] } } },
+      { $project: { _id: 1 } }
+    ]);
+
+    const fullJobIds = fullJobs.map(j => j._id);
+
     const filter = {
       status: JobStatus.PUBLISHED,
       deadline: { $gte: now },
@@ -1057,6 +1077,10 @@ export const getPublicJobs = async (req, res) => {
         { bannedReason: { $exists: false } }
       ]
     };
+
+    if (fullJobIds.length > 0) {
+      filter._id = { $nin: fullJobIds };
+    }
 
     if (keyword.trim()) {
       filter.$and = filter.$and || [];

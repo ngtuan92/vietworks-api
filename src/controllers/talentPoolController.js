@@ -1,4 +1,4 @@
-import UploadedCV from '../models/uploadedCvModels.js';
+﻿import UploadedCV from '../models/uploadedCvModels.js';
 import Cv from '../models/cvModels.js';
 import User from '../models/userModels.js';
 import UnlockedCandidate from '../models/unlockedCandidateModels.js';
@@ -141,8 +141,6 @@ export const getTalentPool = async (req, res) => {
       pipeline.push({
         $match: {
           $or: [
-            { 'user.fullName': { $regex: search, $options: 'i' } },
-            { summary: { $regex: search, $options: 'i' } },
             { extractedText: { $regex: search, $options: 'i' } }
           ]
         }
@@ -239,7 +237,9 @@ export const getTalentPool = async (req, res) => {
         isInvited: invitedMap[c.user._id.toString()] || false,
         applications: applicationsMap[c.user._id.toString()] || [],
         fileUrl: unlockedMap[c.user._id.toString()] ? c.fileUrl : null,
-        fileName: unlockedMap[c.user._id.toString()] ? c.fileName : null
+        fileName: unlockedMap[c.user._id.toString()] ? c.fileName : null,
+        searchable: Boolean(c.extractedText && c.extractedText.trim()),
+        textExtractStatus: c.textExtractStatus || (c.extractedText ? 'EXTRACTED' : 'NOT_EXTRACTED')
       };
     });
 

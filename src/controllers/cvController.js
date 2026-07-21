@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { Cv, CvTemplate, CvSection } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
 
@@ -153,6 +153,8 @@ export const updateCv = async (req, res) => {
 
     if (sections) {
       cv.extractedText = extractTextFromObj(sections).trim();
+    } else if (isPublic === true) {
+      cv.extractedText = extractTextFromObj(cv.sections).trim();
     }
 
     await cv.save();
@@ -235,3 +237,4 @@ export const deleteCv = async (req, res) => {
     res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
+
