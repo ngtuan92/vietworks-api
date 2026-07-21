@@ -123,6 +123,30 @@ const checkEmployerUrgentPackage = async (userId) => {
   return Boolean(await findEmployerActivePremiumJobPackage(userId));
 };
 
+
+const buildJobNameSnapshot = async ({ companyId, careerGroupId, careerId, careerPositionId, jobLevelId, skills = [] }) => {
+  const skillIds = Array.isArray(skills) ? skills.filter(Boolean) : [];
+
+  const [company, careerGroup, career, careerPosition, jobLevel, skillDocs] = await Promise.all([
+    companyId ? Company.findById(companyId).select('name avatarUrl').lean() : null,
+    careerGroupId ? CareerGroup.findById(careerGroupId).select('name').lean() : null,
+    careerId ? Career.findById(careerId).select('name').lean() : null,
+    careerPositionId ? CareerPosition.findById(careerPositionId).select('name').lean() : null,
+    jobLevelId ? JobLevel.findById(jobLevelId).select('name').lean() : null,
+    skillIds.length ? Skill.find({ _id: { $in: skillIds } }).select('name').lean() : []
+  ]);
+
+  return {
+    careerGroupNameSnapshot: careerGroup?.name || null,
+    careerNameSnapshot: career?.name || null,
+    careerPositionNameSnapshot: careerPosition?.name || null,
+    jobLevelNameSnapshot: jobLevel?.name || null,
+    companyNameSnapshot: company?.name || null,
+    companyLogoSnapshot: company?.avatarUrl || null,
+    skillNameSnapshots: skillDocs.map((skill) => skill.name).filter(Boolean)
+  };
+};
+
 /**
  * @desc Create a new job (draft status)
 
@@ -216,6 +240,15 @@ export const createJob = async (req, res) => {
     }
 
     const canUseUrgent = Boolean(activePremiumPackage);
+    const normalizedSkillIds = skills ? skills.map(id => new mongoose.Types.ObjectId(id)) : [];
+    const jobSnapshot = await buildJobNameSnapshot({
+      companyId: employerProfile.companyId,
+      careerGroupId,
+      careerId,
+      careerPositionId,
+      jobLevelId,
+      skills: normalizedSkillIds
+    });
 
     // Create job
     const newJob = new Job({
@@ -226,8 +259,9 @@ export const createJob = async (req, res) => {
       careerId: new mongoose.Types.ObjectId(careerId),
       careerPositionId: new mongoose.Types.ObjectId(careerPositionId),
       jobLevelId: new mongoose.Types.ObjectId(jobLevelId),
+      ...jobSnapshot,
       experience,
-      skills: skills ? skills.map(id => new mongoose.Types.ObjectId(id)) : [],
+      skills: normalizedSkillIds,
       salary: salary || { type: 'NEGOTIABLE' },
       workLocations: workLocations || [],
       saturdayPolicy: saturdayPolicy || 'NOT_SPECIFIED',
@@ -592,6 +626,21 @@ export const updateJob = async (req, res) => {
     }
 
     // 7. Lưu lại vào Database
+    const snapshotFields = ['companyId', 'careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'skills'];
+    const shouldRefreshSnapshot = snapshotFields.some((field) => updates[field] !== undefined);
+
+    if (shouldRefreshSnapshot) {
+      const jobSnapshot = await buildJobNameSnapshot({
+        companyId: job.companyId,
+        careerGroupId: job.careerGroupId,
+        careerId: job.careerId,
+        careerPositionId: job.careerPositionId,
+        jobLevelId: job.jobLevelId,
+        skills: job.skills
+      });
+      Object.assign(job, jobSnapshot);
+    }
+
     await job.save();
 
     // Phản hồi thông điệp rõ ràng cho client biết tin có bị hạ xuống để chờ duyệt hay không

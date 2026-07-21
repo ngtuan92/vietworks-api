@@ -7,6 +7,7 @@ import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 import { notifyPaymentCancelled, notifyPackagePurchaseSuccess } from '../services/paymentNotificationService.js';
+import { buildPackageSnapshot } from '../utils/packageSnapshot.js';
 import { computeEmployerUpgradeQuote, computeUpgradeQuoteByPackage } from '../utils/proration.js';
 
 /**
@@ -26,14 +27,7 @@ const activatePremiumJobPackage = async ({ userId, jobId, pkg, transactionId }) 
         packageId: pkg._id,
         // Defensive defaults: mọi field đều có fallback tránh validation error khi
         // ServicePackage thiếu field (vd: gói cũ seed với durationDays=null).
-        packageSnapshot: {
-          id: pkg._id,
-          code: pkg.code ?? null,
-          name: pkg.name ?? null,
-          type: pkg.packageType ?? null,
-          price: pkg.price ?? null,
-          durationDays: pkg.durationDays ?? 7
-        },
+        packageSnapshot: buildPackageSnapshot(pkg),
         packageCode: pkg.code ?? null,
         packageType: pkg.packageType ?? null,
         targetType: 'JOB',
@@ -234,6 +228,7 @@ export const createBoostPayment = async (req, res) => {
         targetType: 'JOB',
         targetId: jobId,
         packageId,
+        packageSnapshot: buildPackageSnapshot(pkg),
         balanceBefore,
         balanceAfter,
         description: `Boost Job ${job.title} - ${pkg.name}${effectivePrice < pkg.price ? ` (nâng cấp từ ${activeSubscription?.packageCode || 'gói cũ'})` : ''}`,
@@ -302,14 +297,7 @@ export const createBoostPayment = async (req, res) => {
       targetType: 'JOB',
       targetId: jobId,
       packageId,
-      packageSnapshot: {
-        id: pkg._id,
-        code: pkg.code,
-        name: pkg.name,
-        type: pkg.packageType,
-        price: pkg.price,
-        durationDays: pkg.durationDays
-      },
+      packageSnapshot: buildPackageSnapshot(pkg),
       description: `Boost Job ${job.title} - ${pkg.name}${effectivePrice < pkg.price ? ` (nâng cấp từ ${activeSubscription?.packageCode || 'gói cũ'})` : ''}`,
       metadata: action === 'upgrade' && activeSubscription ? {
         upgradeFrom: {

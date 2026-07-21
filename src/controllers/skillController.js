@@ -332,22 +332,33 @@ export const hardDeleteSkill = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy kỹ năng' });
     }
 
+    const JobseekerProfile = mongoose.model('JobseekerProfile');
     const jobCount = await Job.countDocuments({ skills: { $in: [id] } });
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa kỹ năng này vì có ${jobCount} công việc đang sử dụng.`
+    const profileCount = await JobseekerProfile.countDocuments({ skills: { $in: [id] } });
+    const totalReferences = jobCount + profileCount;
+
+    if (totalReferences > 0) {
+      if (skill.status !== 'INACTIVE') {
+        skill.status = 'INACTIVE';
+        skill.updatedAt = new Date();
+        await skill.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: skill,
+        message: 'Kỹ năng đã được sử dụng nên được chuyển sang trạng thái ngừng hoạt động để bảo toàn dữ liệu lịch sử'
       });
     }
 
     await Skill.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Xóa kỹ năng thành công'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 // Khôi phục kỹ năng

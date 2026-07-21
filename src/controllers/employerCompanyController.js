@@ -1,12 +1,24 @@
 import EmployerProfile from '../models/employerProfileModels.js';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
+import CompanyIndustry from '../models/companyIndustryModels.js';
 import { CommonStatus,  CompanyVerificationStatus
  } from '../enums/masterDataEnums.js';
 import NotificationService from '../services/notificationService.js';
 import { NotificationTypeCode, NotificationChannel } from '../enums/notificationEnums.js';
 import User from '../models/userModels.js';
 import { UserRole } from '../enums/userEnums.js';
+
+
+const buildIndustryNameSnapshots = async (industryIds = []) => {
+  if (!Array.isArray(industryIds) || industryIds.length === 0) return [];
+
+  const industries = await CompanyIndustry.find({ _id: { $in: industryIds } })
+    .select('name')
+    .lean();
+
+  return industries.map((industry) => industry.name).filter(Boolean);
+};
 
 export const getMyCompanyProfile = async (req, res) => {
   try {
@@ -117,11 +129,14 @@ export const updateMyCompanyProfile = async (req, res) => {
       });
     }
 
+    const industryNameSnapshots = await buildIndustryNameSnapshots(industryIds);
+
     const updateData = {
       name,
       taxCode,
       website: website || null,
       industryIds,
+      industryNameSnapshots,
       size,
       email,
       phone,

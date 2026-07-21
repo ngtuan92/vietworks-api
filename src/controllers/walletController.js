@@ -8,6 +8,7 @@ import ServicePackage from '../models/servicePackageModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import UploadedCV from '../models/uploadedCvModels.js';
 import SepayWebhookLog from '../models/sepayWebhookLogModels.js';
+import { buildPackageSnapshot } from '../utils/packageSnapshot.js';
 import { createQRPaymentUrl, verifySepayWebhook, parseSepayWebhook, generateOrderCode, buildTransferContent, findSepayTransactionByCode } from '../services/sepayService.js';
 import { notifyWalletDepositSuccess, notifyPackagePurchaseSuccess, notifyPaymentFailed, notifyPaymentCancelled } from '../services/paymentNotificationService.js';
 import { PaymentMethod, TransactionType, TransactionStatus, UserServicePackageStatus, PackageTargetType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
@@ -194,12 +195,9 @@ async function processPaidTransaction(orderCode, sepay) {
             // Defensive defaults: pkg có thể là fresh ServicePackage (.lean()) HOẶC snapshot cũ.
             // Tránh validation error khi cả 6 field đều undefined.
             packageSnapshot: {
+              ...buildPackageSnapshot(pkg),
               id: pkgId,
-              code: pkg.code ?? null,
-              name: pkg.name ?? null,
-              type: pkg.packageType ?? pkg.type ?? null,
-              price: pkg.price ?? null,
-              durationDays: durationDays ?? null
+              durationDays: durationDays ?? pkg.durationDays ?? null
             },
             packageCode: pkg.code ?? null,
             packageType: pkg.packageType ?? pkg.type ?? null,

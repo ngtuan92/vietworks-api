@@ -25,8 +25,13 @@ const transactionSchema = new mongoose.Schema({
     code: { type: String, default: null },
     name: { type: String, default: null },
     type: { type: String, default: null },
+    targetRole: { type: String, default: null },
     price: { type: Number, default: null },
-    durationDays: { type: Number, default: null }
+    durationDays: { type: Number, default: null },
+    quantity: { type: Number, default: null },
+    unit: { type: String, default: null },
+    benefits: { type: mongoose.Schema.Types.Mixed, default: null },
+    description: { type: String, default: null }
   },
   targetType: { type: String, enum: Object.values(PackageTargetType), default: null },
   targetId: { type: objectId, default: null },

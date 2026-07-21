@@ -21,16 +21,33 @@ export const getMyNotifications = async (req, res) => {
       Notification.countDocuments({ ...query, status: NotificationStatus.UNREAD })
     ]);
 
+    let fetchedItems = items;
+    let finalUnreadCount = unreadCount;
+
+    if (page === 1 && req.user.role === 'JOBSEEKER' && (!req.user.phone || req.user.phone.trim() === '')) {
+      const systemNotification = {
+        _id: 'missing-phone-warning',
+        title: 'Cập nhật số điện thoại',
+        content: 'Hãy cập nhật số điện thoại để nhà tuyển dụng có thể liên hệ bạn bất cứ lúc nào',
+        typeCode: 'SYSTEM_UPDATE',
+        status: 'UNREAD',
+        createdAt: new Date().toISOString(),
+        isSystemFake: true,
+      };
+      fetchedItems = [systemNotification, ...fetchedItems];
+      finalUnreadCount += 1;
+    }
+
     res.json({
       success: true,
-      data: items,
+      data: fetchedItems,
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit)
       },
-      unreadCount
+      unreadCount: finalUnreadCount
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Không thể tải danh sách thông báo' });

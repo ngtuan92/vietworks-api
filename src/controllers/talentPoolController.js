@@ -17,6 +17,7 @@ import { UserRole, AccountStatus } from '../enums/userEnums.js';
 import { TransactionType, PaymentMethod, TransactionStatus, ServicePackageType, CvUnlockCreditStatus } from '../enums/paymentEnums.js';
 import { ApplicationStatus } from '../enums/jobEnums.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
+import { buildPackageSnapshot } from '../utils/packageSnapshot.js';
 import { computeCreditUpgradeQuote, getPackageCredits } from '../utils/proration.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 import mongoose from 'mongoose';
@@ -398,14 +399,7 @@ export const unlockCandidate = async (req, res) => {
       targetType: 'CV',
       targetId: cvId,
       packageId: pkg._id,
-      packageSnapshot: {
-        id: pkg._id,
-        code: pkg.code,
-        name: pkg.name,
-        type: pkg.packageType,
-        price: pkg.price,
-        durationDays: pkg.durationDays
-      },
+      packageSnapshot: buildPackageSnapshot(pkg),
       description: `Mở khóa CV (lẻ) - ${candidateId}`
     });
 
@@ -558,6 +552,7 @@ export const purchaseCvUnlockPackage = async (req, res) => {
         status: TransactionStatus.SUCCESS,
         paymentMethod: PaymentMethod.WALLET,
         packageId,
+        packageSnapshot: buildPackageSnapshot(pkg),
         balanceBefore: balanceAfter + quote.upgradePrice,
         balanceAfter,
         description: `Nâng cấp lên ${pkg.name} (${credits} lượt) — bù ${quote.upgradePrice.toLocaleString('vi-VN')}đ từ ${oldBag.packageCode}`,
@@ -636,6 +631,7 @@ export const purchaseCvUnlockPackage = async (req, res) => {
         status: TransactionStatus.SUCCESS,
         paymentMethod: PaymentMethod.WALLET,
         packageId,
+        packageSnapshot: buildPackageSnapshot(pkg),
         balanceBefore: balanceAfter + pkg.price,
         balanceAfter,
         description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
@@ -682,14 +678,7 @@ export const purchaseCvUnlockPackage = async (req, res) => {
       status: TransactionStatus.PENDING,
       paymentMethod: PaymentMethod.SEPAY,
       packageId,
-      packageSnapshot: {
-        id: pkg._id,
-        code: pkg.code,
-        name: pkg.name,
-        type: pkg.packageType,
-        price: pkg.price,
-        durationDays: pkg.durationDays
-      },
+      packageSnapshot: buildPackageSnapshot(pkg),
       description: `Mua ${pkg.name} (${credits} lượt mở khóa CV)`,
       metadata: {}
     });

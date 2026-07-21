@@ -228,44 +228,34 @@ export const hardDeleteCareerGroup = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy nhóm nghề' });
     }
 
-    // Kiểm tra xem có bất kỳ job nào sử dụng nhóm nghề này không (tất cả trạng thái)
-    const jobCount = await Job.countDocuments({ careerGroupId: id });
-    
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa nhóm nghề này vì có ${jobCount} công việc đang sử dụng (bao gồm cả công việc đã xóa). Vui lòng xóa hoặc chuyển đổi tất cả công việc này trước.`
-      });
-    }
-
-    // Cũng nên kiểm tra Career và CareerPosition có sử dụng không
     const Career = mongoose.model('Career');
     const CareerPosition = mongoose.model('CareerPosition');
-    
+    const jobCount = await Job.countDocuments({ careerGroupId: id });
     const careerCount = await Career.countDocuments({ careerGroupId: id });
-    if (careerCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa nhóm nghề này vì có ${careerCount} nghề đang sử dụng. Vui lòng xóa hoặc chuyển đổi các nghề này trước.`
-      });
-    }
-
     const positionCount = await CareerPosition.countDocuments({ careerGroupId: id });
-    if (positionCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa nhóm nghề này vì có ${positionCount} vị trí chuyên môn đang sử dụng. Vui lòng xóa hoặc chuyển đổi các vị trí này trước.`
+    const totalReferences = jobCount + careerCount + positionCount;
+
+    if (totalReferences > 0) {
+      if (careerGroup.status !== CommonStatus.INACTIVE) {
+        careerGroup.status = CommonStatus.INACTIVE;
+        await careerGroup.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: careerGroup,
+        message: 'Nhóm nghề đã được sử dụng nên được chuyển sang trạng thái ngừng hoạt động để bảo toàn dữ liệu lịch sử'
       });
     }
 
     await CareerGroup.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Xóa nhóm nghề thành công'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

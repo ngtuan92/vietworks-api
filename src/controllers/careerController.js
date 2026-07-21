@@ -306,33 +306,32 @@ export const hardDeleteCareer = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy nghề' });
     }
 
-    // Kiểm tra Job
-    const jobCount = await Job.countDocuments({ careerId: id });
-    if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa nghề này vì có ${jobCount} công việc đang sử dụng.`
-      });
-    }
-
-    // Kiểm tra CareerPosition
     const CareerPosition = mongoose.model('CareerPosition');
+    const jobCount = await Job.countDocuments({ careerId: id });
     const positionCount = await CareerPosition.countDocuments({ careerId: id });
-    if (positionCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa nghề này vì có ${positionCount} vị trí chuyên môn đang sử dụng.`
+    const totalReferences = jobCount + positionCount;
+
+    if (totalReferences > 0) {
+      if (career.status !== CommonStatus.INACTIVE) {
+        career.status = CommonStatus.INACTIVE;
+        await career.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: career,
+        message: 'Nghề đã được sử dụng nên được chuyển sang trạng thái ngừng hoạt động để bảo toàn dữ liệu lịch sử'
       });
     }
 
     await Career.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Xóa nghề thành công'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

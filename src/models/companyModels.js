@@ -8,6 +8,7 @@ const companySchema = new mongoose.Schema({
   taxCode: { type: String, required: true, unique: true },
   website: { type: String, default: null },
   industryIds: [{ type: objectId, ref: 'CompanyIndustry', required: true }],
+  industryNameSnapshots: { type: [String], default: [] },
   size: { type: String, required: true },
   email: { type: String, required: true },
   phone: { type: String, required: true },

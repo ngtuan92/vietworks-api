@@ -10,6 +10,7 @@ import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import Company from '../models/companyModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
+import CompanyIndustry from '../models/companyIndustryModels.js';
 import { verifyGoogleToken } from '../services/googleAuthService.js';
 import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/emailService.js';
@@ -54,6 +55,17 @@ const isValidPhone = (phone) => {
 const isValidObjectId = (id) => mongoose.isValidObjectId(id);
 
 const badRequest = (res, message) => res.status(400).json({ success: false, message });
+
+const buildCompanyIndustrySnapshots = async (industryIds = []) => {
+  if (!Array.isArray(industryIds) || industryIds.length === 0) return [];
+
+  const industries = await CompanyIndustry.find({ _id: { $in: industryIds } })
+    .select('name')
+    .lean();
+
+  return industries.map((industry) => industry.name).filter(Boolean);
+};
+
 const isBlockedAccount = (user) => (
   user?.accountStatus === AccountStatus.BANNED || user?.accountStatus === 'LOCKED'
 );
@@ -283,12 +295,15 @@ export const registerEmployer = async (req, res) => {
     });
     createdWalletId = wallet._id;
 
+    const industryNameSnapshots = await buildCompanyIndustrySnapshots(companyIndustryIds);
+
     const newCompany = await Company.create({
       ownerUserId: user._id,
       name: companyName,
       taxCode: companyTaxCode,
       website: companyWebsite || null,
       industryIds: companyIndustryIds,
+      industryNameSnapshots,
       size: companySize,
       email: companyEmail,
       phone: companyPhone,
