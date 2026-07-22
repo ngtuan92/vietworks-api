@@ -1,6 +1,7 @@
 // controllers/careerController.js
 import Career from '../models/careerModels.js';
 import CareerGroup from '../models/careerGroupModels.js';
+import CareerPosition from '../models/careerPositionModels.js';
 import Job from '../models/jobModels.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import mongoose from 'mongoose';
@@ -270,25 +271,29 @@ export const softDeleteCareer = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return res.status(400).json({ success: false, message: 'ID kh?ng h?p l?' });
     }
 
     const career = await Career.findById(id);
     if (!career) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy nghề' });
+      return res.status(404).json({ success: false, message: 'Kh?ng t?m th?y ngh?' });
     }
 
-    // KHÔNG KIỂM TRA JOB, vẫn cho phép ẩn
     career.status = CommonStatus.INACTIVE;
     await career.save();
 
-    res.status(200).json({
+    await CareerPosition.updateMany(
+      { careerId: id, status: { $ne: CommonStatus.INACTIVE } },
+      { $set: { status: CommonStatus.INACTIVE } }
+    );
+
+    return res.status(200).json({
       success: true,
       data: career,
-      message: 'Đã ẩn nghề thành công. Các job cũ vẫn hiển thị bình thường.'
+      message: '?? ?n ngh? th?nh c?ng. C?c v? tr? thu?c ngh? n?y c?ng ?? ???c ?n theo.'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

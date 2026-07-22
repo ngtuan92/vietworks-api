@@ -7,6 +7,7 @@ import CompanyLocation from '../models/companyLocationModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import { JobStatus } from '../enums/jobEnums.js';
 import { CommonStatus, CompanyVerificationStatus } from '../enums/masterDataEnums.js';
+import { attachHiringStats } from './jobController.js';
 
 const MAX_SEARCH_HISTORY = 20;
 
@@ -650,9 +651,11 @@ export const getCompanyOpenJobs = async (req, res) => {
       Job.countDocuments(filter)
     ]);
 
+    const enrichedJobs = await attachHiringStats(jobs);
+
     return res.status(200).json({
       success: true,
-      data: jobs,
+      data: enrichedJobs,
       pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) }
     });
   } catch {

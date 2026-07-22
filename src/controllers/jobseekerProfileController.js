@@ -1,7 +1,43 @@
 import User from '../models/userModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import { UserRole } from '../enums/userEnums.js';
-import { NotificationTypeCode } from '../enums/notificationEnums.js';
+import { NotificationStatus, NotificationTypeCode } from '../enums/notificationEnums.js';
+import { Notification } from '../models/index.js';
+import { getIO } from '../sockets/chatSocket.js';
+
+const MISSING_PHONE_NOTIFICATION_KEY = 'MISSING_PHONE_WARNING';
+
+const upsertMissingPhoneNotification = async (userId) => {
+  const notification = await Notification.findOneAndUpdate(
+    {
+      receiverUserId: userId,
+      'metadata.systemKey': MISSING_PHONE_NOTIFICATION_KEY,
+      deletedAt: null
+    },
+    {
+      $set: {
+        title: 'Cập nhật số điện thoại',
+        content: 'Hãy cập nhật số điện thoại để nhà tuyển dụng có thể liên hệ bạn bất cứ lúc nào.',
+        typeCode: NotificationTypeCode.SYSTEM_UPDATE,
+        status: NotificationStatus.UNREAD,
+        metadata: {
+          systemKey: MISSING_PHONE_NOTIFICATION_KEY,
+          actionUrl: '/profile'
+        }
+      },
+      $setOnInsert: {
+        receiverUserId: userId
+      }
+    },
+    { upsert: true, new: true }
+  );
+
+  try {
+    getIO().to(userId.toString()).emit('notification_upsert', notification.toObject());
+  } catch (socketError) {
+    console.error('Lỗi gửi cảnh báo số điện thoại realtime:', socketError.message);
+  }
+};
 
 // Notification types relevant to Jobseeker with display metadata
 const JOBSEEKER_NOTIFICATION_TYPES = [
@@ -226,11 +262,17 @@ export const updateMyProfile = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Họ tên không được để trống' });
     }
 
+    const normalizedPhone = phone?.trim() || '';
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
-      { fullName: fullName.trim(), phone: phone?.trim() || '' },
+      { fullName: fullName.trim(), phone: normalizedPhone },
       { new: true, select: 'fullName email phone accountStatus' }
     );
+
+    if (!normalizedPhone) {
+      await upsertMissingPhoneNotification(req.user._id);
+    }
 
     // Ảnh đại diện được lưu trên JobseekerProfile (chỉ cập nhật khi client gửi lên).
     let savedAvatarUrl;
