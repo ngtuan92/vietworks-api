@@ -4,7 +4,7 @@ import AdmZip from 'adm-zip';
 import { v2 as cloudinary } from 'cloudinary';
 import { Application, Company, Cv, Job, UploadedCv, JobseekerProfile } from '../models/index.js';
 import User from '../models/userModels.js';
-import { ApplicationStatus } from '../enums/jobEnums.js';
+import { ApplicationStatus, JobStatus } from '../enums/jobEnums.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
 import NotificationService from '../services/notificationService.js';
 
@@ -440,6 +440,23 @@ export const approveApplication = async (req, res) => {
         employerUserId: toId(req.user)
       }
     });
+
+    // Auto-close job if fully hired
+    if (updated.jobId && updated.jobId._id) {
+      const job = await Job.findById(updated.jobId._id);
+      if (job && job.headcount > 0 && job.status === JobStatus.PUBLISHED) {
+        const currentHiredCount = await Application.countDocuments({
+          jobId: job._id,
+          status: ApplicationStatus.APPROVED
+        });
+        if (currentHiredCount >= job.headcount) {
+          await Job.findByIdAndUpdate(job._id, {
+            status: JobStatus.CLOSED,
+            closedAt: new Date()
+          });
+        }
+      }
+    }
 
     res.json({ success: true, message: 'Đã duyệt hồ sơ', data: updated });
   } catch (error) {

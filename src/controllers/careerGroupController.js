@@ -1,5 +1,7 @@
 // controllers/careerGroupController.js
 import CareerGroup from '../models/careerGroupModels.js';
+import Career from '../models/careerModels.js';
+import CareerPosition from '../models/careerPositionModels.js';
 import Job from '../models/jobModels.js';
 import { CommonStatus } from '../enums/masterDataEnums.js';
 import mongoose from 'mongoose';
@@ -192,25 +194,34 @@ export const softDeleteCareerGroup = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'ID không hợp lệ' });
+      return res.status(400).json({ success: false, message: 'ID kh?ng h?p l?' });
     }
 
     const careerGroup = await CareerGroup.findById(id);
     if (!careerGroup) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy nhóm nghề' });
+      return res.status(404).json({ success: false, message: 'Kh?ng t?m th?y nh?m ngh?' });
     }
 
-    // KHÔNG KIỂM TRA JOB, vẫn cho phép ẩn
     careerGroup.status = CommonStatus.INACTIVE;
     await careerGroup.save();
 
-    res.status(200).json({
+    await Career.updateMany(
+      { careerGroupId: id, status: { $ne: CommonStatus.INACTIVE } },
+      { $set: { status: CommonStatus.INACTIVE } }
+    );
+
+    await CareerPosition.updateMany(
+      { careerGroupId: id, status: { $ne: CommonStatus.INACTIVE } },
+      { $set: { status: CommonStatus.INACTIVE } }
+    );
+
+    return res.status(200).json({
       success: true,
       data: careerGroup,
-      message: 'Đã vô hiệu hóa nhóm nghề thành công. Các job cũ vẫn hiển thị bình thường.'
+      message: '?? ?n nh?m ngh? th?nh c?ng. C?c ngh? nghi?p v? v? tr? thu?c nh?m n?y c?ng ?? ???c ?n theo.'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

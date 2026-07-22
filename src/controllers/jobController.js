@@ -62,7 +62,7 @@ const ensureCompanyVerifiedForEmployer = async (userId) => {
   };
 };
 
-const attachHiringStats = async (jobs = []) => {
+export const attachHiringStats = async (jobs = []) => {
   const jobIds = jobs.map((job) => job?._id).filter(Boolean);
   if (!jobIds.length) return jobs;
 

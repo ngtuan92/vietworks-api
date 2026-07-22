@@ -1,8 +1,40 @@
 import { Notification } from '../models/index.js';
 import { NotificationStatus } from '../enums/notificationEnums.js';
 
+const MISSING_PHONE_NOTIFICATION_KEY = 'MISSING_PHONE_WARNING';
+
+const ensureMissingPhoneNotification = async (user) => {
+  if (user.role !== 'JOBSEEKER' || (user.phone && user.phone.trim() !== '')) {
+    return;
+  }
+
+  await Notification.findOneAndUpdate(
+    {
+      receiverUserId: user._id,
+      'metadata.systemKey': MISSING_PHONE_NOTIFICATION_KEY,
+      deletedAt: null
+    },
+    {
+      $setOnInsert: {
+        receiverUserId: user._id,
+        title: 'Cập nhật số điện thoại',
+        content: 'Hãy cập nhật số điện thoại để nhà tuyển dụng có thể liên hệ bạn bất cứ lúc nào.',
+        typeCode: 'SYSTEM_UPDATE',
+        status: NotificationStatus.UNREAD,
+        metadata: {
+          systemKey: MISSING_PHONE_NOTIFICATION_KEY,
+          actionUrl: '/profile'
+        }
+      }
+    },
+    { upsert: true, new: true }
+  );
+};
+
 export const getMyNotifications = async (req, res) => {
   try {
+    await ensureMissingPhoneNotification(req.user);
+
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
     const skip = (page - 1) * limit;
@@ -21,33 +53,16 @@ export const getMyNotifications = async (req, res) => {
       Notification.countDocuments({ ...query, status: NotificationStatus.UNREAD })
     ]);
 
-    let fetchedItems = items;
-    let finalUnreadCount = unreadCount;
-
-    if (page === 1 && req.user.role === 'JOBSEEKER' && (!req.user.phone || req.user.phone.trim() === '')) {
-      const systemNotification = {
-        _id: 'missing-phone-warning',
-        title: 'Cập nhật số điện thoại',
-        content: 'Hãy cập nhật số điện thoại để nhà tuyển dụng có thể liên hệ bạn bất cứ lúc nào',
-        typeCode: 'SYSTEM_UPDATE',
-        status: 'UNREAD',
-        createdAt: new Date().toISOString(),
-        isSystemFake: true,
-      };
-      fetchedItems = [systemNotification, ...fetchedItems];
-      finalUnreadCount += 1;
-    }
-
     res.json({
       success: true,
-      data: fetchedItems,
+      data: items,
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit)
       },
-      unreadCount: finalUnreadCount
+      unreadCount
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Không thể tải danh sách thông báo' });
