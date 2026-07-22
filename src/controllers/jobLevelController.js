@@ -256,20 +256,26 @@ export const hardDeleteJobLevel = async (req, res) => {
 
     const jobCount = await Job.countDocuments({ jobLevelId: id });
     if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa cấp bậc này vì có ${jobCount} công việc đang sử dụng.`
+      if (jobLevel.status !== CommonStatus.INACTIVE) {
+        jobLevel.status = CommonStatus.INACTIVE;
+        await jobLevel.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: jobLevel,
+        message: 'Cấp bậc đã được sử dụng nên được chuyển sang trạng thái ngừng hoạt động để bảo toàn dữ liệu lịch sử'
       });
     }
 
     await JobLevel.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Xóa cấp bậc thành công'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

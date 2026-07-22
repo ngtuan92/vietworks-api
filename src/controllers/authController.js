@@ -9,6 +9,8 @@ import Wallet from '../models/walletModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import Company from '../models/companyModels.js';
 import EmployerProfile from '../models/employerProfileModels.js';
+import CompanyLocation from '../models/companyLocationModels.js';
+import CompanyIndustry from '../models/companyIndustryModels.js';
 import { verifyGoogleToken } from '../services/googleAuthService.js';
 import { verifyLinkedinCode } from '../services/linkedinAuthService.js';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/emailService.js';
@@ -47,12 +49,23 @@ const isValidPhone = (phone) => {
   const normalized = phone.trim();
   if (!normalized.length) return false;
   const digits = normalized.replace(/[^\d]/g, '');
-  return digits.length >= 8 && digits.length <= 15 && /^[+\d][\d\s-]+$/.test(normalized);
+  return digits.length >= 10 && digits.length <= 11 && /^[+\d][\d\s-]+$/.test(normalized);
 };
 
 const isValidObjectId = (id) => mongoose.isValidObjectId(id);
 
 const badRequest = (res, message) => res.status(400).json({ success: false, message });
+
+const buildCompanyIndustrySnapshots = async (industryIds = []) => {
+  if (!Array.isArray(industryIds) || industryIds.length === 0) return [];
+
+  const industries = await CompanyIndustry.find({ _id: { $in: industryIds } })
+    .select('name')
+    .lean();
+
+  return industries.map((industry) => industry.name).filter(Boolean);
+};
+
 const isBlockedAccount = (user) => (
   user?.accountStatus === AccountStatus.BANNED || user?.accountStatus === 'LOCKED'
 );
@@ -222,6 +235,7 @@ export const registerEmployer = async (req, res) => {
     const companyIndustryIds = company.industryIds;
     const companySize = company.size;
     const companyWebsite = company.website ? String(company.website).trim() : null;
+    const locationData = company.locationData || null;
 
     if (!companyName) {
       return badRequest(res, 'Tên công ty là bắt buộc');
@@ -281,12 +295,15 @@ export const registerEmployer = async (req, res) => {
     });
     createdWalletId = wallet._id;
 
+    const industryNameSnapshots = await buildCompanyIndustrySnapshots(companyIndustryIds);
+
     const newCompany = await Company.create({
       ownerUserId: user._id,
       name: companyName,
       taxCode: companyTaxCode,
       website: companyWebsite || null,
       industryIds: companyIndustryIds,
+      industryNameSnapshots,
       size: companySize,
       email: companyEmail,
       phone: companyPhone,
@@ -297,6 +314,18 @@ export const registerEmployer = async (req, res) => {
       businessLicenseFile: company.businessLicenseFile || null
     });
     createdCompanyId = newCompany._id;
+
+    if (locationData && locationData.provinceName) {
+      await CompanyLocation.create({
+        companyId: newCompany._id,
+        name: 'Trụ sở chính',
+        province: locationData.provinceName,
+        district: null,
+        ward: locationData.wardName || null,
+        addressLine: locationData.addressLine || 'Chưa cập nhật',
+        isPrimary: true
+      });
+    }
 
     const employerProfile = await EmployerProfile.create({
       userId: user._id,

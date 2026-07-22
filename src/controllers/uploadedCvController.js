@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
 import { createRequire } from 'module';
@@ -8,6 +8,25 @@ import { v2 as cloudinary } from 'cloudinary';
 import { UploadedCv } from '../models/index.js';
 import { CvStatus } from '../enums/cvEnums.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
+
+const normalizeExtractedText = (value) => (value || '').replace(/\s+/g, ' ').trim();
+
+const extractTextFromDocx = (buffer) => {
+  const zip = new AdmZip(buffer);
+  const documentXml = zip.readAsText('word/document.xml');
+  if (!documentXml) return '';
+
+  return normalizeExtractedText(
+    documentXml
+      .replace(/<w:tab\/>/g, ' ')
+      .replace(/<w:br\/>/g, ' ')
+      .replace(/<\/w:p>/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+  );
+};
 
 export const uploadCv = async (req, res) => {
   try {
@@ -46,13 +65,15 @@ export const uploadCv = async (req, res) => {
     let extractedText = null;
     let textExtractStatus = 'NOT_EXTRACTED';
 
-    const isPdf = fileType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+    const lowerFileName = fileName.toLowerCase();
+    const isPdf = fileType === 'application/pdf' || lowerFileName.endsWith('.pdf');
+    const isDocx = fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || lowerFileName.endsWith('.docx');
 
     if (isPdf) {
       try {
         const pdfData = await pdfParse(req.file.buffer);
         if (pdfData && pdfData.text && pdfData.text.trim()) {
-          extractedText = pdfData.text.trim();
+          extractedText = normalizeExtractedText(pdfData.text);
           textExtractStatus = 'EXTRACTED';
         } else {
           textExtractStatus = 'FAILED';
@@ -61,6 +82,21 @@ export const uploadCv = async (req, res) => {
         console.error('Failed to parse PDF text:', err);
         textExtractStatus = 'FAILED';
       }
+    } else if (isDocx) {
+      try {
+        const docxText = extractTextFromDocx(req.file.buffer);
+        if (docxText) {
+          extractedText = docxText;
+          textExtractStatus = 'EXTRACTED';
+        } else {
+          textExtractStatus = 'FAILED';
+        }
+      } catch (err) {
+        console.error('Failed to parse DOCX text:', err);
+        textExtractStatus = 'FAILED';
+      }
+    } else {
+      textExtractStatus = 'UNSUPPORTED';
     }
 
     const uploadedCv = await UploadedCv.create({
@@ -255,3 +291,4 @@ export const deleteUploadedCv = async (req, res) => {
     res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.' });
   }
 };
+

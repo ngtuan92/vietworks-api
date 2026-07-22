@@ -57,7 +57,7 @@ export const createMyCompanyLocation = async (req, res) => {
 
     if (isPrimary) {
       await CompanyLocation.updateMany(
-        { companyId: employerProfile.companyId },
+        { companyId: employerProfile.companyId, status: CommonStatus.ACTIVE },
         { isPrimary: false }
       );
     }
@@ -87,7 +87,6 @@ export const createMyCompanyLocation = async (req, res) => {
     });
   }
 };
-
 
 export const getMyCompanyLocations = async (req, res) => {
   try {
@@ -147,13 +146,20 @@ export const updateMyCompanyLocation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc' });
     }
 
-    const location = await CompanyLocation.findOne({ _id: id, companyId: employerProfile.companyId });
+    const location = await CompanyLocation.findOne({
+      _id: id,
+      companyId: employerProfile.companyId,
+      status: CommonStatus.ACTIVE
+    });
     if (!location) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy địa điểm' });
     }
 
     if (isPrimary && !location.isPrimary) {
-      await CompanyLocation.updateMany({ companyId: employerProfile.companyId }, { isPrimary: false });
+      await CompanyLocation.updateMany(
+        { companyId: employerProfile.companyId, status: CommonStatus.ACTIVE },
+        { isPrimary: false }
+      );
     }
 
     location.name = name;
@@ -184,12 +190,20 @@ export const deleteMyCompanyLocation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nhà tuyển dụng chưa có công ty' });
     }
 
-    const location = await CompanyLocation.findOneAndDelete({ _id: id, companyId: employerProfile.companyId });
+    const location = await CompanyLocation.findOne({
+      _id: id,
+      companyId: employerProfile.companyId,
+      status: CommonStatus.ACTIVE
+    });
     if (!location) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy địa điểm' });
     }
 
-    return res.status(200).json({ success: true, message: 'Xóa địa điểm thành công' });
+    location.status = CommonStatus.INACTIVE;
+    location.isPrimary = false;
+    await location.save();
+
+    return res.status(200).json({ success: true, message: 'Ẩn địa điểm công ty thành công' });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
   }

@@ -8,6 +8,7 @@ import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageType, ServicePackageTargetRole, TransactionType, TransactionStatus, PaymentMethod, UserServicePackageStatus, PackageTargetType } from '../enums/paymentEnums.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 import { notifyPackagePurchaseSuccess } from '../services/paymentNotificationService.js';
+import { buildPackageSnapshot } from '../utils/packageSnapshot.js';
 import { computeJobseekerUpgradeQuote, computeUpgradeQuoteByPackage, isSamePackage } from '../utils/proration.js';
 
 /**
@@ -26,15 +27,7 @@ const activatePremiumCvPackage = async ({ userId, cvId, pkg, transactionId }) =>
         userId,
         packageId: pkg._id,
         // Defensive defaults: tránh validation error khi ServicePackage thiếu field.
-        packageSnapshot: {
-          id: pkg._id,
-          code: pkg.code ?? null,
-          name: pkg.name ?? null,
-          type: pkg.packageType ?? null,
-          price: pkg.price ?? null,
-          durationDays: pkg.durationDays ?? 7,
-          aiPremiumAccess: pkg.benefits?.aiPremiumAccess ?? false
-        },
+        packageSnapshot: buildPackageSnapshot(pkg),
         packageCode: pkg.code ?? null,
         packageType: pkg.packageType ?? null,
         targetType: 'CV',
@@ -278,6 +271,7 @@ export const createBoostPayment = async (req, res) => {
         targetType: 'CV',
         targetId: cvId,
         packageId,
+        packageSnapshot: buildPackageSnapshot(pkg),
         balanceBefore,
         balanceAfter,
         description: `Boost CV ${cv.title} - ${pkg.name}${effectivePrice < pkg.price ? ` (nâng cấp từ ${activeSubscription?.packageCode || 'gói cũ'})` : ''}`,
@@ -336,14 +330,7 @@ export const createBoostPayment = async (req, res) => {
       targetType: 'CV',
       targetId: cvId,
       packageId,
-      packageSnapshot: {
-        id: pkg._id,
-        code: pkg.code,
-        name: pkg.name,
-        type: pkg.packageType,
-        price: pkg.price,
-        durationDays: pkg.durationDays
-      },
+      packageSnapshot: buildPackageSnapshot(pkg),
       description: `Boost CV ${cv.title} - ${pkg.name}${effectivePrice < pkg.price ? ` (nâng cấp từ ${activeSubscription?.packageCode || 'gói cũ'})` : ''}`,
       metadata: action === 'upgrade' && activeSubscription ? {
         upgradeFrom: {

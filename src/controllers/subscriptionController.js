@@ -27,6 +27,7 @@ import { UserRole } from '../enums/userEnums.js';
 import { notifyPackagePurchaseSuccess, notifyPaymentCancelled } from '../services/paymentNotificationService.js';
 import { createQRPaymentUrl, generateOrderCode, buildTransferContent } from '../services/sepayService.js';
 import CvUnlockCredit from '../models/cvUnlockCreditModels.js';
+import { buildPackageSnapshot } from '../utils/packageSnapshot.js';
 import { computeSubscriptionUsage } from '../utils/proration.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -115,6 +116,7 @@ export const renewSubscription = async (req, res) => {
         targetType: sub.targetType,
         targetId: sub.targetId,
         packageId: newPkg._id,
+        packageSnapshot: buildPackageSnapshot(newPkg),
         balanceBefore: balanceAfter + effectivePrice,
         balanceAfter,
         description: `Gia hạn ${newPkg.name} thêm ${newPkg.durationDays} ngày`,
@@ -162,14 +164,7 @@ export const renewSubscription = async (req, res) => {
       targetType: sub.targetType,
       targetId: sub.targetId,
       packageId: newPkg._id,
-      packageSnapshot: {
-        id: newPkg._id,
-        code: newPkg.code,
-        name: newPkg.name,
-        type: newPkg.packageType,
-        price: newPkg.price,
-        durationDays: newPkg.durationDays
-      },
+      packageSnapshot: buildPackageSnapshot(newPkg),
       description: `Gia hạn ${newPkg.name} thêm ${newPkg.durationDays} ngày`,
       metadata: {
         renewFromSubscriptionId: sub._id,
@@ -335,14 +330,7 @@ export const activateTrial = async (req, res) => {
     const subscription = await UserServicePackage.create({
       userId,
       packageId: pkg._id,
-      packageSnapshot: {
-        id: pkg._id,
-        code: pkg.code,
-        name: pkg.name,
-        type: pkg.packageType,
-        price: pkg.price,
-        durationDays: pkg.durationDays
-      },
+      packageSnapshot: buildPackageSnapshot(pkg),
       packageCode: pkg.code,
       packageType: pkg.packageType,
       targetType,

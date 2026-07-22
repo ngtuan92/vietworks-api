@@ -357,21 +357,28 @@ export const hardDeleteCareerPosition = async (req, res) => {
     }
 
     const jobCount = await Job.countDocuments({ careerPositionId: id });
+
     if (jobCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Không thể xóa vị trí này vì có ${jobCount} công việc đang sử dụng.`
+      if (position.status !== CommonStatus.INACTIVE) {
+        position.status = CommonStatus.INACTIVE;
+        await position.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: position,
+        message: 'Vị trí chuyên môn đã được sử dụng nên được chuyển sang trạng thái ngừng hoạt động để bảo toàn dữ liệu lịch sử'
       });
     }
 
     await CareerPosition.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Xóa vị trí thành công'
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
