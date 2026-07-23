@@ -3,10 +3,6 @@ import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageCode, ServicePackageTargetRole, ServicePackageType, ServicePackageUnit, UserServicePackageStatus } from '../enums/paymentEnums.js';
 
 const validatePackageBusinessRules = ({ code, packageType, benefits }) => {
-  if (code === ServicePackageCode.UNLOCK_CV_SINGLE) {
-    return 'Không còn hỗ trợ gói mở khóa CV lẻ.';
-  }
-
   if (packageType === ServicePackageType.CV_UNLOCK) {
     const cvAccessLimit = Number(benefits?.cvAccessLimit || benefits?.unlockCvCount || 0);
     if (cvAccessLimit < 2) {
