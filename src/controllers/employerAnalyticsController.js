@@ -51,7 +51,6 @@ export const getEmployerDashboardAnalytics = async (req, res) => {
     // ── Transactions (chi tiêu) theo tháng ──────────────────
     const spendTypes = [
       TransactionType.PACKAGE_PURCHASE,
-      TransactionType.CV_UNLOCK_SINGLE,
       TransactionType.CV_UNLOCK_BY_PACKAGE
     ];
     const txByMonth = await Transaction.aggregate([

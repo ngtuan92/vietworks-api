@@ -47,6 +47,13 @@ export const createBroadcast = async (req, res) => {
       }
     });
 
+    try {
+      const { getIO } = await import('../sockets/chatSocket.js');
+      getIO().to(req.user._id.toString()).emit('new_notification', broadcastLog.toObject());
+    } catch (e) {
+      console.error('Socket emit error for admin broadcast log', e);
+    }
+
     const batchSize = 100;
     for (let i = 0; i < users.length; i += batchSize) {
       const batch = users.slice(i, i + batchSize);

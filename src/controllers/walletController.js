@@ -545,7 +545,12 @@ export const getTransactions = async (req, res) => {
     const { type, status, page = 1, limit = 20 } = req.query;
 
     const filter = { userId };
-    if (type) filter.type = type;
+    if (type) {
+      filter.type = type;
+    } else {
+      // Mặc định không hiển thị các giao dịch không phát sinh dòng tiền (trừ lượt từ gói)
+      filter.type = { $ne: 'CV_UNLOCK_BY_PACKAGE' };
+    }
     if (status) filter.status = status;
 
     const transactions = await Transaction.find(filter)
