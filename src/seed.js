@@ -1,4 +1,4 @@
-// Seed dữ liệu demo cho Review 1 (Gói dịch vụ + Ví + Giao dịch + Hóa đơn).
+﻿// Seed dữ liệu demo cho Review 1 (Gói dịch vụ + Ví + Giao dịch + Hóa đơn).
 // Chạy: npm run seed   (idempotent — chạy lại không tạo trùng, đồng thời cập nhật
 // các field theo PACKAGES bên dưới để đảm bảo giá/hạn luôn khớp với code mới nhất)
 import dotenv from 'dotenv';
@@ -42,14 +42,7 @@ const PACKAGES = [
     description: 'Trọn gói boost CV + Dùng tính năng AI Premium không giới hạn suốt 1 năm — tiết kiệm nhất.', sortOrder: 3
   },
 
-  // ─── Nhà tuyển dụng (Mở khóa CV) ───
-  {
-    code: 'UNLOCK_CV_SINGLE', name: 'Mở khóa 1 Ứng viên', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
-    price: 20000, durationDays: 365, unit: Unit.CV,
-    benefits: { cvAccessLimit: 1 },
-    description: 'Mở khóa thông tin liên hệ của 1 ứng viên. Trả phí 1 lần, xem được toàn bộ các CV khác của người này miễn phí. (hạn dùng 1 năm).', sortOrder: 1
-  },
-  {
+  // ─── Nhà tuyển dụng (Mở khóa CV) ───  {
     code: 'UNLOCK_CV_50_30_DAYS', name: 'Gói mở khóa 50 Ứng viên - 1 tháng', targetRole: Role.EMPLOYER, packageType: PType.CV_UNLOCK,
     price: 800000, durationDays: 30, unit: Unit.CV,
     benefits: { cvAccessLimit: 50 },
@@ -158,3 +151,4 @@ async function run() {
 }
 
 run().catch((e) => { console.error('Seed lỗi:', e); process.exit(1); });
+

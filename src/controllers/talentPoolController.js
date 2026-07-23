@@ -366,52 +366,11 @@ export const unlockCandidate = async (req, res) => {
       });
     }
 
-    // ─── ƯU TIÊN 2: không có credit → trừ ví trực tiếp (gói lẻ rẻ nhất) ───
-    const pkg = await ServicePackage.findOne({
-      packageType: ServicePackageType.CV_UNLOCK,
-      status: 'ACTIVE'
-    }).sort({ price: 1 });
-    if (!pkg) {
-      return res.status(400).json({ success: false, message: 'No active unlock package found' });
-    }
-    const amount = pkg.price;
-
-    // Atomic trừ ví (chỉ trừ khi đủ) — chống race
-    const wallet = await Wallet.findOneAndUpdate(
-      { userId: employerId, balance: { $gte: amount } },
-      { $inc: { balance: -amount, totalSpent: amount } },
-      { new: true }
-    );
-    if (!wallet) {
-      return res.status(400).json({
-        success: false,
-        code: 'INSUFFICIENT_BALANCE',
-        message: 'Số dư ví không đủ. Hãy mua gói mở khóa hoặc nạp thêm tiền.'
-      });
-    }
-
-    await Transaction.create({
-      userId: employerId,
-      type: TransactionType.CV_UNLOCK_SINGLE,
-      amount,
-      status: TransactionStatus.SUCCESS,
-      paymentMethod: PaymentMethod.WALLET,
-      targetType: 'CV',
-      targetId: cvId,
-      packageId: pkg._id,
-      packageSnapshot: buildPackageSnapshot(pkg),
-      description: `Mở khóa CV (lẻ) - ${candidateId}`
+    return res.status(400).json({
+      success: false,
+      code: 'NO_UNLOCK_CREDIT',
+      message: 'Bạn không còn lượt mở khóa CV. Vui lòng mua gói mở khóa CV trước khi tiếp tục.'
     });
-
-    const unlocked = await UnlockedCandidate.create({ 
-      employerId, 
-      candidateId, 
-      cvId: cvId || null, 
-      amountCharged: amount,
-      packageId: pkg._id,
-      packageName: pkg.name
-    });
-    res.status(201).json({ success: true, data: unlocked });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

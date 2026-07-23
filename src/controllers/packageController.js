@@ -2,6 +2,21 @@ import ServicePackage from '../models/servicePackageModels.js';
 import UserServicePackage from '../models/userServicePackageModels.js';
 import { ServicePackageCode, ServicePackageTargetRole, ServicePackageType, ServicePackageUnit, UserServicePackageStatus } from '../enums/paymentEnums.js';
 
+const validatePackageBusinessRules = ({ code, packageType, benefits }) => {
+  if (code === ServicePackageCode.UNLOCK_CV_SINGLE) {
+    return 'Không còn hỗ trợ gói mở khóa CV lẻ.';
+  }
+
+  if (packageType === ServicePackageType.CV_UNLOCK) {
+    const cvAccessLimit = Number(benefits?.cvAccessLimit || benefits?.unlockCvCount || 0);
+    if (cvAccessLimit < 2) {
+      return 'Gói mở khóa CV phải có ít nhất 2 lượt. Không còn hỗ trợ gói mở khóa CV lẻ.';
+    }
+  }
+
+  return null;
+};
+
 export const createPackage = async (req, res) => {
   try {
     const {
@@ -14,6 +29,11 @@ export const createPackage = async (req, res) => {
         success: false,
         message: 'Missing required fields: code, name, targetRole, packageType, price, unit'
       });
+    }
+
+    const businessError = validatePackageBusinessRules({ code, packageType, benefits });
+    if (businessError) {
+      return res.status(400).json({ success: false, message: businessError });
     }
 
     const packageData = {
@@ -57,6 +77,15 @@ export const updatePackage = async (req, res) => {
     const pkg = await ServicePackage.findById(id);
     if (!pkg) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy gói dịch vụ' });
+    }
+
+    const businessError = validatePackageBusinessRules({
+      code: pkg.code,
+      packageType: packageType ?? pkg.packageType,
+      benefits: benefits ?? pkg.benefits
+    });
+    if (businessError) {
+      return res.status(400).json({ success: false, message: businessError });
     }
 
     const updateData = {};
