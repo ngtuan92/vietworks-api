@@ -5,8 +5,8 @@ import { ServicePackageCode, ServicePackageTargetRole, ServicePackageType, Servi
 const validatePackageBusinessRules = ({ code, packageType, benefits }) => {
   if (packageType === ServicePackageType.CV_UNLOCK) {
     const cvAccessLimit = Number(benefits?.cvAccessLimit || benefits?.unlockCvCount || 0);
-    if (cvAccessLimit < 2) {
-      return 'Gói mở khóa CV phải có ít nhất 2 lượt. Không còn hỗ trợ gói mở khóa CV lẻ.';
+    if (cvAccessLimit < 1) {
+      return 'Gói mở khóa CV phải có ít nhất 1 lượt.';
     }
   }
 
