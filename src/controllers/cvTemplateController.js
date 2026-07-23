@@ -51,6 +51,11 @@ export const createCvTemplate = async (req, res) => {
           metadata: { isBroadcastLog: true, targetRole: 'JOBSEEKER', sentCount: users.length, actionUrl: '/admin/cv-templates' }
         });
 
+        try {
+          const { getIO } = await import('../sockets/chatSocket.js');
+          getIO().to(broadcastLog.receiverUserId.toString()).emit('new_notification', broadcastLog.toObject());
+        } catch (e) {}
+
         // Chạy ngầm, không block
         Promise.resolve().then(async () => {
           const batchSize = 100;
