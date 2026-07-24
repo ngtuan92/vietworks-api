@@ -71,6 +71,13 @@ jest.unstable_mockModule('../../src/models/index.js', () => ({
   Career: careerMock, CareerPosition: careerPositionMock, Skill: skillMock,
   default: 'mock-models-index'
 }));
+jest.unstable_mockModule('axios', () => ({
+  default: {
+    get: jest.fn().mockResolvedValue({ data: Buffer.from('fake pdf data') }),
+    post: jest.fn().mockResolvedValue({ data: {} })
+  }
+}));
+
 jest.unstable_mockModule('../../src/models/cvModels.js', () => ({ default: cvMock }));
 jest.unstable_mockModule('../../src/models/cvTemplateModels.js', () => ({ default: cvTemplateMock }));
 jest.unstable_mockModule('../../src/models/cvSectionModels.js', () => ({ default: cvSectionMock }));
@@ -505,7 +512,8 @@ describe('AI Review History - UTCID01-03', () => {
     expect([200, 500]).toContain(res.statusCode);
   });
   test('UTCID03: A - db error returns 500', async () => {
-    aiCvReviewMock.find.mockReturnValueOnce({ populate: () => ({ populate: () => ({ sort: () => Promise.reject(new Error('db')) }) }) });
+    jest.spyOn(console, 'error').mockImplementationOnce(() => {});
+    aiCvReviewMock.find.mockReturnValueOnce({ populate: () => ({ sort: () => Promise.reject(new Error('db')) }) });
     const req = jobseekerReq();
     const res = mockResponse();
     await aiCvReview.getUserReviews(req, res);
@@ -542,6 +550,7 @@ describe('AI Review Detail - UTCID01-04', () => {
   test('UTCID04: A - db error returns 500', async () => {
     // getReviewById does `.findOne({...}).populate(...)` with no .lean() - it's
     // awaited straight off .populate().
+    jest.spyOn(console, 'error').mockImplementationOnce(() => {});
     aiCvReviewMock.findOne.mockReturnValueOnce({ populate: () => Promise.reject(new Error('db')) });
     const req = jobseekerReq({ params: { id: validCvId } });
     const res = mockResponse();
