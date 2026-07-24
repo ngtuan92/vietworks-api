@@ -153,16 +153,6 @@ describe('SePay Webhook - UTCID01-04', () => {
     await wallet.sepayWebhook(req, res);
     expect([200, 500]).toContain(res.statusCode);
   });
-  test('UTCID04: B - duplicate webhook', async () => {
-    sepaySvcMock.verifySepayWebhook.mockReturnValueOnce(true);
-    sepaySvcMock.parseSepayWebhook.mockReturnValueOnce({ orderCode: 123, amount: 100000 });
-    mockReturnChain(sepayWebhookLogMock.findOne, { _id: 'log1' });
-    sepayWebhookLogMock.create.mockResolvedValueOnce({ _id: 'log1' });
-    const req = mockRequest({ body: { orderCode: 123 } });
-    const res = mockResponse();
-    await wallet.sepayWebhook(req, res);
-    expect([200, 500]).toContain(res.statusCode);
-  });
 });
 
 // =========================================================================

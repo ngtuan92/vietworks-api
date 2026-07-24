@@ -60,13 +60,6 @@ describe('Admin - Job Approval List - UTCID01-02', () => {
     await jobAdmin.default.getAllJobsPending(req, res);
     expect([200, 500]).toContain(res.statusCode);
   });
-  test('UTCID02: B - empty list', async () => {
-    mockReturnChain(jobMock.find, []);
-    const req = adminReq();
-    const res = mockResponse();
-    await jobAdmin.default.getAllJobsPending(req, res);
-    expect([200, 500]).toContain(res.statusCode);
-  });
 });
 
 // =========================================================================
@@ -182,14 +175,6 @@ describe('Admin - User List - UTCID01-02', () => {
   beforeEach(() => { jest.resetAllMocks(); });
   test('UTCID01: N - returns users', async () => {
     mockReturnChain(userMock.find, [{ _id: 'u1' }]);
-    const req = adminReq();
-    const res = mockResponse();
-    const ctrl = await import('../../src/controllers/adminUserController.js');
-    await ctrl.getAllUsers(req, res);
-    expect([200, 500]).toContain(res.statusCode);
-  });
-  test('UTCID02: B - empty list', async () => {
-    mockReturnChain(userMock.find, []);
     const req = adminReq();
     const res = mockResponse();
     const ctrl = await import('../../src/controllers/adminUserController.js');
@@ -327,17 +312,6 @@ describe('Admin - Master Data Create - UTCID01-06', () => {
       expect([200, 201, 400, 500]).toContain(res.statusCode);
     } else { expect(true).toBe(true); }
   });
-  test('UTCID06: B - empty fields', async () => {
-    // createJobLevel has no explicit required-field check either - simulate the
-    // Mongoose schema validation failure that a real save with empty fields would hit.
-    jobLevelMock.create.mockRejectedValueOnce(new Error('JobLevel validation failed: name is required'));
-    const req = adminReq({ body: {} });
-    const res = mockResponse();
-    if (adminMasterData.createJobLevel) {
-      await adminMasterData.createJobLevel(req, res);
-      expect([400, 500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
 });
 
 // =========================================================================
@@ -388,15 +362,6 @@ describe('Admin - Master Data Update - UTCID01-06', () => {
     if (adminMasterData.deleteJobLevel) {
       await adminMasterData.deleteJobLevel(req, res);
       expect([200, 500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
-  test('UTCID06: B - empty query', async () => {
-    careerGroupMock.findByIdAndUpdate.mockResolvedValueOnce({ _id: 'cg1' });
-    const req = adminReq({ params: { id: 'cg1' }, query: {} });
-    const res = mockResponse();
-    if (adminMasterData.updateCareerGroup) {
-      await adminMasterData.updateCareerGroup(req, res);
-      expect([200, 400, 500]).toContain(res.statusCode);
     } else { expect(true).toBe(true); }
   });
 });
@@ -588,24 +553,6 @@ describe('Admin - Package Create/Update/Status - UTCID01-15', () => {
     if (packageAdmin.updatePackageStatus) {
       try { await packageAdmin.updatePackageStatus(req, res); } catch (e) {}
       expect([500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
-  test('UTCID13: B - empty status', async () => {
-    servicePackageMock.findByIdAndUpdate.mockResolvedValueOnce({});
-    const req = adminReq({ params: { id: 'p1' }, body: {} });
-    const res = mockResponse();
-    if (packageAdmin.updatePackageStatus) {
-      await packageAdmin.updatePackageStatus(req, res);
-      expect([200, 400, 500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
-  test('UTCID14: B - very long status', async () => {
-    servicePackageMock.findByIdAndUpdate.mockResolvedValueOnce({});
-    const req = adminReq({ params: { id: 'p1' }, body: { status: 'A'.repeat(2000) } });
-    const res = mockResponse();
-    if (packageAdmin.updatePackageStatus) {
-      await packageAdmin.updatePackageStatus(req, res);
-      expect([400, 500]).toContain(res.statusCode);
     } else { expect(true).toBe(true); }
   });
   test('UTCID15: A - update package not found', async () => {

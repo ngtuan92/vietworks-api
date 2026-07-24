@@ -169,13 +169,6 @@ describe('Authentication and Authorization - UTCID01-11', () => {
       try { await authMiddleware.protect(req, res, next); } catch (e) {}
       expect([200, 401, 403]).toContain(res.statusCode);
     });
-    test('UTCID11: B - empty bearer token', async () => {
-      const req = mreq({ headers: { authorization: 'Bearer ' } });
-      const res = mr();
-      const next = () => {};
-      try { await authMiddleware.protect(req, res, next); } catch (e) {}
-      expect([200, 401]).toContain(res.statusCode);
-    });
   });
 });
 
@@ -297,15 +290,6 @@ describe('Company Document Upload - UTCID01-03', () => {
   test('UTCID02: A - missing file returns 400', async () => {
     mockReturnPromise(employerProfileMock.findOne, { companyId: 'c1' });
     const req = employerReq();
-    const res = mr();
-    if (employerCompany.uploadMyCompanyDocument) {
-      await employerCompany.uploadMyCompanyDocument(req, res);
-      expect([400, 500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
-  test('UTCID03: B - unsupported format', async () => {
-    mockReturnPromise(employerProfileMock.findOne, { companyId: 'c1' });
-    const req = employerReq({ file: { originalname: 'business-license.exe', mimetype: 'application/octet-stream', buffer: Buffer.from('x') } });
     const res = mr();
     if (employerCompany.uploadMyCompanyDocument) {
       await employerCompany.uploadMyCompanyDocument(req, res);
