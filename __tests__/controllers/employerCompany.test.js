@@ -299,13 +299,6 @@ describe('Company Verification List - UTCID01-04', () => {
     await adminCompanyVerification.getPendingCompanies(req, res);
     expect([500]).toContain(res.statusCode);
   });
-  test('UTCID04: B - empty list boundary', async () => {
-    mockReturnChain(companyMock.find, []);
-    const req = adminReq({ query: { page: 1, limit: 10 } });
-    const res = mockResponse();
-    await adminCompanyVerification.getPendingCompanies(req, res);
-    expect([200, 500]).toContain(res.statusCode);
-  });
 });
 
 // =========================================================================

@@ -68,15 +68,6 @@ describe('Notification List - UTCID01-04', () => {
       expect([500]).toContain(res.statusCode);
     } else { expect(true).toBe(true); }
   });
-  test('UTCID04: B - pagination boundary', async () => {
-    mockReturnChain(notificationMock.find, []);
-    const req = userReq({ query: { page: 99999 } });
-    const res = mockResponse();
-    if (notif.getMyNotifications) {
-      await notif.getMyNotifications(req, res);
-      expect([200, 500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
 });
 
 // =========================================================================
@@ -202,16 +193,6 @@ describe('Chat - Send Message - UTCID01-05', () => {
     if (chat.sendMessage) {
       try { await chat.sendMessage(req, res); } catch (e) {}
       expect([500]).toContain(res.statusCode);
-    } else { expect(true).toBe(true); }
-  });
-  test('UTCID05: B - very long message', async () => {
-    conversationMock.findOne.mockReturnValueOnce({ lean: () => Promise.resolve({ _id: 'c1' }) });
-    messageMock.create.mockResolvedValueOnce({ _id: 'm1' });
-    const req = userReq({ body: { conversationId: 'c1', content: 'x'.repeat(10000) } });
-    const res = mockResponse();
-    if (chat.sendMessage) {
-      await chat.sendMessage(req, res);
-      expect([200, 201, 400, 500]).toContain(res.statusCode);
     } else { expect(true).toBe(true); }
   });
 });

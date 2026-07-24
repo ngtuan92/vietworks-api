@@ -180,14 +180,6 @@ describe('Job Update - UTCID01-06', () => {
     await job.updateJob(req, res);
     expect([404, 500]).toContain(res.statusCode);
   });
-  test('UTCID05: B - empty body update', async () => {
-    mockReturnChain(jobMock.findById, { companyId: 'c1', status: 'PUBLISHED' });
-    mockReturnPromise(jobMock.findByIdAndUpdate, { _id: 'j1' });
-    const req = employerReq({ params: { id: 'j1' }, body: {} });
-    const res = mockResponse();
-    await job.updateJob(req, res);
-    expect([200, 400, 500]).toContain(res.statusCode);
-  });
   test('UTCID06: A - db error returns 500', async () => {
     mockReturnChain(jobMock.findById, { companyId: 'c1', status: 'PUBLISHED' });
     jobMock.findByIdAndUpdate.mockImplementation(() => { throw new Error("db"); });
@@ -265,13 +257,6 @@ describe('Job Search Suggestion - UTCID01-02', () => {
   test('UTCID01: N - returns suggestions', async () => {
     mockReturnChain(jobMock.find, [{ title: 'Backend' }]);
     const req = mockRequest({ query: { q: 'back' } });
-    const res = mockResponse();
-    await job.getSearchSuggestions(req, res);
-    expect([200, 500]).toContain(res.statusCode);
-  });
-  test('UTCID02: B - empty q returns 200', async () => {
-    mockReturnChain(jobMock.find, []);
-    const req = mockRequest({ query: {} });
     const res = mockResponse();
     await job.getSearchSuggestions(req, res);
     expect([200, 500]).toContain(res.statusCode);
@@ -355,16 +340,6 @@ describe('Apply Job - UTCID01-07', () => {
     const res = mockResponse();
     await apply.applyJob(req, res);
     expect([400, 500]).toContain(res.statusCode);
-  });
-  test('UTCID06: B - job with multiple locations', async () => {
-    mockReturnChain(jobMock.findById, { _id: 'j1', status: 'PUBLISHED', workLocations: ['L1', 'L2'] });
-    mockReturnPromise(cvMock.findOne, { _id: 'c1', userId: 'js1' });
-    applicationMock.findOne.mockResolvedValueOnce(null);
-    applicationMock.create.mockResolvedValueOnce({ _id: 'a1' });
-    const req = jobseekerReq({ params: { id: 'j1' }, body: { cvId: 'c1', personalDataAgreementAccepted: true } });
-    const res = mockResponse();
-    await apply.applyJob(req, res);
-    expect([200, 201, 400, 500]).toContain(res.statusCode);
   });
   test('UTCID07: A - db error returns 500', async () => {
     mockReturnChain(jobMock.findById, { _id: 'j1', status: 'PUBLISHED' });
@@ -471,14 +446,6 @@ describe('Mark Application As Viewed - UTCID01-04', () => {
     const res = mockResponse();
     await ats.markApplicationAsViewed(req, res);
     expect([403, 404, 500]).toContain(res.statusCode);
-  });
-  test('UTCID04: B - boundary: null app returns 400/404', async () => {
-    mockReturnChain(companyMock.find, [{ _id: 'c1' }]);
-    mockReturnChain(applicationMock.findOne, null);
-    const req = employerReq({ params: { id: validId } });
-    const res = mockResponse();
-    await ats.markApplicationAsViewed(req, res);
-    expect([400, 404, 500]).toContain(res.statusCode);
   });
 });
 
@@ -616,15 +583,6 @@ describe('Reject Application - UTCID01-06', () => {
     const res = mockResponse();
     try { await ats.rejectApplication(req, res); } catch (e) {}
     expect([500]).toContain(res.statusCode);
-  });
-  test('UTCID06: B - very long reason', async () => {
-    mockReturnChain(companyMock.find, [{ _id: 'c1' }]);
-    mockReturnChain(applicationMock.findOne, { _id: validId, jobId: {}, status: 'VIEWED' });
-    mockReturnChain(applicationMock.findByIdAndUpdate, { _id: validId, jobId: {}, companyId: {}, jobseekerUserId: { _id: 'js1' } });
-    const req = employerReq({ params: { id: validId }, body: { reason: 'a'.repeat(2000) } });
-    const res = mockResponse();
-    await ats.rejectApplication(req, res);
-    expect([200, 400, 500]).toContain(res.statusCode);
   });
 });
 

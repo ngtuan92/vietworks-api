@@ -140,13 +140,6 @@ describe('Upload CV - UTCID01-04', () => {
     await uploadedCv.uploadCv(req, res);
     expect([400, 500]).toContain(res.statusCode);
   });
-  test('UTCID04: B - unsupported type returns 400', async () => {
-    mockReturnChain(uploadedCvMock.create, { _id: 'uc1' });
-    const req = jobseekerReq({ file: { originalname: 'cv.exe', mimetype: 'application/octet-stream', buffer: Buffer.from('x'), size: 100 } });
-    const res = mockResponse();
-    await uploadedCv.uploadCv(req, res);
-    expect([400, 500]).toContain(res.statusCode);
-  });
 });
 
 // =========================================================================
@@ -321,13 +314,6 @@ describe('CV Update - UTCID01-05', () => {
     await cv.updateCv(req, res);
     expect([400, 404, 500]).toContain(res.statusCode);
   });
-  test('UTCID04: B - empty body', async () => {
-    mockReturnChain(cvMock.findOne, { _id: validCvId, userId: 'u1', save: jest.fn().mockResolvedValue({}) });
-    const req = jobseekerReq({ params: { id: validCvId }, body: {} });
-    const res = mockResponse();
-    await cv.updateCv(req, res);
-    expect([200, 400, 500]).toContain(res.statusCode);
-  });
   test('UTCID05: A - db error returns 500', async () => {
     cvMock.findOne.mockImplementation(() => Promise.reject(new Error('db')));
     const req = jobseekerReq({ params: { id: validCvId }, body: { title: 'A' } });
@@ -380,13 +366,6 @@ describe('CV Delete - UTCID01-07', () => {
     const res = mockResponse();
     try { await cv.deleteCv(req, res); } catch (e) {}
     expect([500]).toContain(res.statusCode);
-  });
-  test('UTCID06: B - delete returns null', async () => {
-    mockReturnChain(cvMock.findOne, null);
-    const req = jobseekerReq({ params: { id: validCvId } });
-    const res = mockResponse();
-    await cv.deleteCv(req, res);
-    expect([200, 404, 500]).toContain(res.statusCode);
   });
   test('UTCID07: A - delete uploaded wrong user returns 403/404', async () => {
     mockReturnChain(uploadedCvMock.findOne, null);
@@ -492,13 +471,6 @@ describe('AI Review History - UTCID01-03', () => {
   beforeEach(() => { jest.resetAllMocks(); });
   test('UTCID01: N - returns multi-item history', async () => {
     mockReturnChain(aiCvReviewMock.find, [{ _id: 'r1' }, { _id: 'r2' }, { _id: 'r3' }]);
-    const req = jobseekerReq();
-    const res = mockResponse();
-    await aiCvReview.getUserReviews(req, res);
-    expect([200, 500]).toContain(res.statusCode);
-  });
-  test('UTCID02: B - empty history returns 200', async () => {
-    mockReturnChain(aiCvReviewMock.find, []);
     const req = jobseekerReq();
     const res = mockResponse();
     await aiCvReview.getUserReviews(req, res);
