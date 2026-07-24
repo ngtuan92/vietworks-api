@@ -454,7 +454,8 @@ export const updateJobLevel = async (req, res) => {
 export const deleteJobLevel = async (req, res) => {
   try {
     const { id } = req.params;
-    await JobLevel.findByIdAndUpdate(id, { status: CommonStatus.INACTIVE });
+    const updated = await JobLevel.findByIdAndUpdate(id, { status: CommonStatus.INACTIVE });
+    if (!updated) return res.status(404).json({ success: false, message: 'Không tìm thấy cấp bậc!' });
     res.status(200).json({ success: true, message: 'Đã ẩn cấp bậc thành công.' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
