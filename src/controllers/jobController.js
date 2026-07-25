@@ -68,12 +68,12 @@ export const attachHiringStats = async (jobs = []) => {
 
   const stats = await Application.aggregate([
     { $match: { jobId: { $in: jobIds } } },
-    { 
-      $group: { 
-        _id: '$jobId', 
+    {
+      $group: {
+        _id: '$jobId',
         appliedCount: { $sum: 1 },
         hiredCount: { $sum: { $cond: [{ $eq: ['$status', 'APPROVED'] }, 1, 0] } }
-      } 
+      }
     }
   ]);
 
@@ -91,7 +91,7 @@ export const attachHiringStats = async (jobs = []) => {
     job.remainingSlots = neededCount > 0 ? Math.max(neededCount - hiredCount, 0) : null;
   });
 
-    return jobs;
+  return jobs;
 };
 
 const findEmployerActivePremiumJobPackage = async (userId) => {
@@ -225,13 +225,13 @@ export const createJob = async (req, res) => {
 
 
     if (company.verificationStatus !== CompanyVerificationStatus.VERIFIED) {
-  return res.status(403).json({
-    success: false,
-    message: 'Company must be verified before creating jobs'
-  });
-}
+      return res.status(403).json({
+        success: false,
+        message: 'Company must be verified before creating jobs'
+      });
+    }
 
-        const activePremiumPackage = isUrgent ? await findEmployerActivePremiumJobPackage(userId) : null;
+    const activePremiumPackage = isUrgent ? await findEmployerActivePremiumJobPackage(userId) : null;
     if (isUrgent && !activePremiumPackage) {
       return res.status(400).json({
         success: false,
@@ -273,18 +273,18 @@ export const createJob = async (req, res) => {
       deadline: new Date(deadline),
       isUrgent: canUseUrgent,
       premium: activePremiumPackage ? {
-              isActive: true,
-              startedAt: new Date(),
-              expiredAt: activePremiumPackage.expiredAt,
-              deactivatedAt: null,
-              deactivatedReason: null
-            } : {
-              isActive: false,
-              startedAt: null,
-              expiredAt: null,
-              deactivatedAt: null,
-              deactivatedReason: null
-            },
+        isActive: true,
+        startedAt: new Date(),
+        expiredAt: activePremiumPackage.expiredAt,
+        deactivatedAt: null,
+        deactivatedReason: null
+      } : {
+        isActive: false,
+        startedAt: null,
+        expiredAt: null,
+        deactivatedAt: null,
+        deactivatedReason: null
+      },
       headcount: headcount ? Number(headcount) : 1,
       status: JobStatus.DRAFT
     });
@@ -318,7 +318,7 @@ export const createJob = async (req, res) => {
  * @access Private (Employer)
  */
 export const submitJobForReview = async (req, res) => {
-  
+
   try {
     const userId = req.user.id;
     const { jobId } = req.params;
@@ -354,15 +354,15 @@ export const submitJobForReview = async (req, res) => {
         message: `Only DRAFT jobs can be submitted for review. Current status: ${job.status}`
       });
     }
-      const companyCheck = await ensureCompanyVerifiedForEmployer(userId);
+    const companyCheck = await ensureCompanyVerifiedForEmployer(userId);
 
 
     if (!companyCheck.ok) {
-  return res.status(companyCheck.statusCode).json({
-    success: false,
-    message: companyCheck.message
-  });
-}
+      return res.status(companyCheck.statusCode).json({
+        success: false,
+        message: companyCheck.message
+      });
+    }
 
     // Cập nhật status
     job.status = JobStatus.PENDING_APPROVAL;
@@ -454,7 +454,7 @@ export const updateJob = async (req, res) => {
     // 4. Định nghĩa các nhóm trường để kiểm tra "Quay xe" về chờ duyệt
     // Bao gồm các thông tin cốt lõi ảnh hưởng trực tiếp đến người lao động
     const coreFields = [
-      'title', 'salary', 'description', 'requirements', 'benefits', 
+      'title', 'salary', 'description', 'requirements', 'benefits',
       'careerGroupId', 'careerId', 'careerPositionId', 'jobLevelId', 'experience', 'headcount'
     ];
 
@@ -467,11 +467,11 @@ export const updateJob = async (req, res) => {
     // Biến cờ đánh dấu xem có sự thay đổi ở trường cốt lõi nào không
     let hasCoreFieldChanged = false;
 
-        // 5. Duyệt qua các trường gửi lên và xử lý cập nhật
+    // 5. Duyệt qua các trường gửi lên và xử lý cập nhật
     for (const field of allowedUpdates) {
 
       if (updates[field] !== undefined) {
-        
+
         let newValue = updates[field];
         let isFieldChanged = false;
 
@@ -491,7 +491,7 @@ export const updateJob = async (req, res) => {
           newValue = newValue
             .filter(id => id && id !== "")
             .map(id => new mongoose.Types.ObjectId(id));
-          
+
           // So sánh mảng (nếu cần bắt chặt chẽ hơn, nhưng skills không nằm trong coreFields nên tạm bỏ qua check biến đổi sâu)
 
         } else if (field === 'deadline') {
@@ -504,7 +504,7 @@ export const updateJob = async (req, res) => {
           // So sánh Object lương sâu (Deep Compare)
           const currentSalary = job.salary || {};
           const newSalary = newValue || {};
-          
+
           if (
             currentSalary.type !== newSalary.type ||
             currentSalary.minMillion !== newSalary.minMillion ||
@@ -523,9 +523,9 @@ export const updateJob = async (req, res) => {
 
 
 
-                } else if (field === 'isUrgent') {
+        } else if (field === 'isUrgent') {
           newValue = Boolean(newValue);
-          
+
           // Check if the actual isUrgent value is changing
           if (Boolean(job[field]) !== newValue) {
             isFieldChanged = true;
@@ -538,7 +538,7 @@ export const updateJob = async (req, res) => {
             job.premium = {
               isActive: true,
               // Keep existing startedAt if already premium, otherwise set new.
-              startedAt: job.premium?.startedAt || new Date(), 
+              startedAt: job.premium?.startedAt || new Date(),
               expiredAt: activePremiumPackage.expiredAt,
               deactivatedAt: null,
               deactivatedReason: null,
@@ -581,7 +581,7 @@ export const updateJob = async (req, res) => {
           hasCoreFieldChanged = true;
         }
 
-                // Gán giá trị mới vào document
+        // Gán giá trị mới vào document
         job[field] = newValue;
       }
     }
@@ -793,16 +793,16 @@ export const getMyJobs = async (req, res) => {
       .populate('careerPositionId', 'name')
       .populate('jobLevelId', 'name')
       .populate('skills', 'name')
-            .select('+isUrgent +premium +rejectedReason +bannedReason') // Ensure these fields are selected
-            .sort({ createdAt: -1 })
+      .select('+isUrgent +premium +rejectedReason +bannedReason') // Ensure these fields are selected
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .lean();
 
     // Enrich: thêm activeBoost cho mỗi job (nếu có UserServicePackage ACTIVE cho job đó)
     const UserServicePackage = (await import('../models/userServicePackageModels.js')).default;
-const jobIds = jobs.map(j => new mongoose.Types.ObjectId(j._id));    
-const activeBoosts = await UserServicePackage.find({
+    const jobIds = jobs.map(j => new mongoose.Types.ObjectId(j._id));
+    const activeBoosts = await UserServicePackage.find({
       userId,
       status: 'ACTIVE',
       targetType: 'JOB',
@@ -867,7 +867,7 @@ export const getJobById = async (req, res) => {
       .populate('skills')
       .populate('createdBy', 'fullName email').
       lean();
-      
+
     if (!job) {
       return res.status(404).json({
         success: false,
@@ -885,7 +885,7 @@ export const getJobById = async (req, res) => {
       });
     }
 
-  await attachHiringStats([job]);     // ← dùng job trực tiếp, bỏ jobObject
+    await attachHiringStats([job]);     // ← dùng job trực tiếp, bỏ jobObject
 
 
     // Check if user can apply
@@ -897,25 +897,25 @@ export const getJobById = async (req, res) => {
 
     // SỬA: đổi tất cả jobObject → job trong phần canApply
 
-if (job.status === JobStatus.EXPIRED) {
-  canApply = false;
-  cannotApplyReason = 'Việc làm đã hết hạn';
-} else if (job.status === JobStatus.CLOSED) {
-  canApply = false;
-  cannotApplyReason = 'Việc làm đã đóng';
-} else if (job.status === JobStatus.REJECTED) {
-  canApply = false;
-  cannotApplyReason = 'Việc làm bị từ chối';
-} else if (job.status === JobStatus.BANNED) {
-  canApply = false;
-  cannotApplyReason = 'Việc làm bị khóa';
-} else if (new Date(job.deadline) < startOfToday) {
-  canApply = false;
-  cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
-} else if (job.isHiringFull) {
-  canApply = false;
-  cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
-}
+    if (job.status === JobStatus.EXPIRED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm đã hết hạn';
+    } else if (job.status === JobStatus.CLOSED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm đã đóng';
+    } else if (job.status === JobStatus.REJECTED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm bị từ chối';
+    } else if (job.status === JobStatus.BANNED) {
+      canApply = false;
+      cannotApplyReason = 'Việc làm bị khóa';
+    } else if (new Date(job.deadline) < startOfToday) {
+      canApply = false;
+      cannotApplyReason = 'Đã quá hạn nộp hồ sơ';
+    } else if (job.isHiringFull) {
+      canApply = false;
+      cannotApplyReason = 'Tin tuyển dụng đã tuyển đủ số lượng';
+    }
 
     res.status(200).json({
       success: true,
@@ -924,7 +924,7 @@ if (job.status === JobStatus.EXPIRED) {
       cannotApplyReason
     });
   } catch (error) {
-console.error("======= CHÍNH LÀ NÓ! LỖI TẠI ĐÂY: =======", error);    res.status(500).json({
+    console.error("======= CHÍNH LÀ NÓ! LỖI TẠI ĐÂY: =======", error); res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ'
     });
@@ -1090,7 +1090,7 @@ export const getPublicJobs = async (req, res) => {
       salaryMax,
       saturdayPolicy,
       page = 1,
-      limit = 12,
+      limit = 10,
       sortBy = 'publishedAt',
       sortOrder = 'desc'
     } = req.query;
@@ -1105,7 +1105,7 @@ export const getPublicJobs = async (req, res) => {
           from: 'applications',
           let: { jobId: '$_id' },
           pipeline: [
-            { $match: { $expr: { $and: [ { $eq: ['$jobId', '$$jobId'] }, { $eq: ['$status', 'APPROVED'] } ] } } },
+            { $match: { $expr: { $and: [{ $eq: ['$jobId', '$$jobId'] }, { $eq: ['$status', 'APPROVED'] }] } } },
             { $count: 'count' }
           ],
           as: 'apps'
@@ -1180,14 +1180,7 @@ export const getPublicJobs = async (req, res) => {
         filter.$and = filter.$and || [];
         filter.$and.push({
           $or: [
-            {
-              'salary.minMillion': { $lte: maxSalary },
-              'salary.maxMillion': { $gte: minSalary }
-            },
-            {
-              'salary.minMillion': { $gte: minSalary, $lte: maxSalary },
-              'salary.maxMillion': null
-            },
+            { 'salary.minMillion': { $gte: minSalary, $lte: maxSalary } },
             {
               'salary.minMillion': null,
               'salary.maxMillion': { $gte: minSalary, $lte: maxSalary }
@@ -1198,8 +1191,11 @@ export const getPublicJobs = async (req, res) => {
         filter.$and = filter.$and || [];
         filter.$and.push({
           $or: [
-            { 'salary.maxMillion': { $gte: minSalary } },
-            { 'salary.minMillion': { $gte: minSalary } }
+            { 'salary.minMillion': { $gte: minSalary } },
+            {
+              'salary.minMillion': null,
+              'salary.maxMillion': { $gte: minSalary }
+            }
           ]
         });
       } else if (maxSalary !== null) {
@@ -1207,7 +1203,10 @@ export const getPublicJobs = async (req, res) => {
         filter.$and.push({
           $or: [
             { 'salary.minMillion': { $lte: maxSalary } },
-            { 'salary.maxMillion': { $lte: maxSalary } }
+            {
+              'salary.minMillion': null,
+              'salary.maxMillion': { $lte: maxSalary }
+            }
           ]
         });
       }

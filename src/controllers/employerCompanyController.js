@@ -29,7 +29,7 @@ export const getMyCompanyProfile = async (req, res) => {
     if (!employerProfile || !employerProfile.companyId) {
       return res.status(400).json({
         success: false,
-        message: 'Employer has no company'
+        message: 'Nhà tuyển dụng chưa có thông tin công ty'
       });
     }
 
@@ -125,7 +125,7 @@ export const updateMyCompanyProfile = async (req, res) => {
     if (!employerProfile?.companyId) {
       return res.status(400).json({
         success: false,
-        message: 'Employer has no company'
+        message: 'Nhà tuyển dụng chưa có thông tin công ty'
       });
     }
 
@@ -159,7 +159,7 @@ export const updateMyCompanyProfile = async (req, res) => {
 if (!currentCompany) {
   return res.status(404).json({
     success: false,
-    message: 'Company not found or not owned by this employer'
+    message: 'Không tìm thấy công ty hoặc công ty không thuộc nhà tuyển dụng này'
   });
 }
 
@@ -291,7 +291,7 @@ export const submitMyCompanyForVerification = async (req, res) => {
     if (!employerProfile?.companyId) {
       return res.status(400).json({
         success: false,
-        message: 'Employer has no company'
+        message: 'Nhà tuyển dụng chưa có thông tin công ty'
       });
     }
 
@@ -303,28 +303,34 @@ export const submitMyCompanyForVerification = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Company not found or not owned by this employer'
+        message: 'Không tìm thấy công ty hoặc công ty không thuộc nhà tuyển dụng này'
       });
     }
 
-    if (!company.name || !company.taxCode || !company.industryIds || !company.industryIds.length || !company.size || !company.email || !company.phone || !company.description) {
+    const missingFields = [];
+    if (!company.name?.trim()) missingFields.push('Tên công ty');
+    if (!company.taxCode?.trim()) missingFields.push('Mã số thuế');
+    if (!company.businessLicenseFile?.fileUrl) missingFields.push('Giấy phép kinh doanh');
+
+    if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Company profile is incomplete'
+        message: `Vui lòng bổ sung đầy đủ thông tin: ${missingFields.join(', ')} trước khi gửi xác thực.`,
+        missingFields
       });
     }
 
-    if (!company.businessLicenseFile?.fileUrl) {
+    if (!company.industryIds || !company.industryIds.length || !company.size || !company.email || !company.phone || !company.description) {
       return res.status(400).json({
         success: false,
-        message: 'Business license file is required before submitting for verification'
+        message: 'Hồ sơ công ty chưa đầy đủ. Vui lòng hoàn thiện tất cả các thông tin bắt buộc trước khi gửi xác thực.'
       });
     }
 
     if (company.verificationStatus === CompanyVerificationStatus.VERIFIED) {
       return res.status(400).json({
         success: false,
-        message: 'Company is already verified'
+        message: 'Công ty đã được xác thực trước đó.'
       });
     }
 
@@ -337,7 +343,7 @@ export const submitMyCompanyForVerification = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Company submitted for verification successfully',
+      message: 'Gửi hồ sơ xác thực công ty thành công. Vui lòng chờ Admin duyệt.',
       data: {
         id: company._id,
         verificationStatus: company.verificationStatus,
@@ -347,7 +353,7 @@ export const submitMyCompanyForVerification = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }
