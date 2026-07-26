@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import Job from '../models/jobModels.js';
 import SavedJob from '../models/savedJobModels.js';
 import FollowedCompany from '../models/followedCompanyModels.js';
@@ -8,6 +8,7 @@ import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import { JobStatus } from '../enums/jobEnums.js';
 import { CommonStatus, CompanyVerificationStatus } from '../enums/masterDataEnums.js';
 import { attachHiringStats } from './jobController.js';
+import { buildPublicMatchedJobFilter, sortMatchedJobs } from '../utils/jobMatching.js';
 
 const MAX_SEARCH_HISTORY = 20;
 
@@ -223,30 +224,9 @@ export const getMatchedJobs = async (req, res) => {
       });
     }
 
-    const { desiredJob } = profile;
-    const filter = { ...publicJobFilter() };
+    const filter = buildPublicMatchedJobFilter(profile);
 
-    // ── Lọc theo BẤT KỲ tiêu chí nào ứng viên đã chọn ─────────
-    // Không bắt buộc ngành nghề: có tiêu chí nào thì lọc cứng theo tiêu chí đó.
-
-    // NGÀNH NGHỀ: khớp theo Nghề (careerId); nếu chỉ chọn tới Nhóm thì theo Nhóm.
-    if (desiredJob.careerId) {
-      filter.careerId = desiredJob.careerId;
-    } else if (desiredJob.careerGroupId) {
-      filter.careerGroupId = desiredJob.careerGroupId;
-    }
-
-    // ĐỊA ĐIỂM: job lưu theo provinceName nên so khớp theo tên tỉnh/thành.
-    const desiredProvinceNames = (desiredJob.workLocations || [])
-      .map((loc) => loc?.provinceName)
-      .filter(Boolean);
-    if (desiredProvinceNames.length) {
-      filter['workLocations.provinceName'] = { $in: desiredProvinceNames };
-    }
-
-    // Nếu chưa chọn tiêu chí nào (cả ngành nghề lẫn địa điểm) → không có gì để gợi ý.
-    const hasCareerFilter = Boolean(desiredJob.careerId || desiredJob.careerGroupId);
-    if (!hasCareerFilter && !desiredProvinceNames.length) {
+    if (!filter) {
       return res.status(200).json({
         success: true,
         data: [],
@@ -254,10 +234,6 @@ export const getMatchedJobs = async (req, res) => {
         message: 'Bạn chưa cài đặt nhu cầu việc làm để gợi ý'
       });
     }
-
-    // ── Tiêu chí phụ (chỉ XẾP HẠNG, không loại job) ───────────
-    const salaryMin = desiredJob.salaryExpectationMillion?.min;
-    const salaryMax = desiredJob.salaryExpectationMillion?.max;
 
     const allMatched = await Job.find(filter)
       .populate('companyId', 'name avatarUrl coverUrl')
@@ -268,32 +244,9 @@ export const getMatchedJobs = async (req, res) => {
       .populate('skills', 'name')
       .lean();
 
-    const idStr = (v) => String(v?._id || v || '');
-    const scoreJob = (job) => {
-      let score = 0;
-      if (job.premium?.isActive) score += 10;
-      if (job.isUrgent) score += 2;
-      // Khớp đúng vị trí mong muốn → ưu tiên cao.
-      if (desiredJob.careerPositionId && idStr(job.careerPositionId) === idStr(desiredJob.careerPositionId)) score += 5;
-      // Khớp mức kinh nghiệm mong muốn.
-      if (desiredJob.experience && job.experience === desiredJob.experience) score += 3;
-      // Lương job nằm trong khoảng mong muốn.
-      if ((salaryMin || salaryMax) && job.salary?.type !== 'NEGOTIABLE') {
-        const okMin = !salaryMin || (job.salary?.maxMillion ?? 0) >= salaryMin;
-        const okMax = !salaryMax || (job.salary?.minMillion ?? Infinity) <= salaryMax;
-        if (okMin && okMax) score += 3;
-      }
-      return score;
-    };
-
-    allMatched.sort((a, b) => {
-      const diff = scoreJob(b) - scoreJob(a);
-      if (diff !== 0) return diff;
-      return new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt);
-    });
-
-    const total = allMatched.length;
-    const jobs = allMatched.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+    const sortedMatched = sortMatchedJobs(allMatched, profile);
+    const total = sortedMatched.length;
+    const jobs = sortedMatched.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
     return res.status(200).json({
       success: true,

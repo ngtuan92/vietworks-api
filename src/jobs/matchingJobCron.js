@@ -1,49 +1,14 @@
-import cron from 'node-cron';
+﻿import cron from 'node-cron';
 import Job from '../models/jobModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import User from '../models/userModels.js';
 import { Notification } from '../models/index.js';
-import { JobStatus } from '../enums/jobEnums.js';
 import NotificationService from '../services/notificationService.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
+import { buildPublicMatchedJobFilter, sortMatchedJobs } from '../utils/jobMatching.js';
 
 // Giờ VN — để cron 08:00 chạy đúng 8h sáng Việt Nam bất kể timezone của server.
 const TZ = 'Asia/Ho_Chi_Minh';
-
-const buildMatchingJobFilter = (profile, since) => {
-  const desiredJob = profile.desiredJob || {};
-  const skills = profile.skills || [];
-
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const filter = {
-    status: JobStatus.PUBLISHED,
-    deadline: { $gte: startOfToday },
-    publishedAt: { $gte: since }
-  };
-
-  const orConditions = [];
-  if (desiredJob.careerGroupId) orConditions.push({ careerGroupId: desiredJob.careerGroupId });
-  if (desiredJob.careerId) orConditions.push({ careerId: desiredJob.careerId });
-  if (desiredJob.careerPositionId) orConditions.push({ careerPositionId: desiredJob.careerPositionId });
-  if (desiredJob.experience) orConditions.push({ experience: desiredJob.experience });
-  if (skills.length) orConditions.push({ skills: { $in: skills } });
-
-  if (orConditions.length > 0) {
-    filter.$or = orConditions;
-  }
-
-  const salaryMin = desiredJob.salaryExpectationMillion?.min;
-  const salaryMax = desiredJob.salaryExpectationMillion?.max;
-  if (salaryMin || salaryMax) {
-    filter['salary.type'] = { $ne: 'NEGOTIABLE' };
-    if (salaryMin) filter['salary.maxMillion'] = { $gte: salaryMin };
-    if (salaryMax) filter['salary.minMillion'] = { $lte: salaryMax };
-  }
-
-  return filter;
-};
 
 const formatJobsForNotification = (jobs) => jobs.map((job) => ({
   jobId: job._id,
@@ -99,11 +64,17 @@ export const runMatchingJobScan = async ({ since } = {}) => {
       continue;
     }
 
-    const jobs = await Job.find(buildMatchingJobFilter(profile, scanSince))
+    const filter = buildPublicMatchedJobFilter(profile, { since: scanSince });
+    if (!filter) {
+      continue;
+    }
+
+    const matchedJobs = await Job.find(filter)
       .populate('companyId', 'name avatarUrl')
-      .select('title salary workLocations companyId')
-      .limit(10)
+      .select('title salary workLocations companyId careerGroupId careerId careerPositionId jobLevelId skills experience premium isUrgent publishedAt createdAt')
       .lean();
+
+    const jobs = sortMatchedJobs(matchedJobs, profile).slice(0, 10);
 
     if (!jobs.length) {
       continue;
@@ -135,3 +106,5 @@ cron.schedule('0 8 * * *', async () => {
     console.error('=== [CRON 08:00] Lỗi quét việc làm phù hợp:', error);
   }
 }, { timezone: TZ });
+
+
