@@ -355,13 +355,12 @@ export const restoreCareer = async (req, res) => {
     }
 
     if (career.status === CommonStatus.ACTIVE) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Nghề đã ở trạng thái hoạt động' 
+      return res.status(400).json({
+        success: false,
+        message: 'Nghề đã ở trạng thái hoạt động'
       });
     }
 
-    // Kiểm tra nhóm nghề vẫn còn hoạt động
     const careerGroup = await CareerGroup.findById(career.careerGroupId);
     if (!careerGroup || careerGroup.status !== CommonStatus.ACTIVE) {
       return res.status(400).json({
@@ -373,10 +372,18 @@ export const restoreCareer = async (req, res) => {
     career.status = CommonStatus.ACTIVE;
     await career.save();
 
+    const restoredPositions = await CareerPosition.updateMany(
+      { careerId: id, status: CommonStatus.INACTIVE },
+      { $set: { status: CommonStatus.ACTIVE } }
+    );
+
     res.status(200).json({
       success: true,
-      data: career,
-      message: 'Khôi phục nghề thành công'
+      data: {
+        career,
+        restoredPositions: restoredPositions.modifiedCount || 0
+      },
+      message: 'Khôi phục nghề thành công. Các vị trí thuộc nghề này cũng đã được khôi phục.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

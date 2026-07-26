@@ -5,6 +5,7 @@ import { objectId } from './sharedModels.js';
 const careerSchema = new mongoose.Schema({
   careerGroupId: { type: objectId, ref: 'CareerGroup', required: true },
   name: { type: String, required: true },
+  code: { type: String, default: null, trim: true, uppercase: true },
   slug: { type: String, required: true, unique: true },
   description: String,
   status: { type: String, enum: Object.values(CommonStatus), default: CommonStatus.ACTIVE },

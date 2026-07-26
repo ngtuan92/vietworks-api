@@ -1235,10 +1235,10 @@ export const getPublicJobs = async (req, res) => {
         .sort({
           'premium.isActive': -1,
           'premium.packagePrice': -1,
-          'premium.startedAt': -1,
+          'premium.startedAt': 1,
           isUrgent: -1,
           [sortField]: sortDirection,
-          createdAt: -1
+          createdAt: sortDirection
         })
         .skip((pageNumber - 1) * limitNumber)
         .limit(limitNumber)
