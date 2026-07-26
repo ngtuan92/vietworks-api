@@ -60,6 +60,12 @@ export const getTalentPool = async (req, res) => {
       },
       {
         $unwind: { path: '$profile', preserveNullAndEmptyArrays: true }
+      },
+      {
+        $match: {
+          'profile.allowEmployerSearch': { $ne: false },
+          'profile.profileVisibility': { $ne: 'PRIVATE' }
+        }
       }
     ];
 
@@ -685,13 +691,13 @@ export const getUnlockedCandidates = async (req, res) => {
       .lean();
 
     const candidateIds = unlocked.map(u => u.candidateId?._id).filter(Boolean);
-    const uploadedCvs = await UploadedCV.find({ userId: { $in: candidateIds }, isPublic: true, status: 'ACTIVE' })
+    const uploadedCvs = await UploadedCV.find({ userId: { $in: candidateIds }, status: 'ACTIVE' })
       .select('title summary skills fileUrl fileName userId')
       .lean();
-    const templateCvs = await Cv.find({ userId: { $in: candidateIds }, isPublic: true, status: 'ACTIVE' })
+    const templateCvs = await Cv.find({ userId: { $in: candidateIds }, status: 'ACTIVE' })
       .select('title summary skills userId')
       .lean();
-    const allPublicCvs = [...uploadedCvs, ...templateCvs];
+    const allUnlockedCvs = [...uploadedCvs, ...templateCvs];
 
     const employerProfile = await EmployerProfile.findOne({ userId: employerId });
     const companyId = employerProfile?.companyId;
@@ -719,7 +725,7 @@ export const getUnlockedCandidates = async (req, res) => {
 
     unlocked.forEach(u => {
       const cIdStr = u.candidateId?._id?.toString();
-      u.allCvs = allPublicCvs.filter(cv => cv.userId.toString() === cIdStr);
+      u.allCvs = allUnlockedCvs.filter(cv => cv.userId.toString() === cIdStr);
       u.applications = applicationsMap[cIdStr] || [];
     });
 
