@@ -844,7 +844,12 @@ const linkedinLoginByRole = async (req, res, expectedRole = null) => {
     const { code, role } = req.body;
     const targetRole = expectedRole || role || UserRole.JOBSEEKER;
 
-    const linkedinUser = await verifyLinkedinCode(code);
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const redirectUri = targetRole === UserRole.EMPLOYER
+      ? `${clientUrl}/employer/linkedin-callback`
+      : process.env.LINKEDIN_REDIRECT_URI || `${clientUrl}/linkedin-callback`;
+
+    const linkedinUser = await verifyLinkedinCode(code, redirectUri);
     const { email, name } = linkedinUser;
 
     let user = await User.findOne({ email });
