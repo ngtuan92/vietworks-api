@@ -121,7 +121,7 @@ export const sendCvViewedEmail = ({ receiverUserId, toEmail, jobseekerName, empl
 /**
  * Gửi email thông báo lời mời phỏng vấn.
  */
-export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseekerName, companyName, jobTitle, interviewTime, interviewType, location, note, actionUrl, actionLabel, notificationId }) => {
+export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseekerName, companyName, jobTitle, interviewTime, interviewType, location, contactPerson, contactPhone, note, actionUrl, actionLabel, notificationId }) => {
   const formatTime = (timeStr) => {
     if (!timeStr) return 'Sẽ được thông báo';
     const date = new Date(timeStr);
@@ -148,6 +148,8 @@ export const sendInterviewInvitationEmail = ({ receiverUserId, toEmail, jobseeke
           <tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold; width:40%;">Thời gian</td><td style="padding:8px; border:1px solid #e5e7eb;">${formatTime(interviewTime)}</td></tr>
           <tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Hình thức</td><td style="padding:8px; border:1px solid #e5e7eb;">${interviewType === 'ONLINE' ? 'Trực tuyến (Online)' : 'Trực tiếp (Offline)'}</td></tr>
           ${location ? `<tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Địa điểm / Link</td><td style="padding:8px; border:1px solid #e5e7eb;">${location}</td></tr>` : ''}
+          ${contactPerson ? `<tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Người liên hệ</td><td style="padding:8px; border:1px solid #e5e7eb;">${contactPerson}</td></tr>` : ''}
+          ${contactPhone ? `<tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Số điện thoại liên hệ</td><td style="padding:8px; border:1px solid #e5e7eb;">${contactPhone}</td></tr>` : ''}
           ${note ? `<tr><td style="padding:8px; border:1px solid #e5e7eb; font-weight:bold;">Ghi chú</td><td style="padding:8px; border:1px solid #e5e7eb;">${note}</td></tr>` : ''}
         </table>
         <p>Hãy đăng nhập VietWorks để xem chi tiết và chuẩn bị cho buổi phỏng vấn.</p>

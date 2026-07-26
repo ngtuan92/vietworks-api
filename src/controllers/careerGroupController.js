@@ -291,10 +291,24 @@ export const restoreCareerGroup = async (req, res) => {
     careerGroup.status = CommonStatus.ACTIVE;
     await careerGroup.save();
 
+    const restoredCareers = await Career.updateMany(
+      { careerGroupId: id, status: CommonStatus.INACTIVE },
+      { $set: { status: CommonStatus.ACTIVE } }
+    );
+
+    const restoredPositions = await CareerPosition.updateMany(
+      { careerGroupId: id, status: CommonStatus.INACTIVE },
+      { $set: { status: CommonStatus.ACTIVE } }
+    );
+
     res.status(200).json({
       success: true,
-      data: careerGroup,
-      message: 'Khôi phục nhóm nghề thành công'
+      data: {
+        careerGroup,
+        restoredCareers: restoredCareers.modifiedCount || 0,
+        restoredPositions: restoredPositions.modifiedCount || 0
+      },
+      message: 'Khôi phục nhóm nghề thành công. Các nghề nghiệp và vị trí thuộc nhóm này cũng đã được khôi phục.'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

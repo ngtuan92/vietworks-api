@@ -72,7 +72,7 @@ const jobAdminController = {
       const { jobId } = req.params;
 
       const job = await Job.findById(jobId)
-        .populate('companyId', 'name logo website scale description') // Thông tin công ty
+        .populate('companyId', 'name avatarUrl website size description') // Thông tin công ty
         .populate('createdBy', 'fullName email phone') // Người tạo tin
         .populate('careerGroupId', 'name') // Nhóm ngành
         .populate('careerId', 'name') // Ngành nghề chi tiết

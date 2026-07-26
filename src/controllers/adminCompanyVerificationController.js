@@ -34,7 +34,7 @@ export const getPendingCompanies = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }
@@ -47,7 +47,7 @@ export const getCompanyVerificationDetail = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(companyId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid companyId'
+        message: 'Mã công ty không hợp lệ'
       });
     }
 
@@ -60,7 +60,7 @@ export const getCompanyVerificationDetail = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Company not found'
+        message: 'Không tìm thấy công ty'
       });
     }
 
@@ -100,7 +100,7 @@ export const getCompanyVerificationDetail = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }
@@ -115,7 +115,7 @@ export const approveCompanyVerification = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(companyId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid companyId'
+        message: 'Mã công ty không hợp lệ'
       });
     }
 
@@ -127,7 +127,7 @@ export const approveCompanyVerification = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Pending company not found'
+        message: 'Không tìm thấy công ty đang chờ duyệt'
       });
     }
 
@@ -155,7 +155,7 @@ export const approveCompanyVerification = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Company verified successfully',
+      message: 'Duyệt công ty thành công',
       data: {
         id: company._id,
         name: company.name,
@@ -167,7 +167,7 @@ export const approveCompanyVerification = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }
@@ -181,14 +181,14 @@ export const rejectCompanyVerification = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(companyId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid companyId'
+        message: 'Mã công ty không hợp lệ'
       });
     }
 
     if (!rejectionReason || !rejectionReason.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Rejection reason is required'
+        message: 'Vui lòng nhập lý do từ chối'
       });
     }
 
@@ -200,7 +200,7 @@ export const rejectCompanyVerification = async (req, res) => {
     if (!company) {
       return res.status(404).json({
         success: false,
-        message: 'Pending company not found'
+        message: 'Không tìm thấy công ty đang chờ duyệt'
       });
     }
 
@@ -213,7 +213,7 @@ export const rejectCompanyVerification = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Company verification rejected successfully',
+      message: 'Từ chối công ty thành công',
       data: {
         id: company._id,
         name: company.name,
@@ -226,7 +226,7 @@ export const rejectCompanyVerification = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Lỗi máy chủ',
       error: error.message
     });
   }

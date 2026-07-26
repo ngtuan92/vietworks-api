@@ -1,4 +1,4 @@
-﻿import { Notification } from '../models/index.js';
+import { Notification } from '../models/index.js';
 import User from '../models/userModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
 import {
@@ -123,6 +123,8 @@ export const createNotification = async ({
         interviewTime: metadata.interviewTime,
         interviewType: metadata.interviewType,
         location: metadata.location,
+        contactPerson: metadata.contactPerson,
+        contactPhone: metadata.contactPhone,
         note: metadata.note,
         actionUrl: emailTarget.url,
         actionLabel: emailTarget.label,
@@ -184,5 +186,6 @@ const NotificationService = {
 };
 
 export default NotificationService;
+
 
 
