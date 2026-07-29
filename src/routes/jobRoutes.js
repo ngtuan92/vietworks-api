@@ -22,6 +22,7 @@ import { getMyApplications } from '../controllers/applyController.js';
 import { getApplicationStatus } from '../controllers/applyController.js';
 import { getSimilarAppliedJobs } from '../controllers/applyController.js';
 import { getInterviewInvitation } from '../controllers/applyController.js';
+import { declineInterview } from '../controllers/applyController.js';
 
 
 const router = express.Router();
@@ -583,6 +584,7 @@ router.get('/jobseeker/applications/:id/result', protect, getApplicationStatus);
  *         description: Trả về chi tiết thư mời phỏng vấn
  */
 router.get('/jobseeker/applications/:id/interview-invitation', protect, getInterviewInvitation);
+router.post('/jobseeker/applications/:id/decline-interview', protect, declineInterview);
 
 
 /**

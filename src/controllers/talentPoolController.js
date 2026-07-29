@@ -1,4 +1,4 @@
-﻿import UploadedCV from '../models/uploadedCvModels.js';
+import UploadedCV from '../models/uploadedCvModels.js';
 import Cv from '../models/cvModels.js';
 import User from '../models/userModels.js';
 import UnlockedCandidate from '../models/unlockedCandidateModels.js';
@@ -281,18 +281,34 @@ export const getTalentPoolCvPreview = async (req, res) => {
     // Check if employer has unlocked the candidate
     let isUnlocked = await UnlockedCandidate.exists({ employerId, candidateId: cv.userId });
     
-    if (!isUnlocked) {
+    // Check if employer owns any application that uses this CV
+    const EmployerProfile = (await import('../models/employerProfileModels.js')).default;
+    const employerProfile = await EmployerProfile.findOne({ userId: employerId });
+    let hasAppliedWithThisCv = false;
+
+    if (employerProfile?.companyId) {
+      const Application = (await import('../models/applicationModels.js')).default;
+      hasAppliedWithThisCv = await Application.exists({
+        companyId: employerProfile.companyId,
+        $or: [
+          { cvId: cv._id },
+          { uploadedCvId: cv._id }
+        ]
+      });
+    }
+
+    if (hasAppliedWithThisCv) {
+      isUnlocked = true;
+    }
+
+    if (!isUnlocked && employerProfile?.companyId) {
       // Check if candidate applied to any of the employer's jobs
-      const { EmployerProfile } = await import('../models/employerModels.js');
-      const employerProfile = await EmployerProfile.findOne({ userId: employerId });
-      if (employerProfile?.companyId) {
-        const Job = (await import('../models/jobModels.js')).default;
-        const Application = (await import('../models/jobModels.js')).Application;
-        const employerJobs = await Job.find({ companyId: employerProfile.companyId }).select('_id');
-        const jobIds = employerJobs.map(j => j._id);
-        const hasApplied = await Application.exists({ jobseekerUserId: cv.userId, jobId: { $in: jobIds } });
-        if (hasApplied) isUnlocked = true;
-      }
+      const Job = (await import('../models/jobModels.js')).default;
+      const Application = (await import('../models/applicationModels.js')).default;
+      const employerJobs = await Job.find({ companyId: employerProfile.companyId }).select('_id');
+      const jobIds = employerJobs.map(j => j._id);
+      const hasApplied = await Application.exists({ jobseekerUserId: cv.userId, jobId: { $in: jobIds } });
+      if (hasApplied) isUnlocked = true;
     }
 
     if (!cv.isPublic && !isUnlocked) {

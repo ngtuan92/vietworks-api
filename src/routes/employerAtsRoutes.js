@@ -7,7 +7,9 @@ import {
   previewEmployerApplicationCv,
   approveApplication,
   rejectApplication,
-  createInterviewInvitation
+  createInterviewInvitation,
+  evaluateApplicationWithAi,
+  evaluateAllApplicationsWithAi
 } from '../controllers/employerAtsController.js';
 import { getEmployerDashboardAnalytics } from '../controllers/employerAnalyticsController.js';
 import { authorize, protect } from '../middlewares/authMiddleware.js';
@@ -23,6 +25,8 @@ router.patch('/employer/applications/:id/view', protect, authorize('EMPLOYER'), 
 router.patch('/employer/applications/:id/approve', protect, authorize('EMPLOYER'), approveApplication);
 router.patch('/employer/applications/:id/reject', protect, authorize('EMPLOYER'), rejectApplication);
 router.post('/employer/applications/:id/interview-invitation', protect, authorize('EMPLOYER'), createInterviewInvitation);
+router.post('/employer/applications/:id/ai-evaluate', protect, authorize('EMPLOYER'), evaluateApplicationWithAi);
+router.post('/employer/ats/jobs/:jobId/ai-evaluate-all', protect, authorize('EMPLOYER'), evaluateAllApplicationsWithAi);
 
 export default router;
 

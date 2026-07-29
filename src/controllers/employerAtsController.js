@@ -121,9 +121,12 @@ const formatApplicationListItem = (application) => {
     expectedWorkLocation: application.expectedWorkLocation,
     desiredLocation: formatLocation(application.expectedWorkLocation),
     status: application.status,
+    rejectionReason: application.rejectionReason,
     coverLetter: application.coverLetter,
     appliedAt: application.createdAt,
-    viewedAt: application.viewedAt
+    viewedAt: application.viewedAt,
+    aiMatchScore: application.aiMatchScore !== undefined ? application.aiMatchScore : null,
+    aiMatchReason: application.aiMatchReason || null
   };
 };
 
@@ -598,5 +601,139 @@ export const createInterviewInvitation = async (req, res) => {
     res.json({ success: true, message: 'Đã gửi lời mời phỏng vấn', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi gửi lời mời phỏng vấn' });
+  }
+};
+
+const extractTextFromObj = (obj) => {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj + ' ';
+  if (Array.isArray(obj)) return obj.map(extractTextFromObj).join('');
+  if (typeof obj === 'object') return Object.values(obj).map(extractTextFromObj).join('');
+  return '';
+};
+
+const extractCvText = async (application) => {
+  if (application.cvId) {
+    if (application.cvId.extractedText) {
+      return application.cvId.extractedText;
+    }
+    return extractTextFromObj(application.cvId.sections);
+  }
+  if (application.uploadedCvId) {
+    if (application.uploadedCvId.extractedText) {
+      return application.uploadedCvId.extractedText;
+    }
+    try {
+      const response = await axios.get(application.uploadedCvId.fileUrl, {
+        responseType: 'arraybuffer',
+        timeout: 15000
+      });
+      const pdfParse = (await import('pdf-parse-new')).default;
+      const parsed = await pdfParse(Buffer.from(response.data));
+      return parsed.text || '';
+    } catch (err) {
+      console.error('Failed to parse uploaded CV PDF:', err.message);
+      return '';
+    }
+  }
+  return '';
+};
+
+export const evaluateApplicationWithAi = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const application = await findApplicationForEmployer(id, req.user._id);
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ hoặc bạn không có quyền xem' });
+    }
+
+    const { screenCvWithJob } = await import('../services/aiMatchingService.js');
+    const cvText = await extractCvText(application);
+    if (!cvText) {
+      return res.status(400).json({ success: false, message: 'Không thể trích xuất văn bản từ CV của ứng viên.' });
+    }
+
+    const jobDetails = {
+      title: application.jobId?.title,
+      description: application.jobId?.description,
+      requirements: application.jobId?.requirements
+    };
+
+    const aiResult = await screenCvWithJob(cvText, jobDetails);
+    
+    // Save to database
+    await Application.findByIdAndUpdate(
+      id,
+      {
+        aiMatchScore: aiResult.matchScore || 0,
+        aiMatchReason: aiResult.reason || ''
+      }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        id: application._id,
+        aiMatchScore: aiResult.matchScore || 0,
+        aiMatchReason: aiResult.reason || ''
+      }
+    });
+  } catch (error) {
+    console.error('evaluateApplicationWithAi error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi hệ thống khi đánh giá AI: ' + error.message });
+  }
+};
+
+export const evaluateAllApplicationsWithAi = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const job = await ensureEmployerOwnsJob(jobId, req.user._id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy job hoặc bạn không có quyền xem' });
+    }
+
+    const applications = await Application.find({ jobId: job._id })
+      .populate('cvId')
+      .populate('uploadedCvId');
+
+    const { screenCvWithJob } = await import('../services/aiMatchingService.js');
+    const results = [];
+
+    for (const app of applications) {
+      if (app.aiMatchScore === null || app.aiMatchScore === undefined) {
+        const cvText = await extractCvText(app);
+        if (!cvText) continue;
+
+        try {
+          const aiResult = await screenCvWithJob(cvText, {
+            title: job.title,
+            description: job.description,
+            requirements: job.requirements
+          });
+          
+          app.aiMatchScore = aiResult.matchScore || 0;
+          app.aiMatchReason = aiResult.reason || '';
+          await app.save();
+          
+          results.push({
+            id: app._id,
+            aiMatchScore: app.aiMatchScore,
+            aiMatchReason: app.aiMatchReason
+          });
+        } catch (e) {
+          console.error(`Failed to evaluate application ${app._id}:`, e.message);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Đã chấm điểm thành công các hồ sơ mới`,
+      data: results
+    });
+  } catch (error) {
+    console.error('evaluateAllApplicationsWithAi error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi hệ thống khi đánh giá AI hàng loạt: ' + error.message });
   }
 };

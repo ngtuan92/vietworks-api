@@ -17,7 +17,8 @@ import {
   getFollowedCompanies,
   getPublicCompanies,
   getPublicCompanyDetail,
-  getCompanyOpenJobs
+  getCompanyOpenJobs,
+  getAiMatchingJobs
 } from '../controllers/jobseekerController.js';
 
 const router = express.Router();
@@ -380,5 +381,8 @@ router.delete('/jobseeker/followed-companies/:companyId', requireJobseeker, unfo
  *         description: Danh sách công ty đã follow
  */
 router.get('/jobseeker/followed-companies', requireJobseeker, getFollowedCompanies);
+
+// Tìm kiếm việc làm phù hợp bằng AI dựa trên CV
+router.post('/jobseeker/ai-matching-jobs', requireJobseeker, getAiMatchingJobs);
 
 export default router;
