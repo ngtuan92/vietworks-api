@@ -1,10 +1,12 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import Job from '../models/jobModels.js';
 import SavedJob from '../models/savedJobModels.js';
 import FollowedCompany from '../models/followedCompanyModels.js';
 import Company from '../models/companyModels.js';
 import CompanyLocation from '../models/companyLocationModels.js';
 import JobseekerProfile from '../models/jobseekerProfileModels.js';
+import Cv from '../models/cvModels.js';
+import UploadedCv from '../models/uploadedCvModels.js';
 import { JobStatus } from '../enums/jobEnums.js';
 import { CommonStatus, CompanyVerificationStatus } from '../enums/masterDataEnums.js';
 import { attachHiringStats } from './jobController.js';
@@ -613,5 +615,130 @@ export const getCompanyOpenJobs = async (req, res) => {
     });
   } catch {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+};
+
+const rebuildCvTextFromSections = (sections = []) => {
+  let textParts = [];
+  sections.forEach(sec => {
+    if (!sec) return;
+    if (sec.title) textParts.push(`--- ${sec.title} ---`);
+    if (sec.type === 'personal_info') {
+      textParts.push(`Họ tên: ${sec.fullName || ''}`);
+      textParts.push(`Email: ${sec.email || ''}`);
+      textParts.push(`Số điện thoại: ${sec.phone || ''}`);
+      textParts.push(`Vị trí ứng tuyển mong muốn: ${sec.jobTitle || ''}`);
+    } else if (sec.type === 'summary') {
+      textParts.push(sec.summaryText || '');
+    } else if (sec.type === 'work_experience' && Array.isArray(sec.items)) {
+      sec.items.forEach(item => {
+        textParts.push(`Công ty: ${item.company || ''} - Chức danh: ${item.position || ''}`);
+        textParts.push(`Thời gian: ${item.duration || ''}`);
+        textParts.push(`Chi tiết công việc: ${item.description || ''}`);
+      });
+    } else if (sec.type === 'education' && Array.isArray(sec.items)) {
+      sec.items.forEach(item => {
+        textParts.push(`Trường: ${item.school || ''} - Ngành: ${item.major || ''}`);
+        textParts.push(`Bằng cấp: ${item.degree || ''} - Xếp loại: ${item.gpa || ''}`);
+      });
+    } else if (sec.type === 'skills' && Array.isArray(sec.items)) {
+      sec.items.forEach(item => {
+        textParts.push(`Kỹ năng: ${item.name || ''} - Cấp độ: ${item.level || ''}`);
+      });
+    } else if (sec.type === 'projects' && Array.isArray(sec.items)) {
+      sec.items.forEach(item => {
+        textParts.push(`Dự án: ${item.name || ''} - Vai trò: ${item.role || ''}`);
+        textParts.push(`Công nghệ: ${item.technology || ''}`);
+        textParts.push(`Chi tiết: ${item.description || ''}`);
+      });
+    } else {
+      if (sec.content) textParts.push(sec.content);
+    }
+  });
+  return textParts.filter(Boolean).join('\n');
+};
+
+export const getAiMatchingJobs = async (req, res) => {
+  try {
+    const { cvId, cvType } = req.body;
+    const userId = req.user._id;
+
+    if (!cvId || !cvType) {
+      return res.status(400).json({ success: false, message: 'Vui lòng cung cấp cvId và cvType' });
+    }
+
+    let cvText = '';
+    if (cvType === 'ONLINE') {
+      const cv = await Cv.findOne({ _id: cvId, userId, status: 'ACTIVE' });
+      if (!cv) {
+        return res.status(404).json({ success: false, message: 'Không tìm thấy CV online' });
+      }
+      cvText = cv.extractedText || rebuildCvTextFromSections(cv.sections);
+    } else if (cvType === 'UPLOADED') {
+      const cv = await UploadedCv.findOne({ _id: cvId, userId, status: 'ACTIVE' });
+      if (!cv) {
+        return res.status(404).json({ success: false, message: 'Không tìm thấy CV đã tải lên' });
+      }
+      cvText = cv.extractedText || '';
+    } else {
+      return res.status(400).json({ success: false, message: 'cvType không hợp lệ (ONLINE hoặc UPLOADED)' });
+    }
+
+    if (!cvText.trim()) {
+      return res.status(400).json({ success: false, message: 'Nội dung CV của bạn hiện đang trống hoặc chưa được trích xuất text.' });
+    }
+
+    // Query ALL active jobs
+    const activeJobs = await Job.find(publicJobFilter())
+      .select('title salary workLocations deadline isUrgent premium companyId description requirements careerGroupId careerId jobLevelId experience')
+      .populate('companyId', 'name avatarUrl')
+      .lean();
+
+    if (activeJobs.length === 0) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    // Condense job info to save tokens
+    const condensedJobs = activeJobs.map(job => ({
+      id: job._id.toString(),
+      title: job.title,
+      company: job.companyId?.name || 'Công ty',
+      salary: job.salary?.type === 'NEGOTIABLE' ? 'Thỏa thuận' : `${job.salary?.minMillion || ''} - ${job.salary?.maxMillion || ''} triệu`,
+      locations: job.workLocations?.map(l => `${l.provinceName || ''} ${l.districtName || ''}`).join(', '),
+      description: (job.description || '').replace(/<[^>]+>/g, ' ').substring(0, 300),
+      requirements: (job.requirements || '').replace(/<[^>]+>/g, ' ').substring(0, 300)
+    }));
+
+    // Import AI matching service
+    const { matchCvWithJobs } = await import('../services/aiMatchingService.js');
+
+    // Call AI to match
+    const matchedResults = await matchCvWithJobs(cvText, condensedJobs);
+
+    // Merge matching results with full job details
+    const resultJobs = [];
+    for (const match of matchedResults) {
+      const matchedJob = activeJobs.find(job => job._id.toString() === match.jobId);
+      if (matchedJob) {
+        resultJobs.push({
+          ...matchedJob,
+          aiMatch: {
+            score: match.matchScore,
+            reason: match.reason
+          }
+        });
+      }
+    }
+
+    // Sort by matchScore descending
+    resultJobs.sort((a, b) => b.aiMatch.score - a.aiMatch.score);
+
+    return res.status(200).json({
+      success: true,
+      data: resultJobs
+    });
+  } catch (error) {
+    console.error('getAiMatchingJobs error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Lỗi máy chủ' });
   }
 };

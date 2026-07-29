@@ -326,4 +326,27 @@ export const sendPasswordResetEmail = async ({ toEmail, fullName, resetUrl }) =>
   return sendHtmlEmail({ toEmail, subject, html });
 };
 
+/**
+ * Gửi email thông báo ứng viên từ chối phỏng vấn cho nhà tuyển dụng.
+ */
+export const sendInterviewDeclinedEmail = ({ receiverUserId, toEmail, employerName, jobseekerName, jobTitle, actionUrl, notificationId = null }) => {
+  const subject = `VietWorks - Ứng viên từ chối phỏng vấn cho vị trí ${jobTitle}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.7; color: #1f2937; max-width: 600px; margin: 0 auto;">
+      <div style="background: #003f87; padding: 24px; border-radius: 8px 8px 0 0;">
+        <h1 style="color: #fff; margin: 0; font-size: 20px;">VietWorks</h1>
+      </div>
+      <div style="background: #f9fafb; padding: 28px; border-radius: 0 0 8px 8px;">
+        <h2 style="color: #ea4335;">Ứng viên từ chối phỏng vấn ❌</h2>
+        <p>Xin chào <strong>${employerName || 'Nhà tuyển dụng'}</strong>,</p>
+        <p>Hệ thống xin thông báo ứng viên <strong>${jobseekerName}</strong> đã từ chối lời mời phỏng vấn cho vị trí tuyển dụng <strong>${jobTitle}</strong>.</p>
+        <p>Bạn có thể vào trang quản lý hồ sơ ứng viên để xem chi tiết.</p>
+        ${renderEmailActionButton(actionUrl, 'Xem chi tiết hồ sơ')}
+        <p style="margin-top: 24px;">Trân trọng,<br /><strong>Đội ngũ VietWorks</strong></p>
+      </div>
+    </div>
+  `;
+  return sendBusinessEmail({ receiverUserId, toEmail, subject, html, notificationId });
+};
+
 

@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 import Job from '../models/jobModels.js';
+import User from '../models/userModels.js';
 import { Company, Cv, UploadedCv } from '../models/index.js';
 import NotificationService from '../services/notificationService.js';
+import { sendInterviewDeclinedEmail } from '../services/emailService.js';
 import { NotificationTypeCode } from '../enums/notificationEnums.js';
 import { CvStatus } from '../enums/cvEnums.js';
-import { JobStatus } from '../enums/jobEnums.js';
+import { JobStatus, ApplicationStatus } from '../enums/jobEnums.js';
 
 const publicJobFilter = () => {
   const startOfToday = new Date();
@@ -57,7 +59,7 @@ export const getApplyOptions = async (req, res) => {
     if (job.headcount > 0) {
       const Application = (await import('../models/applicationModels.js')).default;
       const { ApplicationStatus } = await import('../enums/jobEnums.js');
-      const currentHiredCount = await Application.countDocuments({ 
+      const currentHiredCount = await Application.countDocuments({
         jobId: job._id,
         status: ApplicationStatus.APPROVED
       });
@@ -188,9 +190,9 @@ export const applyJob = async (req, res) => {
     const { ApplicationStatus } = await import('../enums/jobEnums.js');
 
     if (job.headcount > 0) {
-      const currentHiredCount = await Application.countDocuments({ 
+      const currentHiredCount = await Application.countDocuments({
         jobId: job._id,
-        status: ApplicationStatus.APPROVED 
+        status: ApplicationStatus.APPROVED
       });
       if (currentHiredCount >= job.headcount) {
         return res.status(400).json({
@@ -470,7 +472,7 @@ export const getSimilarAppliedJobs = async (req, res) => {
 
     return res.status(200).json({ success: true, data: jobs });
   } catch (error) {
-    return    res.status(500).json({ success: false, message: 'Lỗi server khi lấy gợi ý công việc' });
+    return res.status(500).json({ success: false, message: 'Lỗi server khi lấy gợi ý công việc' });
   }
 };
 
@@ -573,6 +575,100 @@ export const getApplicationStatus = async (req, res) => {
       }
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi máy chủ'
+    });
+  }
+};
+
+export const declineInterview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id || req.user._id;
+
+    const Application = (await import('../models/applicationModels.js')).default;
+    const { ApplicationStatus } = await import('../enums/jobEnums.js');
+
+    const application = await Application.findOne({
+      _id: id,
+      jobseekerUserId: userId
+    }).populate('jobId', 'title').populate('companyId');
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy hồ sơ ứng tuyển'
+      });
+    }
+
+    if (application.status !== ApplicationStatus.INTERVIEW_INVITED) {
+      return res.status(400).json({
+        success: false,
+        message: 'Hồ sơ không ở trạng thái được mời phỏng vấn'
+      });
+    }
+
+    // Update application status to REJECTED
+    application.status = ApplicationStatus.REJECTED;
+    application.rejectionReason = '<p>Ứng viên đã từ chối phỏng vấn</p>';
+    application.statusHistory.push({
+      status: ApplicationStatus.REJECTED,
+      changedBy: userId,
+      changedAt: new Date(),
+      note: 'Ứng viên từ chối phỏng vấn'
+    });
+
+    await application.save();
+
+    // Notify the employer
+    try {
+      if (application.companyId?.ownerUserId) {
+        const jobseekerName = req.user.fullName || req.user.email || 'Ứng viên';
+        const jobTitle = application.jobId?.title || 'vị trí ứng tuyển';
+        await NotificationService.create({
+          receiverUserId: application.companyId.ownerUserId,
+          typeCode: NotificationTypeCode.APPLICATION_RESULT,
+          title: 'Ứng viên từ chối phỏng vấn',
+          content: `${jobseekerName} đã từ chối lời mời phỏng vấn cho vị trí ${jobTitle}.`,
+          metadata: {
+            applicationId: application._id,
+            jobId: application.jobId?._id || application.jobId,
+            companyId: application.companyId?._id || application.companyId,
+            jobseekerUserId: userId,
+            status: 'REJECTED'
+          }
+        });
+
+        // Fetch employer user details and send email
+        const employerUser = await User.findById(application.companyId.ownerUserId).select('email fullName');
+        if (employerUser && employerUser.email) {
+          const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+          const actionUrl = `${clientUrl}/employer/jobs/${application.jobId?._id || application.jobId}/applications`;
+          await sendInterviewDeclinedEmail({
+            receiverUserId: employerUser._id,
+            toEmail: employerUser.email,
+            employerName: employerUser.fullName,
+            jobseekerName,
+            jobTitle,
+            actionUrl
+          });
+        }
+      }
+    } catch (notificationError) {
+      console.error('Notify employer error:', notificationError.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Từ chối phỏng vấn thành công',
+      data: {
+        id: application._id,
+        status: application.status
+      }
+    });
+  } catch (error) {
+    console.error('declineInterview error:', error);
     res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ'

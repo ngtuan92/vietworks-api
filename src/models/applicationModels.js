@@ -24,7 +24,9 @@ const applicationSchema = new mongoose.Schema({
     note: { type: String },
     createdAt: { type: Date }
   },
-  statusHistory: { type: [mongoose.Schema.Types.Mixed], default: [] }
+  statusHistory: { type: [mongoose.Schema.Types.Mixed], default: [] },
+  aiMatchScore: { type: Number, default: null },
+  aiMatchReason: { type: String, default: null }
 }, { timestamps: true });
 
 const Application = mongoose.model('Application', applicationSchema, 'applications');
